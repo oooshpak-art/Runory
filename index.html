@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Runner OS</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f4f5f7;
+      color: #171717;
+    }
+
+    .container {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 30px 18px 60px;
+    }
+
+    .header {
+      margin-bottom: 25px;
+    }
+
+    .logo {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -1px;
+    }
+
+    .subtitle {
+      color: #666;
+      margin-top: 5px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 18px;
+      padding: 24px;
+      margin-bottom: 18px;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.06);
+    }
+
+    h2 {
+      margin-top: 0;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 7px;
+    }
+
+    input {
+      width: 100%;
+      padding: 14px;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      font-size: 17px;
+      margin-bottom: 16px;
+    }
+
+    button {
+      width: 100%;
+      border: 0;
+      border-radius: 12px;
+      padding: 15px;
+      background: #111;
+      color: white;
+      font-size: 17px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button:hover {
+      opacity: 0.9;
+    }
+
+    .result {
+      display: none;
+    }
+
+    .metric {
+      display: flex;
+      justify-content: space-between;
+      padding: 13px 0;
+      border-bottom: 1px solid #eee;
+    }
+
+    .metric:last-child {
+      border-bottom: 0;
+    }
+
+    .metric strong {
+      font-size: 18px;
+    }
+
+    .analysis {
+      line-height: 1.6;
+      font-size: 16px;
+    }
+
+    .good {
+      background: #eef9f0;
+      padding: 15px;
+      border-radius: 12px;
+      margin-top: 15px;
+    }
+
+    .warning {
+      background: #fff5e8;
+      padding: 15px;
+      border-radius: 12px;
+      margin-top: 15px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+
+    <div class="header">
+      <div class="logo">🏃 Runner OS</div>
+      <div class="subtitle">
+        Зрозумілий аналіз бігового тренування
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Аналіз тренування</h2>
+
+      <label for="distance">Дистанція, км</label>
+      <input id="distance" type="number" step="0.01" placeholder="Наприклад, 10">
+
+      <label for="time">Час, хвилини</label>
+      <input id="time" type="number" step="0.01" placeholder="Наприклад, 45">
+
+      <label for="heartRate">Середній пульс, уд/хв</label>
+      <input id="heartRate" type="number" placeholder="Наприклад, 155">
+
+      <button onclick="analyze()">Проаналізувати тренування</button>
+    </div>
+
+    <div id="result" class="result">
+
+      <div class="card">
+        <h2>Результат</h2>
+
+        <div class="metric">
+          <span>Темп</span>
+          <strong id="pace">—</strong>
+        </div>
+
+        <div class="metric">
+          <span>Швидкість</span>
+          <strong id="speed">—</strong>
+        </div>
+
+        <div class="metric">
+          <span>Середній пульс</span>
+          <strong id="hr">—</strong>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Що це означає?</h2>
+
+        <div id="analysis" class="analysis"></div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    function analyze() {
+
+      const distance = parseFloat(
+        document.getElementById("distance").value
+      );
+
+      const time = parseFloat(
+        document.getElementById("time").value
+      );
+
+      const heartRate = parseFloat(
+        document.getElementById("heartRate").value
+      );
+
+      if (!distance || !time || distance <= 0 || time <= 0) {
+        alert("Введи дистанцію та час тренування.");
+        return;
+      }
+
+      const paceDecimal = time / distance;
+
+      const paceMinutes = Math.floor(paceDecimal);
+      const paceSeconds = Math.round(
+        (paceDecimal - paceMinutes) * 60
+      );
+
+      const speed = distance / (time / 60);
+
+      document.getElementById("pace").textContent =
+        paceMinutes + ":" +
+        String(paceSeconds).padStart(2, "0") +
+        " /км";
+
+      document.getElementById("speed").textContent =
+        speed.toFixed(2) + " км/год";
+
+      document.getElementById("hr").textContent =
+        heartRate ? heartRate + " уд/хв" : "не вказано";
+
+      let analysis = "";
+
+      if (speed < 9) {
+
+        analysis += `
+          <div class="good">
+            🟢 <strong>Легкий характер тренування.</strong><br>
+            Темп виглядає спокійним. Такі пробіжки добре підходять
+            для розвитку аеробної бази та відновлення.
+          </div>
+        `;
+
+      } else if (speed < 12) {
+
+        analysis += `
+          <div class="good">
+            🟢 <strong>Помірне тренування.</strong><br>
+            Це може бути звичайний тривалий або стабільний біг.
+          </div>
+        `;
+
+      } else {
+
+        analysis += `
+          <div class="warning">
+            🟠 <strong>Досить швидкий біг.</strong><br>
+            Ймовірно, це вже не легке тренування.
+            Для точнішого аналізу Runner OS згодом врахує
+            пульс, структуру тренування та дані Garmin.
+          </div>
+        `;
+      }
+
+      if (heartRate) {
+
+        if (heartRate >= 175) {
+
+          analysis += `
+            <div class="warning">
+              ❤️ Пульс високий. Навантаження було значним.
+            </div>
+          `;
+
+        } else if (heartRate <= 145) {
+
+          analysis += `
+            <div class="good">
+              ❤️ Пульс відносно низький для такого тренування.
+              Це може свідчити про аеробний характер роботи.
+            </div>
+          `;
+
+        } else {
+
+          analysis += `
+            <p>
+              ❤️ Пульс знаходиться в середньому діапазоні.
+              Для повноцінної оцінки потрібні твої індивідуальні
+              пульсові зони.
+            </p>
+          `;
+        }
+      }
+
+      document.getElementById("analysis").innerHTML = analysis;
+
+      document.getElementById("result").style.display = "block";
+    }
+  </script>
+
+</body>
+</html>
