@@ -1,292 +1,117 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="uk">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Runner OS</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Runner OS — зрозумілий аналіз бігових тренувань." />
+    <title>Runner OS — аналіз тренувань</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="src/styles.css" />
+  </head>
+  <body>
+    <main class="page-shell">
+      <header class="topbar">
+        <a class="brand" href="#top" aria-label="Runner OS — головна">
+          <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span>Runner OS</span>
+        </a>
+        <nav class="app-nav" aria-label="Розділи Runner OS">
+          <button class="nav-tab is-active" type="button" data-view="analysis">Аналіз тренування</button>
+          <button class="nav-tab" type="button" data-view="calculator">Калькулятор бігу</button>
+        </nav>
+        <div class="status-pill"><span></span>MVP · FIT-аналіз</div>
+      </header>
 
-  <style>
-    * {
-      box-sizing: border-box;
-    }
+      <div class="view is-active" id="analysis" data-view-panel>
+      <section class="hero" id="top">
+        <p class="eyebrow">ТВОЇ ТРЕНУВАННЯ — ЗРОЗУМІЛО</p>
+        <h1>Кожен кілометр<br />має значення.</h1>
+        <p class="hero-copy">Завантаж тренування з Garmin. Runner OS покаже головне: дистанцію, темп, пульс, каденс і набір висоти.</p>
+      </section>
 
-    body {
-      margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #f4f5f7;
-      color: #171717;
-    }
-
-    .container {
-      max-width: 760px;
-      margin: 0 auto;
-      padding: 30px 18px 60px;
-    }
-
-    .header {
-      margin-bottom: 25px;
-    }
-
-    .logo {
-      font-size: 32px;
-      font-weight: 800;
-      letter-spacing: -1px;
-    }
-
-    .subtitle {
-      color: #666;
-      margin-top: 5px;
-    }
-
-    .card {
-      background: white;
-      border-radius: 18px;
-      padding: 24px;
-      margin-bottom: 18px;
-      box-shadow: 0 4px 18px rgba(0,0,0,0.06);
-    }
-
-    h2 {
-      margin-top: 0;
-    }
-
-    label {
-      display: block;
-      font-weight: 600;
-      margin-bottom: 7px;
-    }
-
-    input {
-      width: 100%;
-      padding: 14px;
-      border: 1px solid #ddd;
-      border-radius: 10px;
-      font-size: 17px;
-      margin-bottom: 16px;
-    }
-
-    button {
-      width: 100%;
-      border: 0;
-      border-radius: 12px;
-      padding: 15px;
-      background: #111;
-      color: white;
-      font-size: 17px;
-      font-weight: 700;
-      cursor: pointer;
-    }
-
-    button:hover {
-      opacity: 0.9;
-    }
-
-    .result {
-      display: none;
-    }
-
-    .metric {
-      display: flex;
-      justify-content: space-between;
-      padding: 13px 0;
-      border-bottom: 1px solid #eee;
-    }
-
-    .metric:last-child {
-      border-bottom: 0;
-    }
-
-    .metric strong {
-      font-size: 18px;
-    }
-
-    .analysis {
-      line-height: 1.6;
-      font-size: 16px;
-    }
-
-    .good {
-      background: #eef9f0;
-      padding: 15px;
-      border-radius: 12px;
-      margin-top: 15px;
-    }
-
-    .warning {
-      background: #fff5e8;
-      padding: 15px;
-      border-radius: 12px;
-      margin-top: 15px;
-    }
-  </style>
-</head>
-
-<body>
-
-  <div class="container">
-
-    <div class="header">
-      <div class="logo">🏃 Runner OS</div>
-      <div class="subtitle">
-        Зрозумілий аналіз бігового тренування
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>Аналіз тренування</h2>
-
-      <label for="distance">Дистанція, км</label>
-      <input id="distance" type="number" step="0.01" placeholder="Наприклад, 10">
-
-      <label for="time">Час, хвилини</label>
-      <input id="time" type="number" step="0.01" placeholder="Наприклад, 45">
-
-      <label for="heartRate">Середній пульс, уд/хв</label>
-      <input id="heartRate" type="number" placeholder="Наприклад, 155">
-
-      <button onclick="analyze()">Проаналізувати тренування</button>
-    </div>
-
-    <div id="result" class="result">
-
-      <div class="card">
-        <h2>Результат</h2>
-
-        <div class="metric">
-          <span>Темп</span>
-          <strong id="pace">—</strong>
+      <section class="upload-section" aria-labelledby="upload-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">НОВЕ ТРЕНУВАННЯ</p>
+            <h2 id="upload-title">Завантаж FIT-файл</h2>
+          </div>
+          <p class="file-help">FIT-файл з Garmin Connect<br />Обробка лише на твоєму пристрої</p>
         </div>
 
-        <div class="metric">
-          <span>Швидкість</span>
-          <strong id="speed">—</strong>
+        <div class="drop-zone" id="dropZone">
+          <input id="fileInput" type="file" accept=".fit,application/octet-stream" hidden />
+          <div class="upload-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M12 16V4m0 0 4 4m-4-4L8 8M5 14v4.2A1.8 1.8 0 0 0 6.8 20h10.4a1.8 1.8 0 0 0 1.8-1.8V14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="drop-content">
+            <p class="drop-title">Додай тренування з Garmin</p>
+            <label class="choose-button" for="fileInput">Обрати FIT-файл</label>
+            <p class="drop-subtitle">або перетягни файл у цю область</p>
+          </div>
+          <span class="fit-badge">.FIT</span>
         </div>
 
-        <div class="metric">
-          <span>Середній пульс</span>
-          <strong id="hr">—</strong>
+        <div class="upload-state" id="uploadState" hidden aria-live="polite">
+          <div class="file-icon">FIT</div>
+          <div class="file-details">
+            <p id="fileName">Тренування.fit</p>
+            <p id="fileStatus">Готово до аналізу</p>
+          </div>
+          <div class="progress-wrap"><div class="progress"><span id="progressBar"></span></div><span id="progressValue">0%</span></div>
+          <button class="reset-button" id="resetButton" aria-label="Видалити файл">×</button>
         </div>
+      </section>
+
+      <section class="results" id="results" hidden aria-labelledby="results-title">
+        <div class="results-heading">
+          <div>
+            <p class="eyebrow">ТРЕНУВАННЯ ГОТОВЕ</p>
+            <h2 id="results-title">Твій забіг у цифрах</h2>
+          </div>
+          <p class="run-label">Біг · сьогодні</p>
+        </div>
+        <div class="metric-grid">
+          <article class="metric-card featured"><p>Дистанція</p><strong>10<span>.02</span></strong><em>кілометрів</em></article>
+          <article class="metric-card"><p>Час</p><strong>52<span>:18</span></strong><em>год : хв : сек</em></article>
+          <article class="metric-card"><p>Середній темп</p><strong>5<span>:13</span></strong><em>хвилин на км</em></article>
+          <article class="metric-card"><p>Середній пульс</p><strong>154</strong><em>ударів за хвилину</em></article>
+        </div>
+        <div class="insight-card">
+          <div class="insight-icon">↗</div>
+          <div><p class="eyebrow">ПЕРШИЙ ПОГЛЯД</p><p class="insight-text">Рівний темп і хороший контроль зусилля. Ти прискорився на останніх 2 км — сильний фініш.</p></div>
+          <span class="demo-note">АНАЛІЗ FIT</span>
+        </div>
+      </section>
+
+      <section class="future-strip" aria-label="Будущие возможности">
+        <span>Незабаром у Runner OS</span><i></i><span>Історія тренувань</span><i></i><span>Garmin Connect</span><i></i><span>AI-аналіз тренера</span>
+      </section>
       </div>
 
-      <div class="card">
-        <h2>Що це означає?</h2>
-
-        <div id="analysis" class="analysis"></div>
-      </div>
-
-    </div>
-
-  </div>
-
-  <script>
-    function analyze() {
-
-      const distance = parseFloat(
-        document.getElementById("distance").value
-      );
-
-      const time = parseFloat(
-        document.getElementById("time").value
-      );
-
-      const heartRate = parseFloat(
-        document.getElementById("heartRate").value
-      );
-
-      if (!distance || !time || distance <= 0 || time <= 0) {
-        alert("Введи дистанцію та час тренування.");
-        return;
-      }
-
-      const paceDecimal = time / distance;
-
-      const paceMinutes = Math.floor(paceDecimal);
-      const paceSeconds = Math.round(
-        (paceDecimal - paceMinutes) * 60
-      );
-
-      const speed = distance / (time / 60);
-
-      document.getElementById("pace").textContent =
-        paceMinutes + ":" +
-        String(paceSeconds).padStart(2, "0") +
-        " /км";
-
-      document.getElementById("speed").textContent =
-        speed.toFixed(2) + " км/год";
-
-      document.getElementById("hr").textContent =
-        heartRate ? heartRate + " уд/хв" : "не вказано";
-
-      let analysis = "";
-
-      if (speed < 9) {
-
-        analysis += `
-          <div class="good">
-            🟢 <strong>Легкий характер тренування.</strong><br>
-            Темп виглядає спокійним. Такі пробіжки добре підходять
-            для розвитку аеробної бази та відновлення.
+      <section class="view calculator-view" id="calculator" data-view-panel aria-labelledby="calculator-title">
+        <div class="calculator-intro">
+          <p class="eyebrow">ІНСТРУМЕНТ БІГУНА</p>
+          <h1 id="calculator-title">Плануй забіг<br />у цифрах.</h1>
+          <p>Введи два значення — Runner OS одразу порахує третє.</p>
+        </div>
+        <div class="calculator-tabs" role="tablist" aria-label="Тип розрахунку">
+          <button class="calc-tab is-active" data-calculator="time" type="button">Знайти час</button>
+          <button class="calc-tab" data-calculator="distance" type="button">Знайти дистанцію</button>
+          <button class="calc-tab" data-calculator="pace" type="button">Знайти темп</button>
+        </div>
+        <div class="calculator-card">
+          <div class="calculator-heading">
+            <div><p class="eyebrow" id="calc-eyebrow">ДИСТАНЦІЯ + ТЕМП</p><h2 id="calc-title">Який буде час?</h2></div>
+            <p id="calc-description">Вкажи дистанцію та бажаний темп.</p>
           </div>
-        `;
-
-      } else if (speed < 12) {
-
-        analysis += `
-          <div class="good">
-            🟢 <strong>Помірне тренування.</strong><br>
-            Це може бути звичайний тривалий або стабільний біг.
-          </div>
-        `;
-
-      } else {
-
-        analysis += `
-          <div class="warning">
-            🟠 <strong>Досить швидкий біг.</strong><br>
-            Ймовірно, це вже не легке тренування.
-            Для точнішого аналізу Runner OS згодом врахує
-            пульс, структуру тренування та дані Garmin.
-          </div>
-        `;
-      }
-
-      if (heartRate) {
-
-        if (heartRate >= 175) {
-
-          analysis += `
-            <div class="warning">
-              ❤️ Пульс високий. Навантаження було значним.
-            </div>
-          `;
-
-        } else if (heartRate <= 145) {
-
-          analysis += `
-            <div class="good">
-              ❤️ Пульс відносно низький для такого тренування.
-              Це може свідчити про аеробний характер роботи.
-            </div>
-          `;
-
-        } else {
-
-          analysis += `
-            <p>
-              ❤️ Пульс знаходиться в середньому діапазоні.
-              Для повноцінної оцінки потрібні твої індивідуальні
-              пульсові зони.
-            </p>
-          `;
-        }
-      }
-
-      document.getElementById("analysis").innerHTML = analysis;
-
-      document.getElementById("result").style.display = "block";
-    }
-  </script>
-
-</body>
+          <form id="calculatorForm" novalidate><div class="calculator-fields" id="calculatorFields"></div><button class="calculate-button" type="submit">Розрахувати</button></form>
+          <div class="calculation-result" id="calculationResult" hidden aria-live="polite"><p id="result-label">Твій орієнтовний час</p><strong id="result-value">—</strong><span id="result-detail"></span></div>
+        </div>
+      </section>
+    </main>
+    <script src="src/services/fitParser.js"></script>
+    <script src="src/main.js"></script>
+  </body>
 </html>
