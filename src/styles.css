@@ -108,22 +108,33 @@
     grid-template-columns: 1fr;
   }
 }
-/* Calculator visual cleanup */
+/* Final calculator polish */
+
+/* Remove browser focus outline from calculator buttons */
+.choose-button:focus,
+.choose-button:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+/* Make calculator more compact */
 .calculator-card {
-  margin-top: 16px;
-  padding: 34px;
+  padding: 26px 34px;
 }
 
 .calculator-fields {
-  align-items: stretch;
+  gap: 12px;
 }
 
-.calc-field {
-  display: flex;
-  flex-direction: column;
+.calculator-card .calc-field > div,
+.calculator-card .split-inputs {
+  height: 54px;
 }
 
-.calc-field > div,
-.split-inputs {
-  height: 58px;
+.calculator-card .calc-field input {
+  height: 52px;
+}
+
+.calculator-card button {
+  margin-top: 4px;
 }
