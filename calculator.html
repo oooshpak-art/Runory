@@ -1,0 +1,590 @@
+<!doctype html>
+<html lang="uk">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <meta
+    name="description"
+    content="Runory — калькулятор бігу: час, дистанція та темп."
+  />
+
+  <title>Runory — калькулятор бігу</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  />
+
+  <link rel="stylesheet" href="src/styles.css" />
+</head>
+
+<body>
+
+<main class="page-shell">
+
+  <header class="topbar">
+
+    <a class="brand" href="index.html" aria-label="Runory — головна">
+      <span class="brand-mark" aria-hidden="true">
+        <i></i><i></i><i></i>
+      </span>
+
+      <span>Runory</span>
+    </a>
+
+    <span class="brand-tagline">Story of your run</span>
+
+    <nav class="app-nav" aria-label="Розділи Runory">
+
+      <a
+        class="nav-tab"
+        href="index.html"
+        style="text-decoration:none;"
+      >
+        Аналіз тренування
+      </a>
+
+      <a
+        class="nav-tab is-active"
+        href="calculator.html"
+        style="text-decoration:none;"
+      >
+        Калькулятор бігу
+      </a>
+
+    </nav>
+
+    <div class="status-pill">
+      <span></span>
+      MVP · RUNORY
+    </div>
+
+  </header>
+
+
+  <section class="calculator-view">
+
+    <div class="calculator-intro">
+
+      <p class="eyebrow">ІНСТРУМЕНТ БІГУНА</p>
+
+      <h1>
+        Плануй забіг<br />
+        у цифрах.
+      </h1>
+
+      <p>
+        Введи два значення — Runory одразу порахує третє.
+      </p>
+
+    </div>
+
+
+    <div
+      class="calculator-tabs"
+      role="tablist"
+      aria-label="Тип розрахунку"
+    >
+
+      <button
+        class="calc-tab is-active"
+        data-calculator="time"
+        type="button"
+      >
+        Знайти час
+      </button>
+
+      <button
+        class="calc-tab"
+        data-calculator="distance"
+        type="button"
+      >
+        Знайти дистанцію
+      </button>
+
+      <button
+        class="calc-tab"
+        data-calculator="pace"
+        type="button"
+      >
+        Знайти темп
+      </button>
+
+    </div>
+
+
+    <div class="calculator-card">
+
+      <div class="calculator-heading">
+
+        <div>
+          <p class="eyebrow" id="calc-eyebrow">
+            ДИСТАНЦІЯ + ТЕМП
+          </p>
+
+          <h2 id="calc-title">
+            Який буде час?
+          </h2>
+        </div>
+
+        <p id="calc-description">
+          Вкажи дистанцію та бажаний темп.
+        </p>
+
+      </div>
+
+
+      <form id="calculatorForm" novalidate>
+
+        <div
+          class="calculator-fields"
+          id="calculatorFields"
+        ></div>
+
+        <button
+          class="calculate-button"
+          type="submit"
+        >
+          Розрахувати
+        </button>
+
+      </form>
+
+
+      <div
+        class="calculation-result"
+        id="calculationResult"
+        hidden
+        aria-live="polite"
+      >
+
+        <p id="result-label">
+          Твій орієнтовний час
+        </p>
+
+        <strong id="result-value">
+          —
+        </strong>
+
+        <span id="result-detail"></span>
+
+      </div>
+
+    </div>
+
+  </section>
+
+</main>
+
+
+<script>
+
+const calculatorForm =
+  document.querySelector('#calculatorForm');
+
+const calculatorFields =
+  document.querySelector('#calculatorFields');
+
+const calculationResult =
+  document.querySelector('#calculationResult');
+
+const calcEyebrow =
+  document.querySelector('#calc-eyebrow');
+
+const calcTitle =
+  document.querySelector('#calc-title');
+
+const calcDescription =
+  document.querySelector('#calc-description');
+
+const resultLabel =
+  document.querySelector('#result-label');
+
+const resultValue =
+  document.querySelector('#result-value');
+
+const resultDetail =
+  document.querySelector('#result-detail');
+
+const calcTabs =
+  document.querySelectorAll('.calc-tab');
+
+
+const calculators = {
+
+  time: {
+    eyebrow: 'ДИСТАНЦІЯ + ТЕМП',
+    title: 'Який буде час?',
+    description: 'Вкажи дистанцію та бажаний темп.',
+    label: 'Твій орієнтовний час',
+    fields: ['distance', 'pace']
+  },
+
+  distance: {
+    eyebrow: 'ЧАС + ТЕМП',
+    title: 'Яка буде дистанція?',
+    description: 'Вкажи час, який маєш, і свій темп.',
+    label: 'Твоя орієнтовна дистанція',
+    fields: ['time', 'pace']
+  },
+
+  pace: {
+    eyebrow: 'ДИСТАНЦІЯ + ЧАС',
+    title: 'Який потрібен темп?',
+    description: 'Вкажи дистанцію та бажаний фінішний час.',
+    label: 'Твій потрібний темп',
+    fields: ['distance', 'time']
+  }
+
+};
+
+
+let activeCalculator = 'time';
+
+
+function renderCalculator(type) {
+
+  activeCalculator = type;
+
+  const calculator =
+    calculators[type];
+
+  calcTabs.forEach(tab => {
+
+    tab.classList.toggle(
+      'is-active',
+      tab.dataset.calculator === type
+    );
+
+  });
+
+
+  calcEyebrow.textContent =
+    calculator.eyebrow;
+
+  calcTitle.textContent =
+    calculator.title;
+
+  calcDescription.textContent =
+    calculator.description;
+
+
+  calculatorFields.innerHTML =
+    calculator.fields.map(field => {
+
+      if (field === 'distance') {
+
+        return `
+          <label class="calc-field">
+
+            <span>Дистанція</span>
+
+            <div>
+
+              <input
+                name="distance"
+                inputmode="decimal"
+                autocomplete="off"
+                placeholder="Наприклад, 21.1"
+                required
+              />
+
+              <em>км</em>
+
+            </div>
+
+          </label>
+        `;
+
+      }
+
+
+      if (field === 'time') {
+
+        return `
+          <fieldset class="calc-field time-field">
+
+            <legend>Час</legend>
+
+            <div class="split-inputs">
+
+              <label>
+                <input
+                  name="timeHours"
+                  type="number"
+                  min="0"
+                  inputmode="numeric"
+                  placeholder="0"
+                />
+                <span>год</span>
+              </label>
+
+              <label>
+                <input
+                  name="timeMinutes"
+                  type="number"
+                  min="0"
+                  max="59"
+                  inputmode="numeric"
+                  placeholder="00"
+                />
+                <span>хв</span>
+              </label>
+
+              <label>
+                <input
+                  name="timeSeconds"
+                  type="number"
+                  min="0"
+                  max="59"
+                  inputmode="numeric"
+                  placeholder="00"
+                />
+                <span>сек</span>
+              </label>
+
+            </div>
+
+          </fieldset>
+        `;
+
+      }
+
+
+      return `
+        <fieldset class="calc-field time-field">
+
+          <legend>
+            Темп на кілометр
+          </legend>
+
+          <div class="split-inputs">
+
+            <label>
+              <input
+                name="paceMinutes"
+                type="number"
+                min="0"
+                inputmode="numeric"
+                placeholder="5"
+                required
+              />
+              <span>хв</span>
+            </label>
+
+            <label>
+              <input
+                name="paceSeconds"
+                type="number"
+                min="0"
+                max="59"
+                inputmode="numeric"
+                placeholder="30"
+                required
+              />
+              <span>сек</span>
+            </label>
+
+          </div>
+
+        </fieldset>
+      `;
+
+    }).join('');
+
+
+  calculationResult.hidden = true;
+
+}
+
+
+function readNumber(data, name) {
+
+  const value = data.get(name);
+
+  return value === '' || value === null
+    ? 0
+    : Number(value);
+
+}
+
+
+function formatDuration(seconds) {
+
+  const total =
+    Math.round(seconds);
+
+  const hours =
+    Math.floor(total / 3600);
+
+  const minutes =
+    Math.floor((total % 3600) / 60);
+
+  const rest =
+    String(total % 60).padStart(2, '0');
+
+
+  return hours
+    ? `${hours}:${String(minutes).padStart(2, '0')}:${rest}`
+    : `${minutes}:${rest}`;
+
+}
+
+
+calculatorForm.addEventListener(
+  'submit',
+  event => {
+
+    event.preventDefault();
+
+    const data =
+      new FormData(calculatorForm);
+
+
+    const distance =
+      Number(
+        String(data.get('distance') || '')
+          .replace(',', '.')
+      );
+
+
+    const hours =
+      readNumber(data, 'timeHours');
+
+    const minutes =
+      readNumber(data, 'timeMinutes');
+
+    const seconds =
+      readNumber(data, 'timeSeconds');
+
+
+    const paceMinutes =
+      readNumber(data, 'paceMinutes');
+
+    const paceSeconds =
+      readNumber(data, 'paceSeconds');
+
+
+    const time =
+      hours * 3600 +
+      minutes * 60 +
+      seconds;
+
+
+    const pace =
+      paceMinutes * 60 +
+      paceSeconds;
+
+
+    let value;
+    let detail;
+
+
+    if (
+      activeCalculator === 'time' &&
+      distance > 0 &&
+      pace > 0
+    ) {
+
+      value =
+        formatDuration(distance * pace);
+
+      detail =
+        `${distance} км × ${formatDuration(pace)} / км`;
+
+    }
+
+
+    if (
+      activeCalculator === 'distance' &&
+      time > 0 &&
+      pace > 0
+    ) {
+
+      value =
+        (time / pace).toFixed(2);
+
+      detail =
+        `${formatDuration(time)} при темпі ${formatDuration(pace)} / км`;
+
+    }
+
+
+    if (
+      activeCalculator === 'pace' &&
+      distance > 0 &&
+      time > 0
+    ) {
+
+      value =
+        formatDuration(time / distance);
+
+      detail =
+        `${distance} км за ${formatDuration(time)}`;
+
+    }
+
+
+    if (
+      !value ||
+      minutes > 59 ||
+      seconds > 59 ||
+      paceSeconds > 59
+    ) {
+
+      resultLabel.textContent =
+        'Перевір введені значення';
+
+      resultValue.textContent =
+        '—';
+
+      resultDetail.textContent =
+        'Хвилини та секунди мають бути від 0 до 59.';
+
+    } else {
+
+      resultLabel.textContent =
+        calculators[activeCalculator].label;
+
+      resultValue.textContent =
+        activeCalculator === 'distance'
+          ? `${value} км`
+          : activeCalculator === 'pace'
+            ? `${value} / км`
+            : value;
+
+      resultDetail.textContent =
+        detail;
+
+    }
+
+
+    calculationResult.hidden = false;
+
+  }
+);
+
+
+calcTabs.forEach(tab => {
+
+  tab.addEventListener(
+    'click',
+    () => renderCalculator(
+      tab.dataset.calculator
+    )
+  );
+
+});
+
+
+renderCalculator('time');
+
+</script>
+
+</body>
+</html>
