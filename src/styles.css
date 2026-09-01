@@ -149,3 +149,9 @@
   display: block;
   object-fit: contain;
 }
+.brand-logo {
+  width: 180px;
+  height: auto;
+  display: block;
+  object-fit: contain;
+}
