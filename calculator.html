@@ -499,8 +499,7 @@ calculatorForm.addEventListener(
       value =
         (time / pace).toFixed(2);
 
-      detail =
-        `${formatDuration(time)} при темпі ${formatDuration(pace)} / км`;
+      detail = '';
 
     }
 
@@ -514,9 +513,7 @@ calculatorForm.addEventListener(
       value =
         formatDuration(time / distance);
 
-      detail =
-        `${distance} км за ${formatDuration(time)}`;
-
+      detail = '';
     }
 
 
