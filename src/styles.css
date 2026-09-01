@@ -108,3 +108,22 @@
     grid-template-columns: 1fr;
   }
 }
+/* Calculator visual cleanup */
+.calculator-card {
+  margin-top: 16px;
+  padding: 34px;
+}
+
+.calculator-fields {
+  align-items: stretch;
+}
+
+.calc-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.calc-field > div,
+.split-inputs {
+  height: 58px;
+}
