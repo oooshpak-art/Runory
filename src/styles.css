@@ -69,3 +69,42 @@
 .calc-field em {
   padding-right: 13px;
 }
+/* Final calculator field layout */
+.split-inputs {
+  display: flex;
+  gap: 12px;
+  border: 0 !important;
+}
+
+.split-inputs label {
+  flex: 1;
+  height: 58px;
+  min-width: 0;
+  border: 1px solid var(--line) !important;
+  border-radius: 10px !important;
+  background: var(--white);
+}
+
+.calculator-fields {
+  gap: 16px;
+}
+
+.calc-field {
+  min-width: 0;
+}
+
+.calc-field > div {
+  height: 58px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.calc-field input {
+  height: 56px;
+}
+
+@media (max-width: 680px) {
+  .calculator-fields {
+    grid-template-columns: 1fr;
+  }
+}
