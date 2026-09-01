@@ -141,11 +141,11 @@
 
 .calculator-card .calc-field > div,
 .calculator-card .split-inputs {
-  height: 54px;
+  height: 58px;
 }
 
 .calculator-card .calc-field input {
-  height: 52px;
+  height: 56px;
 }
 
 .calculator-card button {
