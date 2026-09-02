@@ -250,6 +250,7 @@ if (records.length > 0) {
     cadence,
 
     ascent: Math.round(ascent),
+splits,
 
     date: timestamp
       ? new Date(FIT_EPOCH_MS + timestamp * 1000)
