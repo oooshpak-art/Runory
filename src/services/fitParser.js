@@ -71,7 +71,72 @@ function secondsToTime(seconds) {
   return h ? `${h}:${String(m).padStart(2, '0')}:${s}` : `${m}:${s}`;
 }
 function secondsToPace(seconds) { return !seconds || seconds < 0 ? '—' : `${Math.floor(seconds / 60)}:${String(Math.round(seconds % 60)).padStart(2, '0')}`; }
+function createSplit(km, records) {
+    const first = records[0];
+    const last = records[records.length - 1];
 
+    const firstTime = first?.[253];
+    const lastTime = last?.[253];
+
+    const duration =
+        firstTime != null && lastTime != null
+            ? Math.max(1, lastTime - firstTime)
+            : null;
+
+    const paceSeconds =
+        duration != null
+            ? duration / 1000
+            : null;
+
+    const heartRates = records
+        .map(record => record[3])
+        .filter(value => Number.isFinite(value));
+
+    const cadences = records
+        .map(record => record[4])
+        .filter(value => Number.isFinite(value) && value > 0 && value < 255);
+
+    const altitudes = records
+        .map(record =>
+            Number.isFinite(record[2])
+                ? record[2] / 5 - 500
+                : null
+        )
+        .filter(value => Number.isFinite(value));
+
+    let ascent = 0;
+
+    for (let i = 1; i < altitudes.length; i++) {
+        const difference = altitudes[i] - altitudes[i - 1];
+
+        if (difference > 1) {
+            ascent += difference;
+        }
+    }
+
+    return {
+        km,
+        pace: paceSeconds != null
+            ? secondsToPace(paceSeconds)
+            : null,
+
+        heartRate: heartRates.length
+            ? Math.round(
+                heartRates.reduce((sum, value) => sum + value, 0) /
+                heartRates.length
+            )
+            : null,
+
+        cadence: cadences.length
+            ? Math.round(
+                (cadences.reduce((sum, value) => sum + value, 0) /
+                cadences.length) * 2
+            )
+            : null,
+
+        ascent: Math.round(ascent)
+    };
+}
 function calculateSummary({ sessions, records }) {
   const session = sessions.at(-1) || {};
   const lastRecord = records.at(-1) || {};
@@ -146,7 +211,35 @@ const cadence =
         : session[18] != null
             ? Math.round(session[18])
             : null;
+// Кілометрові спліти для детального AI-аналізу
+const splits = [];
 
+if (records.length > 0) {
+    let currentKm = 1;
+    let kmRecords = [];
+
+    for (const record of records) {
+        const distance = Number.isFinite(record[5])
+            ? record[5] / 100
+            : null;
+
+        if (distance == null) continue;
+
+        const km = Math.floor(distance / 1000) + 1;
+
+        if (km !== currentKm && kmRecords.length > 0) {
+            splits.push(createSplit(currentKm, kmRecords));
+            kmRecords = [];
+            currentKm = km;
+        }
+
+        kmRecords.push(record);
+    }
+
+    if (kmRecords.length > 0) {
+        splits.push(createSplit(currentKm, kmRecords));
+    }
+}
   const timestamp =
     session[2] ?? records[0]?.[253];
 
