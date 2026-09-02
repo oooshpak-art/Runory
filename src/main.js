@@ -1,355 +1,333 @@
-const dropZone =
-  document.querySelector('#dropZone');
+const dropZone = document.querySelector("#dropZone");
+const input = document.querySelector("#fileInput");
+const uploadState = document.querySelector("#uploadState");
+const results = document.querySelector("#results");
+const fileName = document.querySelector("#fileName");
+const fileStatus = document.querySelector("#fileStatus");
+const progressBar = document.querySelector("#progressBar");
+const progressValue = document.querySelector("#progressValue");
+const resetButton = document.querySelector("#resetButton");
 
-const input =
-  document.querySelector('#fileInput');
+const distanceValue = document.querySelector(".metric-card:nth-child(1) strong");
+const durationValue = document.querySelector(".metric-card:nth-child(2) strong");
+const paceValue = document.querySelector(".metric-card:nth-child(3) strong");
+const heartRateValue = document.querySelector(".metric-card:nth-child(4) strong");
+const runLabel = document.querySelector(".run-label");
+const insightText = document.querySelector(".insight-text");
+const splitsBody = document.querySelector("#splitsBody");
+const aiAnalyzeButton = document.querySelector("#aiAnalyzeButton");
+const aiAnalysis = document.querySelector("#aiAnalysis");
+const aiAnalysisText = document.querySelector("#aiAnalysisText");
 
-const uploadState =
-  document.querySelector('#uploadState');
-
-const results =
-  document.querySelector('#results');
-
-const fileName =
-  document.querySelector('#fileName');
-
-const fileStatus =
-  document.querySelector('#fileStatus');
-
-const progressBar =
-  document.querySelector('#progressBar');
-
-const progressValue =
-  document.querySelector('#progressValue');
-
-const resetButton =
-  document.querySelector('#resetButton');
-
-const distanceValue =
-  document.querySelector(
-    '.metric-card:nth-child(1) strong'
-  );
-
-const durationValue =
-  document.querySelector(
-    '.metric-card:nth-child(2) strong'
-  );
-
-const paceValue =
-  document.querySelector(
-    '.metric-card:nth-child(3) strong'
-  );
-
-const heartRateValue =
-  document.querySelector(
-    '.metric-card:nth-child(4) strong'
-  );
-
-const runLabel =
-  document.querySelector('.run-label');
-
-const insightText =
-  document.querySelector('.insight-text');
-
-const splitsBody =
-  document.querySelector('#splitsBody');
-
-const splitsSection =
-  document.querySelector('#splitsSection');
+let currentWorkout = null;
 
 function formatMetric(value) {
-  const stringValue =
-    String(value ?? '—');
-
-  const separatorIndex =
-    stringValue.search(/[.:]/);
-
-  if (separatorIndex === -1) {
-    return stringValue;
-  }
-
-  return (
-    stringValue.slice(0, separatorIndex) +
-    `<span>${stringValue.slice(separatorIndex)}</span>`
-  );
+  const stringValue = String(value ?? "—");
+  const index = stringValue.search(/[.:]/);
+  return index === -1
+    ? stringValue
+    : `${stringValue.slice(0, index)}<span>${stringValue.slice(index)}</span>`;
 }
 
-function renderSplits(splits) {
-  if (!splitsBody) {
-    return;
-  }
+function paceToSeconds(pace) {
+  if (!pace || typeof pace !== "string") return null;
+  const parts = pace.split(":").map(Number);
+  if (parts.length !== 2 || parts.some(v => !Number.isFinite(v))) return null;
+  return parts[0] * 60 + parts[1];
+}
 
-  splitsBody.innerHTML = '';
+function formatAiText(text) {
+  const escaped = String(text ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 
-  if (!Array.isArray(splits) || splits.length === 0) {
-    if (splitsSection) {
-      splitsSection.hidden = false;
+  return escaped
+    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\n\n+/g, "</p><p>")
+    .replace(/\n/g, "<br>");
+}
+
+function detectWorkoutType(summary) {
+  const distance = Number(summary.distance);
+  const paces = (summary.splits || [])
+    .map(s => paceToSeconds(s.pace))
+    .filter(Number.isFinite);
+
+  if (distance >= 15) return "Довга пробіжка";
+
+  if (paces.length >= 4) {
+    const average = paces.reduce((a, b) => a + b, 0) / paces.length;
+    let changes = 0;
+
+    for (let i = 1; i < paces.length; i++) {
+      if (Math.abs(paces[i] - paces[i - 1]) >= 20) changes++;
     }
 
-    splitsBody.innerHTML = `
-      <tr>
-        <td colspan="5" class="splits-empty">
-          У FIT-файлі не знайдено повних кілометрових сплітів.
-        </td>
-      </tr>
-    `;
+    const variation =
+      paces.reduce((sum, p) => sum + Math.abs(p - average) / average, 0) /
+      paces.length;
 
-    return;
+    if (changes >= 3 && variation >= 0.06) return "Інтервальне тренування";
+    if (variation <= 0.035 && distance >= 5) return "Темповий / рівномірний біг";
   }
 
-  if (splitsSection) {
-    splitsSection.hidden = false;
-  }
-
-  splits.forEach((split) => {
-    const row =
-      document.createElement('tr');
-
-    row.innerHTML = `
-      <td>${split.number}</td>
-      <td>${split.pace ?? '—'}</td>
-      <td>${split.heartRate ?? '—'}</td>
-      <td>${split.cadence ?? '—'}</td>
-      <td>${split.ascent ?? '—'}</td>
-    `;
-
-    splitsBody.appendChild(row);
-  });
+  return "Бігове тренування";
 }
 
-function buildInsight(summary) {
-  const parts = [];
+function generateWorkoutInsight(summary) {
+  const splits = summary.splits || [];
+  const paces = splits.map(s => paceToSeconds(s.pace)).filter(Number.isFinite);
+
+  if (!paces.length) {
+    return "Реальні дані з Garmin завантажено. Детальний аналіз сплітів недоступний.";
+  }
+
+  const half = Math.ceil(paces.length / 2);
+  const first = paces.slice(0, half);
+  const second = paces.slice(half);
+
+  const firstAvg = first.reduce((a, b) => a + b, 0) / first.length;
+  const secondAvg = second.length
+    ? second.reduce((a, b) => a + b, 0) / second.length
+    : firstAvg;
+
+  let text;
+
+  if (firstAvg - secondAvg > 8) {
+    text = "Ти поступово прискорювався — друга половина тренування була швидшою.";
+  } else if (firstAvg - secondAvg < -8) {
+    text = "На початку темп був швидшим, а в другій половині відбулося поступове зниження.";
+  } else {
+    text = "Темп був відносно рівним протягом тренування — хороший контроль зусилля.";
+  }
+
+  const details = [];
 
   if (summary.heartRate != null) {
-    parts.push(
-      `середній пульс — ${summary.heartRate} уд/хв`
-    );
+    details.push(`середній пульс ${summary.heartRate} уд/хв`);
   }
 
   if (summary.cadence != null) {
-    parts.push(
-      `середній каденс — ${summary.cadence} кроків/хв`
-    );
+    details.push(`каденс ${summary.cadence} кроків/хв`);
   }
 
   if (summary.ascent != null) {
-    parts.push(
-      `набір висоти — ${summary.ascent} м`
-    );
+    details.push(`набір ${summary.ascent} м`);
   }
 
-  if (summary.splits?.length) {
-    parts.push(
-      `сплітів — ${summary.splits.length}`
-    );
-  }
-
-  if (parts.length === 0) {
-    return 'Реальні дані з Garmin успішно завантажено.';
-  }
-
-  return `Реальні дані з Garmin: ${parts.join(' · ')}.`;
+  return details.length
+    ? `${text} ${details.join(" · ")}.`
+    : text;
 }
 
-function renderSummary(summary) {
-  distanceValue.innerHTML =
-    formatMetric(summary.distance);
+function renderSplits(splits = []) {
+  if (!splitsBody) return;
 
-  durationValue.innerHTML =
-    formatMetric(summary.duration);
+  splitsBody.innerHTML = "";
 
-  paceValue.innerHTML =
-    formatMetric(summary.pace);
-
-  heartRateValue.textContent =
-    summary.heartRate ?? '—';
-
-  const date =
-    summary.date instanceof Date &&
-    !Number.isNaN(summary.date.getTime())
-      ? summary.date.toLocaleDateString(
-          'uk-UA',
-          {
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric'
-          }
-        )
-      : 'Завантажене тренування';
-
-  runLabel.textContent =
-    `Біг · ${date}`;
-
-  insightText.textContent =
-    buildInsight(summary);
-
-  renderSplits(summary.splits);
-}
-
-async function selectFile(file) {
-  if (!file) {
+  if (!splits.length) {
+    splitsBody.innerHTML = `
+      <tr>
+        <td colspan="5" class="splits-empty">
+          Спліти не знайдені
+        </td>
+      </tr>
+    `;
     return;
   }
 
-  const looksLikeFit =
-    file.name
-      .toLowerCase()
-      .endsWith('.fit');
+  for (const split of splits) {
+    const row = document.createElement("tr");
 
-  if (!looksLikeFit) {
-    fileStatus.textContent =
-      'Обери файл із розширенням .fit';
+    row.innerHTML = `
+      <td class="split-km">${split.km}</td>
+      <td class="split-pace">${split.pace ?? "—"}</td>
+      <td>${split.heartRate ?? "—"}</td>
+      <td>${split.cadence ?? "—"}</td>
+      <td>${split.ascent != null ? `${split.ascent} м` : "—"}</td>
+    `;
 
+    splitsBody.appendChild(row);
+  }
+}
+
+function renderSummary(summary) {
+  distanceValue.innerHTML = formatMetric(summary.distance);
+  durationValue.innerHTML = formatMetric(summary.duration);
+  paceValue.innerHTML = formatMetric(summary.pace);
+  heartRateValue.textContent = summary.heartRate ?? "—";
+
+  const date = summary.date instanceof Date && !Number.isNaN(summary.date.getTime())
+    ? summary.date.toLocaleDateString("uk-UA", {
+        day: "numeric",
+        month: "long",
+        year: "numeric"
+      })
+    : "Завантажене тренування";
+
+  runLabel.textContent =
+    `${detectWorkoutType(summary)} · ${date}`;
+
+  insightText.textContent =
+    generateWorkoutInsight(summary);
+
+  renderSplits(summary.splits);
+
+  if (aiAnalysis) aiAnalysis.hidden = true;
+  if (aiAnalysisText) aiAnalysisText.innerHTML = "";
+}
+
+async function analyzeWithAI() {
+  if (!currentWorkout || !aiAnalyzeButton) return;
+
+  aiAnalyzeButton.disabled = true;
+  aiAnalyzeButton.classList.add("is-loading");
+  aiAnalyzeButton.innerHTML =
+    '<span class="ai-button-icon">✦</span><span>Аналізую тренування…</span>';
+
+  if (aiAnalysis) {
+    aiAnalysis.hidden = false;
+    aiAnalysis.classList.add("is-loading");
+  }
+
+  if (aiAnalysisText) {
+    aiAnalysisText.innerHTML =
+      '<div class="ai-loader"><span></span><span></span><span></span></div>';
+  }
+
+  try {
+    const response = await fetch("/api/analyze", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(currentWorkout)
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Помилка AI-аналізу");
+    }
+
+    if (aiAnalysisText) {
+      aiAnalysisText.innerHTML =
+        `<p>${formatAiText(data.analysis || "Не вдалося отримати аналіз.")}</p>`;
+    }
+
+    if (aiAnalysis) {
+      aiAnalysis.classList.remove("is-loading");
+      aiAnalysis.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest"
+      });
+    }
+  } catch (error) {
+    if (aiAnalysisText) {
+      aiAnalysisText.innerHTML =
+        `<p class="ai-error">${String(error.message || "Не вдалося виконати AI-аналіз")}</p>`;
+    }
+    if (aiAnalysis) aiAnalysis.classList.remove("is-loading");
+  } finally {
+    aiAnalyzeButton.disabled = false;
+    aiAnalyzeButton.classList.remove("is-loading");
+    aiAnalyzeButton.innerHTML =
+      '<span class="ai-button-icon">✦</span><span>Проаналізувати тренування</span>';
+  }
+}
+
+aiAnalyzeButton?.addEventListener("click", analyzeWithAI);
+
+async function selectFile(file) {
+  if (!file) return;
+
+  if (!file.name.toLowerCase().endsWith(".fit")) {
     uploadState.hidden = false;
-    uploadState.classList.add('has-error');
-
+    uploadState.classList.add("has-error");
+    fileStatus.textContent = "Обери файл із розширенням .fit";
     return;
   }
 
   uploadState.hidden = false;
-  uploadState.classList.remove('has-error');
-
+  uploadState.classList.remove("has-error");
   results.hidden = true;
 
-  fileName.textContent =
-    file.name;
-
-  fileStatus.textContent =
-    'Готуємо тренування…';
-
-  progressBar.style.width = '0%';
-  progressValue.textContent = '0%';
+  fileName.textContent = file.name;
+  fileStatus.textContent = "Готуємо тренування…";
+  progressBar.style.width = "0%";
+  progressValue.textContent = "0%";
 
   let percent = 0;
+  const timer = window.setInterval(() => {
+    percent = Math.min(percent + 8, 72);
+    progressBar.style.width = `${percent}%`;
+    progressValue.textContent = `${percent}%`;
 
-  const timer =
-    window.setInterval(() => {
-      percent =
-        Math.min(
-          percent + 8,
-          72
-        );
-
-      progressBar.style.width =
-        `${percent}%`;
-
-      progressValue.textContent =
-        `${percent}%`;
-
-      if (percent >= 72) {
-        window.clearInterval(timer);
-      }
-    }, 85);
+    if (percent >= 72) window.clearInterval(timer);
+  }, 85);
 
   try {
-    const summary =
-      await parseFitFile(file);
+    const summary = await parseFitFile(file);
 
     window.clearInterval(timer);
+    currentWorkout = summary;
 
     renderSummary(summary);
 
-    progressBar.style.width =
-      '100%';
-
-    progressValue.textContent =
-      '100%';
-
-    fileStatus.textContent =
-      'Тренування готове до перегляду';
+    progressBar.style.width = "100%";
+    progressValue.textContent = "100%";
+    fileStatus.textContent = "Тренування готове до перегляду";
 
     window.setTimeout(() => {
       results.hidden = false;
-
       results.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start'
+        behavior: "smooth",
+        block: "start"
       });
     }, 250);
-
   } catch (error) {
     window.clearInterval(timer);
 
-    uploadState.classList.add(
-      'has-error'
-    );
-
-    progressBar.style.width =
-      '0%';
-
-    progressValue.textContent =
-      '—';
-
+    uploadState.classList.add("has-error");
+    progressBar.style.width = "0%";
+    progressValue.textContent = "—";
     fileStatus.textContent =
-      error?.message ||
-      'Не вдалося прочитати файл';
+      error.message || "Не вдалося прочитати файл";
   }
 }
 
-input.addEventListener(
-  'change',
-  (event) => {
-    selectFile(
-      event.target.files[0]
-    );
-  }
-);
+input?.addEventListener("change", event => {
+  selectFile(event.target.files[0]);
+});
 
-['dragenter', 'dragover'].forEach(
-  (eventName) => {
-    dropZone.addEventListener(
-      eventName,
-      (event) => {
-        event.preventDefault();
+["dragenter", "dragover"].forEach(eventName => {
+  dropZone?.addEventListener(eventName, event => {
+    event.preventDefault();
+    dropZone.classList.add("is-dragging");
+  });
+});
 
-        dropZone.classList.add(
-          'is-dragging'
-        );
-      }
-    );
-  }
-);
+["dragleave", "drop"].forEach(eventName => {
+  dropZone?.addEventListener(eventName, event => {
+    event.preventDefault();
+    dropZone.classList.remove("is-dragging");
+  });
+});
 
-['dragleave', 'drop'].forEach(
-  (eventName) => {
-    dropZone.addEventListener(
-      eventName,
-      (event) => {
-        event.preventDefault();
+dropZone?.addEventListener("drop", event => {
+  selectFile(event.dataTransfer.files[0]);
+});
 
-        dropZone.classList.remove(
-          'is-dragging'
-        );
-      }
-    );
-  }
-);
+resetButton?.addEventListener("click", () => {
+  input.value = "";
+  uploadState.hidden = true;
+  results.hidden = true;
+  currentWorkout = null;
 
-dropZone.addEventListener(
-  'drop',
-  (event) => {
-    selectFile(
-      event.dataTransfer.files[0]
-    );
-  }
-);
+  progressBar.style.width = "0%";
+  progressValue.textContent = "0%";
 
-resetButton.addEventListener(
-  'click',
-  () => {
-    input.value = '';
-
-    uploadState.hidden = true;
-    results.hidden = true;
-
-    progressBar.style.width =
-      '0%';
-
-    progressValue.textContent =
-      '0%';
-
-    if (splitsBody) {
-      splitsBody.innerHTML = '';
-    }
-  }
-);
+  if (aiAnalysis) aiAnalysis.hidden = true;
+  if (splitsBody) splitsBody.innerHTML = "";
+});
