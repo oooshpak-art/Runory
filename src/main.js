@@ -31,6 +31,44 @@ const calculators = {
   distance: { eyebrow: 'ЧАС + ТЕМП', title: 'Яка буде дистанція?', description: 'Вкажи час, який маєш, і свій темп.', label: 'Твоя орієнтовна дистанція', fields: ['time', 'pace'] },
   pace: { eyebrow: 'ДИСТАНЦІЯ + ЧАС', title: 'Який потрібен темп?', description: 'Вкажи дистанцію та бажаний фінішний час.', label: 'Твій потрібний темп', fields: ['distance', 'time'] },
 };
+let currentWorkout = null;
+
+const aiAnalyzeButton = document.querySelector('#aiAnalyzeButton');
+
+if (aiAnalyzeButton) {
+  aiAnalyzeButton.addEventListener('click', async () => {
+    if (!currentWorkout) {
+      alert('Спочатку завантаж тренування.');
+      return;
+    }
+
+    aiAnalyzeButton.disabled = true;
+    aiAnalyzeButton.textContent = '🤖 Аналізую тренування…';
+
+    try {
+      const response = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(currentWorkout)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Помилка AI-аналізу');
+      }
+
+      alert(data.analysis || 'Аналіз отримано');
+    } catch (error) {
+      alert(error.message || 'Не вдалося виконати AI-аналіз');
+    } finally {
+      aiAnalyzeButton.disabled = false;
+      aiAnalyzeButton.textContent = '🤖 Проаналізувати тренування';
+    }
+  });
+}
 let activeCalculator = 'time';
 
 function renderCalculator(type) {
