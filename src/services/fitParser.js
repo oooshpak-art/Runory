@@ -1,21 +1,42 @@
 const FIT_EPOCH_MS = Date.UTC(1989, 11, 31, 0, 0, 0);
 
 const BASE_TYPES = {
-  0: { size: 1, get: 'getUint8', invalid: 0xff }, 1: { size: 1, get: 'getInt8', invalid: 0x7f },
-  2: { size: 1, get: 'getUint8', invalid: 0xff }, 3: { size: 2, get: 'getInt16', invalid: 0x7fff },
-  4: { size: 2, get: 'getUint16', invalid: 0xffff }, 5: { size: 4, get: 'getInt32', invalid: 0x7fffffff },
-  6: { size: 4, get: 'getUint32', invalid: 0xffffffff }, 8: { size: 4, get: 'getFloat32', invalid: null },
-  9: { size: 8, get: 'getFloat64', invalid: null }, 10: { size: 1, get: 'getUint8', invalid: 0 },
-  11: { size: 2, get: 'getUint16', invalid: 0 }, 12: { size: 4, get: 'getUint32', invalid: 0 },
-  13: { size: 1, get: 'getUint8', invalid: null }, 14: { size: 8, get: 'getBigInt64', invalid: null },
-  15: { size: 8, get: 'getBigUint64', invalid: null }, 16: { size: 8, get: 'getBigUint64', invalid: null },
+  0: { size: 1, get: 'getUint8', invalid: 0xff },
+  1: { size: 1, get: 'getInt8', invalid: 0x7f },
+  2: { size: 1, get: 'getUint8', invalid: 0xff },
+  3: { size: 2, get: 'getInt16', invalid: 0x7fff },
+  4: { size: 2, get: 'getUint16', invalid: 0xffff },
+  5: { size: 4, get: 'getInt32', invalid: 0x7fffffff },
+  6: { size: 4, get: 'getUint32', invalid: 0xffffffff },
+  7: { size: 4, get: 'getFloat32', invalid: null },
+  8: { size: 4, get: 'getFloat32', invalid: null },
+  9: { size: 8, get: 'getFloat64', invalid: null },
+  10: { size: 1, get: 'getUint8', invalid: 0 },
+  11: { size: 2, get: 'getUint16', invalid: 0 },
+  12: { size: 4, get: 'getUint32', invalid: 0 },
+  13: { size: 1, get: 'getUint8', invalid: null },
+  14: { size: 8, get: 'getBigInt64', invalid: null },
+  15: { size: 8, get: 'getBigUint64', invalid: null },
+  16: { size: 8, get: 'getBigUint64', invalid: null },
 };
 
 function readField(view, offset, field, littleEndian) {
   const type = BASE_TYPES[field.baseType & 0x1f];
-  if (!type || field.size < type.size) return null;
+
+  if (!type || field.size < type.size) {
+    return null;
+  }
+
+  if (offset + type.size > view.byteLength) {
+    return null;
+  }
+
   const value = view[type.get](offset, littleEndian);
-  if (type.invalid !== null && value === type.invalid) return null;
+
+  if (type.invalid !== null && value === type.invalid) {
+    return null;
+  }
+
   return typeof value === 'bigint' ? Number(value) : value;
 }
 
@@ -32,12 +53,19 @@ function decodeFit(buffer) {
     .map((i) => view.getUint8(i))
     .join('');
 
-  if (headerSize < 12 || headerSize > buffer.byteLength || magic !== '46707384') {
+  if (
+    headerSize < 12 ||
+    headerSize > buffer.byteLength ||
+    magic !== '46707384'
+  ) {
     throw new Error('Це не схоже на коректний FIT-файл Garmin');
   }
 
   const dataSize = view.getUint32(4, true);
-  const dataEnd = Math.min(headerSize + dataSize, buffer.byteLength);
+  const dataEnd = Math.min(
+    headerSize + dataSize,
+    buffer.byteLength
+  );
 
   let offset = headerSize;
   let lastTimestamp = null;
@@ -47,51 +75,51 @@ function decodeFit(buffer) {
   const records = [];
 
   while (offset < dataEnd) {
-    const messageStart = offset;
-
-    if (offset + 1 > dataEnd) {
-      throw new Error('Пошкоджена структура FIT-файлу');
+    if (offset >= dataEnd) {
+      break;
     }
 
-    const header = view.getUint8(offset++);
+    const recordHeader = view.getUint8(offset++);
 
-    const compressed = (header & 0x80) !== 0;
+    const compressed =
+      (recordHeader & 0x80) !== 0;
+
     const definitionHeader =
-      !compressed && (header & 0x40) !== 0;
+      !compressed &&
+      (recordHeader & 0x40) !== 0;
 
-    const localMessage = compressed
-      ? (header >> 5) & 0x03
-      : header & 0x0f;
+    const localMessage =
+      compressed
+        ? (recordHeader >> 5) & 0x03
+        : recordHeader & 0x0f;
 
-    // -----------------------------
-    // Definition message
-    // -----------------------------
+    /*
+     * Definition message
+     */
     if (definitionHeader) {
       if (offset + 5 > dataEnd) {
-        throw new Error('Неповна структура FIT-файлу');
+        throw new Error('Пошкоджена структура FIT-файлу');
       }
 
       // Reserved byte
       offset += 1;
 
       const architecture = view.getUint8(offset++);
-
       const littleEndian = architecture === 0;
 
-      const globalMessage = view.getUint16(
-        offset,
-        littleEndian
-      );
+      const globalMessage =
+        view.getUint16(offset, littleEndian);
 
       offset += 2;
 
-      const fieldCount = view.getUint8(offset++);
+      const fieldCount =
+        view.getUint8(offset++);
 
       const fields = [];
 
       for (let i = 0; i < fieldCount; i++) {
         if (offset + 3 > dataEnd) {
-          throw new Error('Пошкоджене визначення полів FIT');
+          throw new Error('Пошкоджена структура полів FIT-файлу');
         }
 
         const number = view.getUint8(offset++);
@@ -101,52 +129,45 @@ function decodeFit(buffer) {
         fields.push({
           number,
           size,
-          baseType
+          baseType,
         });
       }
 
-      // Developer fields
-      let developerFieldsSize = 0;
-
-      if (header & 0x20) {
-        if (offset + 1 > dataEnd) {
-          throw new Error('Пошкоджені developer fields FIT');
+      /*
+       * Developer fields
+       */
+      if ((recordHeader & 0x20) !== 0) {
+        if (offset >= dataEnd) {
+          throw new Error('Пошкоджені developer fields FIT-файлу');
         }
 
-        const developerFieldCount = view.getUint8(offset++);
+        const developerFieldCount =
+          view.getUint8(offset++);
 
-        for (let i = 0; i < developerFieldCount; i++) {
-          if (offset + 3 > dataEnd) {
-            throw new Error('Пошкоджені developer fields FIT');
-          }
+        const developerBytes =
+          developerFieldCount * 3;
 
-          // field number
-          offset += 1;
-
-          // field size
-          const fieldSize = view.getUint8(offset++);
-
-          // developer data index
-          offset += 1;
-
-          developerFieldsSize += fieldSize;
+        if (offset + developerBytes > dataEnd) {
+          throw new Error('Пошкоджені developer fields FIT-файлу');
         }
+
+        offset += developerBytes;
       }
 
       definitions.set(localMessage, {
         globalMessage,
         fields,
         littleEndian,
-        developerFieldsSize
       });
 
       continue;
     }
 
-    // -----------------------------
-    // Data message
-    // -----------------------------
-    const definition = definitions.get(localMessage);
+    /*
+     * Data message
+     */
+    const definition =
+      definitions.get(localMessage);
 
     if (!definition) {
       throw new Error(
@@ -154,363 +175,738 @@ function decodeFit(buffer) {
       );
     }
 
-    const message = {};
+    let message = {};
 
-    // Compressed timestamp
+    /*
+     * Compressed timestamp
+     */
     if (compressed && lastTimestamp !== null) {
-      const timeOffset = header & 0x1f;
+      const timeOffset =
+        recordHeader & 0x1f;
 
       message[253] =
         (lastTimestamp & ~0x1f) +
         timeOffset +
         (
-          timeOffset < (lastTimestamp & 0x1f)
+          timeOffset <
+          (lastTimestamp & 0x1f)
             ? 0x20
             : 0
         );
     }
 
-    // Read normal fields
-    for (const field of definition.fields) {
-      if (offset + field.size > dataEnd) {
-        throw new Error(
-          'FIT-файл пошкоджений або має неповний запис'
-        );
-      }
+    let messageSize = 0;
 
-      message[field.number] = readField(
-        view,
-        offset,
-        field,
-        definition.littleEndian
-      );
+    for (const field of definition.fields) {
+      message[field.number] =
+        readField(
+          view,
+          offset,
+          field,
+          definition.littleEndian
+        );
 
       offset += field.size;
+      messageSize += field.size;
     }
 
-    // Skip developer fields.
-    // We don't need their values yet,
-    // but we MUST move the cursor past them.
-    if (definition.developerFieldsSize > 0) {
-      if (
-        offset + definition.developerFieldsSize >
-        dataEnd
-      ) {
-        throw new Error(
-          'FIT-файл має неповні developer fields'
-        );
-      }
-
-      offset += definition.developerFieldsSize;
+    if (messageSize < 0 || offset > dataEnd) {
+      throw new Error(
+        'Пошкоджені дані FIT-файлу'
+      );
     }
 
     if (message[253] != null) {
       lastTimestamp = message[253];
     }
 
+    /*
+     * Session = global message 18
+     */
     if (definition.globalMessage === 18) {
       sessions.push(message);
     }
 
+    /*
+     * Record = global message 20
+     */
     if (definition.globalMessage === 20) {
       records.push(message);
-    }
-
-    // Safety check: every message MUST move the cursor.
-    if (offset <= messageStart) {
-      throw new Error(
-        'Не вдалося продовжити читання FIT-файлу'
-      );
     }
   }
 
   return {
     sessions,
-    records
+    records,
   };
 }
 
 function secondsToTime(seconds) {
-  const total = Math.round(seconds || 0); const h = Math.floor(total / 3600); const m = Math.floor((total % 3600) / 60); const s = String(total % 60).padStart(2, '0');
-  return h ? `${h}:${String(m).padStart(2, '0')}:${s}` : `${m}:${s}`;
+  const total = Math.max(
+    0,
+    Math.round(seconds || 0)
+  );
+
+  const hours =
+    Math.floor(total / 3600);
+
+  const minutes =
+    Math.floor((total % 3600) / 60);
+
+  const secs =
+    String(total % 60).padStart(2, '0');
+
+  if (hours) {
+    return `${hours}:${String(minutes).padStart(2, '0')}:${secs}`;
+  }
+
+  return `${minutes}:${secs}`;
 }
-function secondsToPace(seconds) { return !seconds || seconds < 0 ? '—' : `${Math.floor(seconds / 60)}:${String(Math.round(seconds % 60)).padStart(2, '0')}`; }
-function createSplit(km, records) {
-    if (!records.length) return null;
 
-    const first = records[0];
-    const last = records[records.length - 1];
+function secondsToPace(seconds) {
+  if (
+    !Number.isFinite(seconds) ||
+    seconds <= 0
+  ) {
+    return '—';
+  }
 
-    const firstTime = first?.[253];
-    const lastTime = last?.[253];
+  const rounded =
+    Math.round(seconds);
 
-    const duration =
-        firstTime != null && lastTime != null
-            ? Math.max(1, lastTime - firstTime)
-            : null;
+  const minutes =
+    Math.floor(rounded / 60);
 
-    const heartRates = records
-        .map(record => record[3])
-        .filter(value => Number.isFinite(value) && value > 0 && value < 255);
+  const secs =
+    String(rounded % 60).padStart(2, '0');
 
-    const cadenceValues = records
-        .map(record => {
-            if (!Number.isFinite(record[4])) return null;
-
-            const fractionalCadence =
-                Number.isFinite(record[53])
-                    ? record[53] / 128
-                    : 0;
-
-            return (record[4] + fractionalCadence) * 2;
-        })
-        .filter(value => Number.isFinite(value) && value > 0 && value < 255);
-
-    const altitudes = records
-        .map(record => {
-            if (!Number.isFinite(record[2])) return null;
-            return record[2] / 5 - 500;
-        })
-        .filter(value => Number.isFinite(value));
-
-    let ascent = 0;
-
-    for (let i = 1; i < altitudes.length; i++) {
-        const difference = altitudes[i] - altitudes[i - 1];
-
-        if (difference > 2) {
-            ascent += difference;
-        }
-    }
-
-    return {
-        km,
-
-        pace: duration != null
-            ? secondsToPace(duration)
-            : null,
-
-        heartRate: heartRates.length
-            ? Math.round(
-                heartRates.reduce((sum, value) => sum + value, 0) /
-                heartRates.length
-            )
-            : null,
-
-        cadence: cadenceValues.length
-            ? Math.round(
-                cadenceValues.reduce((sum, value) => sum + value, 0) /
-                cadenceValues.length
-            )
-            : null,
-
-        ascent: Math.round(ascent)
-    };
+  return `${minutes}:${secs}`;
 }
+
+function getRecordTimestamp(record) {
+  return Number.isFinite(record?.[253])
+    ? record[253]
+    : null;
+}
+
+function getRecordDistanceMeters(record) {
+  if (!Number.isFinite(record?.[5])) {
+    return null;
+  }
+
+  // FIT distance: centimeters
+  return record[5] / 100;
+}
+
+function getRecordAltitude(record) {
+  if (!Number.isFinite(record?.[2])) {
+    return null;
+  }
+
+  // FIT enhanced_altitude / altitude:
+  // raw / 5 - 500
+  return record[2] / 5 - 500;
+}
+
+function getRecordHeartRate(record) {
+  if (!Number.isFinite(record?.[3])) {
+    return null;
+  }
+
+  const value = record[3];
+
+  if (value <= 0 || value >= 255) {
+    return null;
+  }
+
+  return value;
+}
+
+function getRecordCadence(record) {
+  if (!Number.isFinite(record?.[4])) {
+    return null;
+  }
+
+  /*
+   * Garmin running cadence in FIT is stored as
+   * half-steps per minute, therefore ×2.
+   *
+   * Field 53 can contain fractional cadence.
+   */
+  const fractional =
+    Number.isFinite(record?.[53])
+      ? record[53] / 128
+      : 0;
+
+  const cadence =
+    (record[4] + fractional) * 2;
+
+  if (
+    !Number.isFinite(cadence) ||
+    cadence <= 0 ||
+    cadence >= 255
+  ) {
+    return null;
+  }
+
+  return cadence;
+}
+
+function interpolate(a, b, fraction) {
+  return a + (b - a) * fraction;
+}
+
 function buildSplits(records) {
-  if (!records?.length) return [];
+  if (!Array.isArray(records) || !records.length) {
+    return [];
+  }
+
+  const points = records
+    .map((record) => ({
+      timestamp: getRecordTimestamp(record),
+      distance: getRecordDistanceMeters(record),
+      heartRate: getRecordHeartRate(record),
+      cadence: getRecordCadence(record),
+      altitude: getRecordAltitude(record),
+    }))
+    .filter(
+      (point) =>
+        Number.isFinite(point.timestamp) &&
+        Number.isFinite(point.distance)
+    )
+    .sort(
+      (a, b) =>
+        a.timestamp - b.timestamp
+    );
+
+  if (points.length < 2) {
+    return [];
+  }
 
   const splits = [];
-  let splitStart = 0;
-  let splitKm = 1;
 
-  for (let i = 0; i < records.length; i++) {
-    const distance = Number(records[i][5]) / 100;
+  let splitNumber = 1;
 
-    if (!Number.isFinite(distance)) continue;
+  let splitDistance = 0;
+  let splitTime = 0;
 
-    if (distance >= splitKm * 1000) {
-      const startRecord = records[splitStart];
-      const endRecord = records[i];
+  let heartRateTime = 0;
+  let heartRateWeighted = 0;
 
-      const startDistance = Number(startRecord?.[5]) / 100;
-      const endDistance = distance;
+  let cadenceTime = 0;
+  let cadenceWeighted = 0;
 
-      const startTime = Number(startRecord?.[253]);
-      const endTime = Number(endRecord?.[253]);
+  let ascent = 0;
 
-      const distanceKm = (endDistance - startDistance) / 1000;
-      const duration = endTime - startTime;
+  let previous = points[0];
 
-      const pace = distanceKm > 0 && duration > 0
-        ? duration / distanceKm
-        : null;
+  for (let i = 1; i < points.length; i++) {
+    const current = points[i];
 
-      const heartRates = records
-        .slice(splitStart, i + 1)
-        .map(r => Number(r[3]))
-        .filter(Number.isFinite);
+    const segmentDistance =
+      current.distance - previous.distance;
 
-      const cadences = records
-        .slice(splitStart, i + 1)
-        .map(r => Number(r[4]))
-        .filter(Number.isFinite);
+    const segmentTime =
+      current.timestamp - previous.timestamp;
 
-      splits.push({
-        km: splitKm,
-        pace: pace ? secondsToPace(pace) : null,
-        heartRate: heartRates.length
-          ? Math.round(heartRates.reduce((a, b) => a + b, 0) / heartRates.length)
-          : null,
-        cadence: cadences.length
+    if (
+      !Number.isFinite(segmentDistance) ||
+      segmentDistance <= 0 ||
+      !Number.isFinite(segmentTime) ||
+      segmentTime < 0
+    ) {
+      previous = current;
+      continue;
+    }
+
+    /*
+     * Position within this GPS segment.
+     *
+     * Instead of a while-loop based on remainingDistance,
+     * calculate exactly how much of the segment belongs
+     * to the current kilometre.
+     *
+     * This prevents the old infinite-loop bug when a
+     * segment crosses a kilometre boundary.
+     */
+    let segmentConsumed = 0;
+
+    while (
+      segmentConsumed <
+      segmentDistance - 0.000001
+    ) {
+      const absoluteStart =
+        previous.distance +
+        segmentConsumed;
+
+      const targetDistance =
+        splitNumber * 1000;
+
+      let distanceToBoundary =
+        targetDistance -
+        absoluteStart;
+
+      /*
+       * Numerical protection.
+       */
+      if (distanceToBoundary <= 0.000001) {
+        finishSplit();
+        continue;
+      }
+
+      const partDistance =
+        Math.min(
+          segmentDistance - segmentConsumed,
+          distanceToBoundary
+        );
+
+      if (
+        !Number.isFinite(partDistance) ||
+        partDistance <= 0
+      ) {
+        break;
+      }
+
+      const startFraction =
+        segmentConsumed /
+        segmentDistance;
+
+      const endFraction =
+        (
+          segmentConsumed +
+          partDistance
+        ) / segmentDistance;
+
+      const middleFraction =
+        (
+          startFraction +
+          endFraction
+        ) / 2;
+
+      const partTime =
+        segmentTime *
+        (partDistance / segmentDistance);
+
+      splitDistance += partDistance;
+      splitTime += partTime;
+
+      /*
+       * Heart rate
+       */
+      if (
+        Number.isFinite(previous.heartRate) &&
+        Number.isFinite(current.heartRate)
+      ) {
+        const averageHeartRate =
+          interpolate(
+            previous.heartRate,
+            current.heartRate,
+            middleFraction
+          );
+
+        heartRateWeighted +=
+          averageHeartRate *
+          partTime;
+
+        heartRateTime += partTime;
+      }
+
+      /*
+       * Cadence
+       */
+      if (
+        Number.isFinite(previous.cadence) &&
+        Number.isFinite(current.cadence)
+      ) {
+        const averageCadence =
+          interpolate(
+            previous.cadence,
+            current.cadence,
+            middleFraction
+          );
+
+        cadenceWeighted +=
+          averageCadence *
+          partTime;
+
+        cadenceTime += partTime;
+      }
+
+      /*
+       * Elevation gain
+       */
+      if (
+        Number.isFinite(previous.altitude) &&
+        Number.isFinite(current.altitude)
+      ) {
+        const altitudeChange =
+          current.altitude -
+          previous.altitude;
+
+        if (altitudeChange > 0) {
+          ascent +=
+            altitudeChange *
+            (partDistance / segmentDistance);
+        }
+      }
+
+      segmentConsumed += partDistance;
+
+      /*
+       * Kilometer completed.
+       */
+      if (
+        Math.abs(
+          splitDistance - 1000
+        ) < 0.01 ||
+        splitDistance > 999.99
+      ) {
+        finishSplit();
+      }
+    }
+
+    previous = current;
+  }
+
+  /*
+   * Last incomplete kilometre.
+   */
+  if (
+    splitDistance > 50 &&
+    splitTime > 0
+  ) {
+    const distanceKm =
+      splitDistance / 1000;
+
+    const paceSeconds =
+      splitTime / distanceKm;
+
+    splits.push({
+      km: `${splitNumber}*`,
+      pace: secondsToPace(paceSeconds),
+
+      heartRate:
+        heartRateTime > 0
           ? Math.round(
-              cadences.reduce((a, b) => a + b, 0) / cadences.length
+              heartRateWeighted /
+              heartRateTime
             )
           : null,
-        ascent: null
-      });
 
-      splitStart = i + 1;
-      splitKm++;
-    }
+      cadence:
+        cadenceTime > 0
+          ? Math.round(
+              cadenceWeighted /
+              cadenceTime
+            )
+          : null,
+
+      ascent: Math.round(ascent),
+    });
   }
 
   return splits;
+
+  /*
+   * Complete current kilometre.
+   */
+  function finishSplit() {
+    if (splitTime <= 0) {
+      splitDistance = 0;
+      splitTime = 0;
+
+      heartRateTime = 0;
+      heartRateWeighted = 0;
+
+      cadenceTime = 0;
+      cadenceWeighted = 0;
+
+      ascent = 0;
+
+      splitNumber++;
+
+      return;
+    }
+
+    splits.push({
+      km: splitNumber,
+
+      pace: secondsToPace(
+        splitTime
+      ),
+
+      heartRate:
+        heartRateTime > 0
+          ? Math.round(
+              heartRateWeighted /
+              heartRateTime
+            )
+          : null,
+
+      cadence:
+        cadenceTime > 0
+          ? Math.round(
+              cadenceWeighted /
+              cadenceTime
+            )
+          : null,
+
+      ascent: Math.round(ascent),
+    });
+
+    splitNumber++;
+
+    splitDistance = 0;
+    splitTime = 0;
+
+    heartRateTime = 0;
+    heartRateWeighted = 0;
+
+    cadenceTime = 0;
+    cadenceWeighted = 0;
+
+    ascent = 0;
+  }
 }
+
 function calculateSummary({ sessions, records }) {
-  const session = sessions.at(-1) || {};
-  const lastRecord = records.at(-1) || {};
+  const session =
+    sessions?.at(-1) || {};
+
+  const lastRecord =
+    records?.at(-1) || {};
+
+  /*
+   * Session fields:
+   *
+   * 7 = total_elapsed_time
+   * 8 = total_timer_time
+   * 9 = total_distance
+   * 14 = avg_speed
+   * 16 = avg_heart_rate
+   * 18 = avg_running_cadence
+   * 22 = total_ascent
+   */
 
   const distanceMeters =
-    session[9] != null
+    Number.isFinite(session[9])
       ? session[9] / 100
-      : (lastRecord[5] || 0) / 100;
+      : (
+          Number.isFinite(lastRecord[5])
+            ? lastRecord[5] / 100
+            : 0
+        );
+
+  const durationMilliseconds =
+    Number.isFinite(session[8])
+      ? session[8]
+      : (
+          Number.isFinite(session[7])
+            ? session[7]
+            : 0
+        );
 
   const duration =
-    (session[8] ?? session[7] ?? 0) / 1000;
+    durationMilliseconds / 1000;
 
-  const speed =
-    session[14] != null
-      ? session[14] / 1000
-      : (duration && distanceMeters
-          ? distanceMeters / duration
-          : 0);
+  let speedMetersPerSecond = 0;
 
-  if (!distanceMeters || !duration) {
+  if (Number.isFinite(session[14])) {
+    speedMetersPerSecond =
+      session[14] / 1000;
+  }
+
+  if (
+    !speedMetersPerSecond &&
+    duration > 0 &&
+    distanceMeters > 0
+  ) {
+    speedMetersPerSecond =
+      distanceMeters /
+      duration;
+  }
+
+  if (
+    !distanceMeters ||
+    !duration
+  ) {
     throw new Error(
       'У цьому FIT-файлі не знайдено даних про бігове тренування'
     );
   }
 
-  return {
-    distance: (distanceMeters / 1000).toFixed(2),
-    duration: secondsToTime(duration),
-    pace: secondsToPace(speed ? 1000 / speed : 0),
-
-    heartRate: session[16]
+  /*
+   * Average heart rate
+   */
+  const heartRate =
+    Number.isFinite(session[16])
       ? Math.round(session[16])
-      : null,
+      : calculateAverageHeartRate(records);
 
-    cadence: session[18]
+  /*
+   * Average cadence
+   */
+  const cadence =
+    Number.isFinite(session[18])
       ? Math.round(session[18] * 2)
-      : null,
+      : calculateAverageCadence(records);
 
-    ascent: session[21]
-      ? Math.round(session[21])
-      : null,
+  /*
+   * Total ascent
+   */
+  const ascent =
+    Number.isFinite(session[22])
+      ? Math.round(session[22])
+      : calculateTotalAscent(records);
+
+  /*
+   * Date
+   */
+  const timestamp =
+    Number.isFinite(session[2])
+      ? session[2]
+      : (
+          Number.isFinite(records?.[0]?.[253])
+            ? records[0][253]
+            : null
+        );
+
+  return {
+    distance:
+      (distanceMeters / 1000)
+        .toFixed(2),
+
+    duration:
+      secondsToTime(duration),
+
+    pace:
+      secondsToPace(
+        speedMetersPerSecond > 0
+          ? 1000 / speedMetersPerSecond
+          : 0
+      ),
+
+    heartRate,
+
+    cadence,
+
+    ascent,
 
     date:
-      (session[2] ?? records[0]?.[253])
+      timestamp != null
         ? new Date(
             FIT_EPOCH_MS +
-            (session[2] ?? records[0][253]) * 1000
+            timestamp * 1000
           )
         : null,
 
-    splits: buildSplits(records),
+    splits:
+      buildSplits(records),
   };
 }
 
-  // Висота в Record:
-  // field 2 = altitude
-  // raw value / 5 - 500 = метри
+function calculateAverageHeartRate(records) {
+  if (!records?.length) {
+    return null;
+  }
+
+  const values = records
+    .map(getRecordHeartRate)
+    .filter(Number.isFinite);
+
+  if (!values.length) {
+    return null;
+  }
+
+  return Math.round(
+    values.reduce(
+      (sum, value) =>
+        sum + value,
+      0
+    ) / values.length
+  );
+}
+
+function calculateAverageCadence(records) {
+  if (!records?.length) {
+    return null;
+  }
+
+  const values = records
+    .map(getRecordCadence)
+    .filter(Number.isFinite);
+
+  if (!values.length) {
+    return null;
+  }
+
+  return Math.round(
+    values.reduce(
+      (sum, value) =>
+        sum + value,
+      0
+    ) / values.length
+  );
+}
+
+function calculateTotalAscent(records) {
+  if (!records?.length) {
+    return null;
+  }
+
   const altitudes = records
-    .map((record) => {
-      if (record[2] == null) return null;
-      return record[2] / 5 - 500;
-    })
-    .filter((value) => Number.isFinite(value));
+    .map(getRecordAltitude)
+    .filter(Number.isFinite);
 
-  // Набір висоти.
-// Спочатку беремо офіційний total_ascent із Session Garmin.
-// Якщо його немає — рахуємо набір по GPS-точках.
-let ascent = null;
-
-if (session[22] != null && Number.isFinite(Number(session[22]))) {
-    ascent = Number(session[22]);
-} else if (altitudes.length > 1) {
-    ascent = 0;
-
-    for (let i = 1; i < altitudes.length; i++) {
-        const difference = altitudes[i] - altitudes[i - 1];
-
-        if (difference > 2) {
-            ascent += difference;
-        }
-    }
-}
-
-  // Середній пульс із Session
-  const heartRate =
-    session[16] != null
-      ? Math.round(session[16])
-      : null;
-
-  // Середній каденс
-const cadenceValues = records
-  .map(record => {
-    if (!Number.isFinite(record[4])) return null;
-
-    const fractionalCadence =
-      Number.isFinite(record[53]) ? record[53] / 128 : 0;
-
-    return (record[4] + fractionalCadence) * 2;
-  })
-  .filter(value => Number.isFinite(value) && value > 0 && value < 255);
-
-const cadence = cadenceValues.length
-  ? Math.round(
-      cadenceValues.reduce((sum, value) => sum + value, 0) /
-      cadenceValues.length
-    )
-  : null;
-// Кілометрові спліти для детального аналізу
-const splits = [];
-
-if (records.length > 0) {
-  let currentKm = 1;
-  let kmRecords = [];
-
-  for (const record of records) {
-    const distance = Number.isFinite(record[5])
-      ? record[5] / 100
-      : null;
-
-    if (distance == null) continue;
-
-    const km = Math.floor(distance / 1000) + 1;
-
-    if (km !== currentKm) {
-      if (kmRecords.length > 0) {
-        splits.push(createSplit(currentKm, kmRecords));
-      }
-
-      kmRecords = [];
-      currentKm = km;
-    }
-
-    kmRecords.push(record);
+  if (altitudes.length < 2) {
+    return null;
   }
 
-  if (kmRecords.length > 0) {
-    splits.push(createSplit(currentKm, kmRecords));
+  let ascent = 0;
+
+  for (let i = 1; i < altitudes.length; i++) {
+    const difference =
+      altitudes[i] -
+      altitudes[i - 1];
+
+    /*
+     * Ignore tiny GPS/barometric noise.
+     */
+    if (difference > 2) {
+      ascent += difference;
+    }
   }
+
+  return Math.round(ascent);
 }
 
-/** Повертає ключові показники бігового тренування з локального FIT-файлу. */
+/**
+ * Повертає ключові показники
+ * бігового тренування з локального FIT-файлу.
+ */
 async function parseFitFile(file) {
-  if (!file?.name?.toLowerCase().endsWith('.fit')) throw new Error('Потрібен файл Garmin у форматі .fit');
-  return calculateSummary(decodeFit(await file.arrayBuffer()));
+  if (
+    !file ||
+    !file.name ||
+    !file.name
+      .toLowerCase()
+      .endsWith('.fit')
+  ) {
+    throw new Error(
+      'Потрібен файл Garmin у форматі .fit'
+    );
+  }
+
+  const buffer =
+    await file.arrayBuffer();
+
+  const decoded =
+    decodeFit(buffer);
+
+  return calculateSummary(
+    decoded
+  );
 }
 
-window.parseFitFile = parseFitFile;
+window.parseFitFile =
+  parseFitFile;
