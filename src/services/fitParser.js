@@ -195,7 +195,14 @@ if (session[22] != null && Number.isFinite(Number(session[22]))) {
 
   // Середній каденс
 const cadenceValues = records
-  .map(record => record[4])
+  .map(record => {
+    if (!Number.isFinite(record[4])) return null;
+
+    const fractionalCadence =
+      Number.isFinite(record[53]) ? record[53] / 128 : 0;
+
+    return (record[4] + fractionalCadence) * 2;
+  })
   .filter(value => Number.isFinite(value) && value > 0 && value < 255);
 
 const cadence = cadenceValues.length
