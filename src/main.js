@@ -174,6 +174,72 @@ function detectWorkoutType(summary) {
 
     return 'Легкий / звичайний біг';
 }
+function generateWorkoutInsight(summary) {
+    const splits = summary.splits || [];
+
+    if (!splits.length) {
+        return 'Реальні дані з Garmin завантажено.';
+    }
+
+    const paces = splits
+        .map(split => {
+            if (!split.pace) return null;
+
+            const [minutes, seconds] = split.pace.split(':').map(Number);
+            return minutes * 60 + seconds;
+        })
+        .filter(Number.isFinite);
+
+    if (!paces.length) {
+        return 'Тренування завантажено. Даних для детального аналізу сплітів недостатньо.';
+    }
+
+    const fastest = Math.min(...paces);
+    const slowest = Math.max(...paces);
+
+    const averagePace =
+        paces.reduce((sum, pace) => sum + pace, 0) / paces.length;
+
+    const firstHalf =
+        paces.slice(0, Math.ceil(paces.length / 2));
+
+    const secondHalf =
+        paces.slice(Math.ceil(paces.length / 2));
+
+    const firstAverage =
+        firstHalf.reduce((sum, pace) => sum + pace, 0) / firstHalf.length;
+
+    const secondAverage =
+        secondHalf.reduce((sum, pace) => sum + pace, 0) / secondHalf.length;
+
+    const difference = firstAverage - secondAverage;
+
+    let insight = '';
+
+    if (difference > 8) {
+        insight = 'Ти поступово прискорювався протягом тренування — фініш вийшов сильнішим за початок.';
+    } else if (difference < -8) {
+        insight = 'На початку тренування темп був швидшим, а далі поступово знизився.';
+    } else if ((slowest - fastest) <= 10) {
+        insight = 'Темп був дуже рівним протягом тренування — хороший контроль зусилля.';
+    } else {
+        insight = 'Темп змінювався протягом тренування, тому спліти варто оцінювати разом із пульсом та каденсом.';
+    }
+
+    if (summary.heartRate) {
+        insight += ` Середній пульс — ${summary.heartRate} уд/хв.`;
+    }
+
+    if (summary.cadence) {
+        insight += ` Середній каденс — ${summary.cadence} кроків/хв.`;
+    }
+
+    if (summary.ascent != null) {
+        insight += ` Набір висоти — ${summary.ascent} м.`;
+    }
+
+    return insight;
+}
 function formatMetric(value) {
   const separatorIndex = String(value).search(/[.:]/);
   return separatorIndex === -1 ? value : `${String(value).slice(0, separatorIndex)}<span>${String(value).slice(separatorIndex)}</span>`;
