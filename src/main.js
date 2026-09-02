@@ -152,7 +152,7 @@ function renderSummary(summary) {
   durationValue.innerHTML = formatMetric(summary.duration);
   paceValue.innerHTML = formatMetric(summary.pace);
   heartRateValue.textContent = summary.heartRate ?? '—';
-
+renderSplits(summary.splits);
   const date = summary.date?.toLocaleDateString('uk-UA', {
     day: 'numeric',
     month: 'long',
