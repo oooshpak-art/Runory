@@ -73,18 +73,82 @@ function secondsToTime(seconds) {
 function secondsToPace(seconds) { return !seconds || seconds < 0 ? '—' : `${Math.floor(seconds / 60)}:${String(Math.round(seconds % 60)).padStart(2, '0')}`; }
 
 function calculateSummary({ sessions, records }) {
-  const session = sessions.at(-1) || {}; const lastRecord = records.at(-1) || {};
-  const distanceMeters = session[9] != null ? session[9] / 100 : (lastRecord[5] || 0) / 100;
-  // У FIT тривалість сесії передається в тисячних частках секунди.
-  const duration = (session[8] ?? session[7] ?? 0) / 1000;
-  const speed = session[14] != null ? session[14] / 1000 : (duration && distanceMeters ? distanceMeters / duration : 0);
-  if (!distanceMeters || !duration) throw new Error('У цьому FIT-файлі не знайдено даних про бігове тренування');
+  const session = sessions.at(-1) || {};
+  const lastRecord = records.at(-1) || {};
+
+  const distanceMeters =
+    session[9] != null
+      ? session[9] / 100
+      : (lastRecord[5] || 0) / 100;
+
+  const duration =
+    (session[8] ?? session[7] ?? 0) / 1000;
+
+  const speed =
+    session[14] != null
+      ? session[14] / 1000
+      : (duration && distanceMeters
+          ? distanceMeters / duration
+          : 0);
+
+  if (!distanceMeters || !duration) {
+    throw new Error(
+      'У цьому FIT-файлі не знайдено даних про бігове тренування'
+    );
+  }
+
+  // Висота в Record:
+  // field 2 = altitude
+  // raw value / 5 - 500 = метри
+  const altitudes = records
+    .map((record) => {
+      if (record[2] == null) return null;
+      return record[2] / 5 - 500;
+    })
+    .filter((value) => Number.isFinite(value));
+
+  // Рахуємо реальний позитивний набір по треку.
+  // Маленькі коливання GPS до 1 м ігноруємо.
+  let ascent = 0;
+
+  for (let i = 1; i < altitudes.length; i++) {
+    const difference = altitudes[i] - altitudes[i - 1];
+
+    if (difference > 1) {
+      ascent += difference;
+    }
+  }
+
+  // Середній пульс із Session
+  const heartRate =
+    session[16] != null
+      ? Math.round(session[16])
+      : null;
+
+  // Середній каденс
+  const cadence =
+    session[18] != null
+      ? Math.round(session[18] * 2)
+      : null;
+
+  const timestamp =
+    session[2] ?? records[0]?.[253];
+
   return {
-    distance: (distanceMeters / 1000).toFixed(2), duration: secondsToTime(duration), pace: secondsToPace(speed ? 1000 / speed : 0),
-    heartRate: session[16] ? Math.round(session[16]) : null,
-    // Garmin записує каденс як кількість пар кроків за хвилину.
-    cadence: session[18] ? Math.round(session[18] * 2) : null,
-    ascent: session[21] ? Math.round(session[21]) : null, date: (session[2] ?? records[0]?.[253]) ? new Date(FIT_EPOCH_MS + (session[2] ?? records[0][253]) * 1000) : null,
+    distance: (distanceMeters / 1000).toFixed(2),
+    duration: secondsToTime(duration),
+    pace: secondsToPace(
+      speed ? 1000 / speed : 0
+    ),
+
+    heartRate,
+    cadence,
+
+    ascent: Math.round(ascent),
+
+    date: timestamp
+      ? new Date(FIT_EPOCH_MS + timestamp * 1000)
+      : null
   };
 }
 
