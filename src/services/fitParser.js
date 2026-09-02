@@ -143,6 +143,147 @@ function createSplit(km, records) {
         ascent: Math.round(ascent)
     };
 }
+function buildSplits(records) {
+  if (!records?.length) return [];
+
+  const points = records
+    .map((record) => ({
+      timestamp: record[253],
+      distance: record[5] != null ? record[5] / 100 : null,
+      heartRate: record[3],
+      cadence: record[4] != null ? record[4] * 2 : null,
+      altitude: record[2] != null ? record[2] / 5 - 500 : null,
+    }))
+    .filter((point) =>
+      Number.isFinite(point.timestamp) &&
+      Number.isFinite(point.distance)
+    )
+    .sort((a, b) => a.timestamp - b.timestamp);
+
+  if (points.length < 2) return [];
+
+  const splits = [];
+  let splitNumber = 1;
+
+  let splitDistance = 0;
+  let splitTime = 0;
+  let heartRateSum = 0;
+  let heartRateTime = 0;
+  let cadenceSum = 0;
+  let cadenceTime = 0;
+  let ascent = 0;
+
+  let previous = points[0];
+
+  for (let i = 1; i < points.length; i++) {
+    const current = points[i];
+
+    const segmentDistance = current.distance - previous.distance;
+    const segmentTime = current.timestamp - previous.timestamp;
+
+    if (
+      !Number.isFinite(segmentDistance) ||
+      segmentDistance <= 0 ||
+      !Number.isFinite(segmentTime) ||
+      segmentTime < 0
+    ) {
+      previous = current;
+      continue;
+    }
+
+    let remainingDistance = segmentDistance;
+    let remainingTime = segmentTime;
+    let segmentStartDistance = previous.distance;
+
+    while (remainingDistance > 0) {
+      const targetDistance = splitNumber * 1000;
+      const distanceToBoundary =
+        targetDistance - (segmentStartDistance + (segmentDistance - remainingDistance));
+
+      const partDistance = Math.min(remainingDistance, distanceToBoundary);
+      const fraction = partDistance / segmentDistance;
+      const partTime = segmentTime * fraction;
+
+      splitDistance += partDistance;
+      splitTime += partTime;
+
+      if (Number.isFinite(previous.heartRate) && Number.isFinite(current.heartRate)) {
+        const averageHeartRate =
+          previous.heartRate +
+          (current.heartRate - previous.heartRate) *
+          ((segmentDistance - remainingDistance + partDistance / 2) / segmentDistance);
+
+        heartRateSum += averageHeartRate * partTime;
+        heartRateTime += partTime;
+      }
+
+      if (Number.isFinite(previous.cadence) && Number.isFinite(current.cadence)) {
+        const averageCadence =
+          previous.cadence +
+          (current.cadence - previous.cadence) *
+          ((segmentDistance - remainingDistance + partDistance / 2) / segmentDistance);
+
+        cadenceSum += averageCadence * partTime;
+        cadenceTime += partTime;
+      }
+
+      if (Number.isFinite(previous.altitude) && Number.isFinite(current.altitude)) {
+        const altitudeChange = current.altitude - previous.altitude;
+
+        if (altitudeChange > 0) {
+          ascent += altitudeChange * fraction;
+        }
+      }
+
+      remainingDistance -= partDistance;
+
+      if (splitDistance >= targetDistance - 0.001) {
+        splits.push({
+          km: splitNumber,
+          pace: secondsToPace(splitTime),
+          heartRate: heartRateTime
+            ? Math.round(heartRateSum / heartRateTime)
+            : null,
+          cadence: cadenceTime
+            ? Math.round(cadenceSum / cadenceTime)
+            : null,
+          ascent: Math.round(ascent),
+        });
+
+        splitNumber++;
+
+        splitDistance = 0;
+        splitTime = 0;
+        heartRateSum = 0;
+        heartRateTime = 0;
+        cadenceSum = 0;
+        cadenceTime = 0;
+        ascent = 0;
+      }
+    }
+
+    previous = current;
+  }
+
+  // Последний неповний кілометр
+  if (splitDistance > 50 && splitTime > 0) {
+    splits.push({
+      km: `${splitNumber}*`,
+      pace: secondsToPace(splitTime / (splitDistance / 1000)),
+      heartRate: heartRateTime
+        ? Math.round(heartRateSum / heartRateTime)
+        : null,
+      cadence: cadenceTime
+        ? Math.round(cadenceSum / cadenceTime)
+        : null,
+      ascent: Math.round(ascent),
+    });
+  }
+
+  return splits;
+}
+
+
 function calculateSummary({ sessions, records }) {
   const session = sessions.at(-1) || {};
   const lastRecord = records.at(-1) || {};
@@ -167,6 +308,35 @@ function calculateSummary({ sessions, records }) {
       'У цьому FIT-файлі не знайдено даних про бігове тренування'
     );
   }
+
+  return {
+    distance: (distanceMeters / 1000).toFixed(2),
+    duration: secondsToTime(duration),
+    pace: secondsToPace(speed ? 1000 / speed : 0),
+
+    heartRate: session[16]
+      ? Math.round(session[16])
+      : null,
+
+    cadence: session[18]
+      ? Math.round(session[18] * 2)
+      : null,
+
+    ascent: session[21]
+      ? Math.round(session[21])
+      : null,
+
+    date:
+      (session[2] ?? records[0]?.[253])
+        ? new Date(
+            FIT_EPOCH_MS +
+            (session[2] ?? records[0][253]) * 1000
+          )
+        : null,
+
+    splits: buildSplits(records),
+  };
+}
 
   // Висота в Record:
   // field 2 = altitude
