@@ -162,6 +162,7 @@ async function selectFile(file) {
     const summary = await parseFitFile(file);
     window.clearInterval(timer);
     renderSummary(summary);
+    currentWorkout = summary;
     progressBar.style.width = '100%';
     progressValue.textContent = '100%';
     fileStatus.textContent = 'Тренування готове до перегляду';
