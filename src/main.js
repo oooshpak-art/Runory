@@ -78,7 +78,7 @@ navTabs.forEach((tab) => tab.addEventListener('click', () => {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }));
 calcTabs.forEach((tab) => tab.addEventListener('click', () => renderCalculator(tab.dataset.calculator)));
-renderCalculator(activeCalculator);
+if (calculatorFields) renderCalculator(activeCalculator);
 
 function formatMetric(value) {
   const separatorIndex = String(value).search(/[.:]/);
