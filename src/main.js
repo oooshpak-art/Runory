@@ -212,7 +212,8 @@ renderSplits(summary.splits);
     year: 'numeric'
   }) ?? 'Завантажене тренування';
 
-  runLabel.textContent = `Біг · ${date}`;
+  const workoutType = detectWorkoutType(summary);
+runLabel.textContent = `${workoutType} · ${date}`;
 
   const details = [
     summary.cadence && `каденс ${summary.cadence} кроків/хв`,
