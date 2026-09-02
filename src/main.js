@@ -95,7 +95,7 @@ function formatDuration(seconds) {
   const total = Math.round(seconds); const hours = Math.floor(total / 3600); const minutes = Math.floor((total % 3600) / 60); const rest = String(total % 60).padStart(2, '0');
   return hours ? `${hours}:${String(minutes).padStart(2, '0')}:${rest}` : `${minutes}:${rest}`;
 }
-
+if (calculatorForm) {
 calculatorForm?.addEventListener('submit', (event) => {
   event.preventDefault();
   const data = new FormData(calculatorForm);
@@ -112,6 +112,7 @@ calculatorForm?.addEventListener('submit', (event) => {
   else { resultLabel.textContent = calculators[activeCalculator].label; resultValue.textContent = activeCalculator === 'distance' ? `${value} км` : activeCalculator === 'pace' ? `${value} / км` : value; resultDetail.textContent = detail; }
   calculationResult.hidden = false;
 });
+}
 
 navTabs.forEach((tab) => tab.addEventListener('click', () => {
   navTabs.forEach((item) => item.classList.toggle('is-active', item === tab));
