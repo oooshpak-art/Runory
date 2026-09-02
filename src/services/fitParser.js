@@ -1,329 +1,292 @@
 const FIT_EPOCH_MS = Date.UTC(1989, 11, 31, 0, 0, 0);
 
 const BASE_TYPES = {
-  0: { size: 1, get: "getUint8", invalid: 0xff },
-  1: { size: 1, get: "getInt8", invalid: 0x7f },
-  2: { size: 1, get: "getUint8", invalid: 0xff },
-  3: { size: 2, get: "getInt16", invalid: 0x7fff },
-  4: { size: 2, get: "getUint16", invalid: 0xffff },
-  5: { size: 4, get: "getInt32", invalid: 0x7fffffff },
-  6: { size: 4, get: "getUint32", invalid: 0xffffffff },
-  7: { size: 1, get: "getUint8", invalid: 0 },
-  8: { size: 4, get: "getFloat32", invalid: null },
-  9: { size: 8, get: "getFloat64", invalid: null },
-  10: { size: 1, get: "getUint8", invalid: 0 },
-  11: { size: 2, get: "getUint16", invalid: 0 },
-  12: { size: 4, get: "getUint32", invalid: 0 },
-  13: { size: 1, get: "getUint8", invalid: null },
-  14: { size: 8, get: "getBigInt64", invalid: null },
-  15: { size: 8, get: "getBigUint64", invalid: null },
-  16: { size: 8, get: "getBigUint64", invalid: null }
+  0: { size: 1, get: 'getUint8', invalid: 0xff }, 1: { size: 1, get: 'getInt8', invalid: 0x7f },
+  2: { size: 1, get: 'getUint8', invalid: 0xff }, 3: { size: 2, get: 'getInt16', invalid: 0x7fff },
+  4: { size: 2, get: 'getUint16', invalid: 0xffff }, 5: { size: 4, get: 'getInt32', invalid: 0x7fffffff },
+  6: { size: 4, get: 'getUint32', invalid: 0xffffffff }, 8: { size: 4, get: 'getFloat32', invalid: null },
+  9: { size: 8, get: 'getFloat64', invalid: null }, 10: { size: 1, get: 'getUint8', invalid: 0 },
+  11: { size: 2, get: 'getUint16', invalid: 0 }, 12: { size: 4, get: 'getUint32', invalid: 0 },
+  13: { size: 1, get: 'getUint8', invalid: null }, 14: { size: 8, get: 'getBigInt64', invalid: null },
+  15: { size: 8, get: 'getBigUint64', invalid: null }, 16: { size: 8, get: 'getBigUint64', invalid: null },
 };
 
 function readField(view, offset, field, littleEndian) {
   const type = BASE_TYPES[field.baseType & 0x1f];
-  if (!type || field.size < type.size || offset + field.size > view.byteLength) return null;
+  if (!type || field.size < type.size) return null;
   const value = view[type.get](offset, littleEndian);
   if (type.invalid !== null && value === type.invalid) return null;
-  return typeof value === "bigint" ? Number(value) : value;
+  return typeof value === 'bigint' ? Number(value) : value;
 }
 
 function decodeFit(buffer) {
   const view = new DataView(buffer);
-  if (buffer.byteLength < 12) throw new Error("FIT-файл занадто малий");
-
   const headerSize = view.getUint8(0);
-  const magic = [8, 9, 10, 11].map(i => view.getUint8(i)).join("");
-  if (headerSize < 12 || headerSize > buffer.byteLength || magic !== "46707384") {
-    throw new Error("Це не схоже на коректний FIT-файл Garmin");
-  }
+  const magic = [8, 9, 10, 11].map((i) => view.getUint8(i)).join('');
+  if (headerSize < 12 || magic !== '46707384') throw new Error('Це не схоже на коректний FIT-файл Garmin');
 
   const dataEnd = Math.min(headerSize + view.getUint32(4, true), buffer.byteLength);
   let offset = headerSize;
   let lastTimestamp = null;
-
   const definitions = new Map();
   const sessions = [];
-  const laps = [];
   const records = [];
 
   while (offset < dataEnd) {
     const header = view.getUint8(offset++);
     const compressed = (header & 0x80) !== 0;
-    const isDefinition = !compressed && (header & 0x40) !== 0;
-    const hasDeveloperData = !compressed && (header & 0x20) !== 0;
-    const localMessage = compressed ? ((header >> 5) & 0x03) : (header & 0x0f);
-
-    if (isDefinition) {
-      if (offset + 5 > dataEnd) throw new Error("Пошкоджена структура FIT-файлу");
-
-      offset += 1; // reserved
+    const definitionHeader = !compressed && (header & 0x40) !== 0;
+    const localMessage = compressed ? (header >> 5) & 0x03 : header & 0x0f;
+    if (definitionHeader) {
+      offset += 1;
       const littleEndian = view.getUint8(offset++) === 0;
-      const globalMessage = view.getUint16(offset, littleEndian);
-      offset += 2;
-
+      const globalMessage = view.getUint16(offset, littleEndian); offset += 2;
       const fieldCount = view.getUint8(offset++);
       const fields = [];
-
-      for (let i = 0; i < fieldCount; i++) {
-        fields.push({
-          number: view.getUint8(offset++),
-          size: view.getUint8(offset++),
-          baseType: view.getUint8(offset++)
-        });
-      }
-
-      const developerFields = [];
-      if (hasDeveloperData) {
-        const developerCount = view.getUint8(offset++);
-        for (let i = 0; i < developerCount; i++) {
-          developerFields.push({
-            number: view.getUint8(offset++),
-            size: view.getUint8(offset++),
-            developerDataIndex: view.getUint8(offset++)
-          });
-        }
-      }
-
-      definitions.set(localMessage, {
-        globalMessage,
-        fields,
-        developerFields,
-        littleEndian
-      });
+      for (let i = 0; i < fieldCount; i++) fields.push({ number: view.getUint8(offset++), size: view.getUint8(offset++), baseType: view.getUint8(offset++) });
+      if (header & 0x20) offset += 1 + view.getUint8(offset) * 3;
+      definitions.set(localMessage, { globalMessage, fields, littleEndian });
       continue;
     }
-
     const definition = definitions.get(localMessage);
-    if (!definition) throw new Error("Не вдалося прочитати структуру FIT-файлу");
-
+    if (!definition) throw new Error('Не вдалося прочитати структуру FIT-файлу');
     const message = {};
-
     if (compressed && lastTimestamp !== null) {
       const timeOffset = header & 0x1f;
-      message[253] =
-        (lastTimestamp & ~0x1f) +
-        timeOffset +
-        (timeOffset < (lastTimestamp & 0x1f) ? 0x20 : 0);
+      message[253] = (lastTimestamp & ~0x1f) + timeOffset + (timeOffset < (lastTimestamp & 0x1f) ? 0x20 : 0);
     }
-
     for (const field of definition.fields) {
-      message[field.number] = readField(
-        view,
-        offset,
-        field,
-        definition.littleEndian
-      );
+      message[field.number] = readField(view, offset, field, definition.littleEndian);
       offset += field.size;
     }
-
-    for (const field of definition.developerFields) {
-      offset += field.size;
-    }
-
     if (message[253] != null) lastTimestamp = message[253];
-
     if (definition.globalMessage === 18) sessions.push(message);
-    if (definition.globalMessage === 19) laps.push(message);
     if (definition.globalMessage === 20) records.push(message);
   }
-
-  return { sessions, laps, records };
+  return { sessions, records };
 }
 
 function secondsToTime(seconds) {
-  const total = Math.max(0, Math.round(seconds || 0));
-  const h = Math.floor(total / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  const s = String(total % 60).padStart(2, "0");
-  return h
-    ? `${h}:${String(m).padStart(2, "0")}:${s}`
-    : `${m}:${s}`;
+  const total = Math.round(seconds || 0); const h = Math.floor(total / 3600); const m = Math.floor((total % 3600) / 60); const s = String(total % 60).padStart(2, '0');
+  return h ? `${h}:${String(m).padStart(2, '0')}:${s}` : `${m}:${s}`;
 }
+function secondsToPace(seconds) { return !seconds || seconds < 0 ? '—' : `${Math.floor(seconds / 60)}:${String(Math.round(seconds % 60)).padStart(2, '0')}`; }
+function createSplit(km, records) {
+    if (!records.length) return null;
 
-function secondsToPace(seconds) {
-  if (!Number.isFinite(seconds) || seconds <= 0) return "—";
-  const total = Math.round(seconds);
-  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
-}
+    const first = records[0];
+    const last = records[records.length - 1];
 
-function recordAltitude(record) {
-  if (!Number.isFinite(record[2])) return null;
-  // FIT enhanced_altitude: scale 5, offset 500.
-  return record[2] / 5 - 500;
-}
+    const firstTime = first?.[253];
+    const lastTime = last?.[253];
 
-function calculateAscentFromRecords(records) {
-  const altitudes = records.map(recordAltitude).filter(Number.isFinite);
-  if (altitudes.length < 2) return null;
+    const duration =
+        firstTime != null && lastTime != null
+            ? Math.max(1, lastTime - firstTime)
+            : null;
 
-  let ascent = 0;
-  for (let i = 1; i < altitudes.length; i++) {
-    const diff = altitudes[i] - altitudes[i - 1];
-    if (diff > 2) ascent += diff;
-  }
-  return Math.round(ascent);
-}
+    const heartRates = records
+        .map(record => record[3])
+        .filter(value => Number.isFinite(value) && value > 0 && value < 255);
 
-function createRecordSplit(km, points) {
-  if (!points.length) return null;
+    const cadenceValues = records
+        .map(record => {
+            if (!Number.isFinite(record[4])) return null;
 
-  const first = points[0];
-  const last = points[points.length - 1];
-  const firstTime = first[253];
-  const lastTime = last[253];
+            const fractionalCadence =
+                Number.isFinite(record[53])
+                    ? record[53] / 128
+                    : 0;
 
-  if (firstTime == null || lastTime == null) return null;
+            const cadence = record[4] + fractionalCadence;
+            // Normalize Garmin's raw cadence field without doubling values
+            // that are already expressed as full steps/min.
+            return cadence < 110 ? cadence * 2 : cadence;
+        })
+        .filter(value => Number.isFinite(value) && value > 0 && value < 255);
 
-  const duration = Math.max(1, lastTime - firstTime);
-  const heartRates = points.map(r => r[3]).filter(v => Number.isFinite(v) && v > 0 && v < 255);
+    const altitudes = records
+        .map(record => {
+            if (!Number.isFinite(record[2])) return null;
+            return record[2] / 5 - 500;
+        })
+        .filter(value => Number.isFinite(value));
 
-  const cadenceValues = points
-    .map(r => {
-      if (!Number.isFinite(r[4])) return null;
-      const fractional = Number.isFinite(r[53]) ? r[53] / 128 : 0;
-      return (r[4] + fractional) * 2;
-    })
-    .filter(v => Number.isFinite(v) && v > 0 && v < 255);
+    let ascent = 0;
 
-  return {
-    km,
-    pace: secondsToPace(duration),
-    heartRate: heartRates.length
-      ? Math.round(heartRates.reduce((a, b) => a + b, 0) / heartRates.length)
-      : null,
-    cadence: cadenceValues.length
-      ? Math.round(cadenceValues.reduce((a, b) => a + b, 0) / cadenceValues.length)
-      : null,
-    ascent: calculateAscentFromRecords(points)
-  };
-}
+    for (let i = 1; i < altitudes.length; i++) {
+        const difference = altitudes[i] - altitudes[i - 1];
 
-function buildRecordSplits(records) {
-  const splits = [];
-  let currentKm = 1;
-  let points = [];
-
-  for (const record of records) {
-    if (!Number.isFinite(record[5])) continue;
-
-    const distanceMeters = record[5] / 100;
-    const km = Math.floor(distanceMeters / 1000) + 1;
-
-    if (km !== currentKm) {
-      const split = createRecordSplit(currentKm, points);
-      if (split) splits.push(split);
-      points = [];
-      currentKm = km;
+        if (difference > 2) {
+            ascent += difference;
+        }
     }
 
-    points.push(record);
-  }
+    return {
+        km,
 
-  const lastSplit = createRecordSplit(currentKm, points);
-  if (lastSplit) splits.push(lastSplit);
+        pace: duration != null
+            ? secondsToPace(duration)
+            : null,
 
-  return splits;
+        heartRate: heartRates.length
+            ? Math.round(
+                heartRates.reduce((sum, value) => sum + value, 0) /
+                heartRates.length
+            )
+            : null,
+
+        cadence: cadenceValues.length
+            ? Math.round(
+                cadenceValues.reduce((sum, value) => sum + value, 0) /
+                cadenceValues.length
+            )
+            : null,
+
+        ascent: Math.round(ascent)
+    };
 }
-
-function normalizeLap(lap, number) {
-  // FIT Lap: total_timer_time=8, total_distance=9,
-  // avg_heart_rate=15, avg_cadence=16, total_ascent=21.
-  const distanceMeters = Number(lap[9]) / 100;
-  const durationSeconds = Number(lap[8]) / 1000;
-
-  if (!Number.isFinite(distanceMeters) || !Number.isFinite(durationSeconds)) return null;
-  if (distanceMeters <= 0 || durationSeconds <= 0) return null;
-
-  return {
-    km: number,
-    pace: secondsToPace(durationSeconds / (distanceMeters / 1000)),
-    heartRate: Number.isFinite(lap[15]) ? Math.round(lap[15]) : null,
-    cadence: Number.isFinite(lap[16]) ? Math.round(lap[16] * 2) : null,
-    ascent: Number.isFinite(lap[21]) ? Math.round(lap[21]) : null
-  };
-}
-
-function buildLapSplits(laps) {
-  const splits = [];
-
-  for (const lap of laps) {
-    const distanceMeters = Number(lap[9]) / 100;
-    if (!Number.isFinite(distanceMeters)) continue;
-
-    // Keep full automatic 1 km laps; ignore the final partial lap.
-    if (distanceMeters < 980 || distanceMeters > 1020) continue;
-
-    const split = normalizeLap(lap, splits.length + 1);
-    if (split) splits.push(split);
-  }
-
-  return splits;
-}
-
-function calculateSummary({ sessions, laps, records }) {
+function calculateSummary({ sessions, records }) {
   const session = sessions.at(-1) || {};
   const lastRecord = records.at(-1) || {};
 
   const distanceMeters =
-    Number.isFinite(session[9])
+    session[9] != null
       ? session[9] / 100
-      : (Number.isFinite(lastRecord[5]) ? lastRecord[5] / 100 : 0);
+      : (lastRecord[5] || 0) / 100;
 
   const duration =
-    Number(session[8] ?? session[7] ?? 0) / 1000;
-
-  if (!distanceMeters || !duration) {
-    throw new Error("У цьому FIT-файлі не знайдено даних про бігове тренування");
-  }
-
-  // Session total_ascent is the authoritative Garmin summary.
-  // If absent, calculate ascent from the record altitude stream.
-  const ascent =
-    Number.isFinite(session[22])
-      ? Math.round(session[22])
-      : calculateAscentFromRecords(records);
+    (session[8] ?? session[7] ?? 0) / 1000;
 
   const speed =
-    Number.isFinite(session[14]) && session[14] > 0
+    session[14] != null
       ? session[14] / 1000
-      : distanceMeters / duration;
+      : (duration && distanceMeters
+          ? distanceMeters / duration
+          : 0);
 
+  if (!distanceMeters || !duration) {
+    throw new Error(
+      'У цьому FIT-файлі не знайдено даних про бігове тренування'
+    );
+  }
+
+  // Висота в Record:
+  // field 2 = altitude
+  // raw value / 5 - 500 = метри
+  const altitudes = records
+    .map((record) => {
+      if (record[2] == null) return null;
+      return record[2] / 5 - 500;
+    })
+    .filter((value) => Number.isFinite(value));
+
+  // Набір висоти.
+// Спочатку беремо офіційний total_ascent із Session Garmin.
+// Якщо його немає — рахуємо набір по GPS-точках.
+let ascent = null;
+
+if (session[22] != null && Number.isFinite(Number(session[22]))) {
+    ascent = Number(session[22]);
+} else if (altitudes.length > 1) {
+    ascent = 0;
+
+    for (let i = 1; i < altitudes.length; i++) {
+        const difference = altitudes[i] - altitudes[i - 1];
+
+        if (difference > 2) {
+            ascent += difference;
+        }
+    }
+}
+
+  // Середній пульс із Session
   const heartRate =
-    Number.isFinite(session[16]) ? Math.round(session[16]) : null;
+    session[16] != null
+      ? Math.round(session[16])
+      : null;
 
-  const cadence =
-    Number.isFinite(session[18]) ? Math.round(session[18] * 2) : null;
+  // Середній каденс
+const cadenceValues = records
+  .map(record => {
+    if (!Number.isFinite(record[4])) return null;
 
-  const timestamp = session[2] ?? records[0]?.[253];
+    const fractionalCadence =
+      Number.isFinite(record[53]) ? record[53] / 128 : 0;
 
-  // Prefer Garmin's own automatic kilometer laps.
-  // Fall back to record-based splits when laps are absent.
-  const lapSplits = buildLapSplits(laps);
-  const splits = lapSplits.length ? lapSplits : buildRecordSplits(records);
+    const cadence = record[4] + fractionalCadence;
+            // Normalize Garmin's raw cadence field without doubling values
+            // that are already expressed as full steps/min.
+            return cadence < 110 ? cadence * 2 : cadence;
+  })
+  .filter(value => Number.isFinite(value) && value > 0 && value < 255);
+
+const cadence = cadenceValues.length
+  ? Math.round(
+      cadenceValues.reduce((sum, value) => sum + value, 0) /
+      cadenceValues.length
+    )
+  : null;
+// Кілометрові спліти для детального аналізу
+const splits = [];
+
+if (records.length > 0) {
+    let currentKm = 1;
+    let kmRecords = [];
+
+    for (const record of records) {
+        const distanceMeters = Number.isFinite(record[5])
+            ? record[5] / 100
+            : null;
+
+        if (distanceMeters == null) continue;
+
+        const km = Math.floor(distanceMeters / 1000) + 1;
+
+        if (km !== currentKm) {
+            if (kmRecords.length > 0) {
+                const split = createSplit(currentKm, kmRecords);
+                if (split) splits.push(split);
+            }
+
+            kmRecords = [];
+            currentKm = km;
+        }
+
+        kmRecords.push(record);
+    }
+
+    if (kmRecords.length > 0) {
+        const split = createSplit(currentKm, kmRecords);
+        if (split) splits.push(split);
+    }
+}
+  const timestamp =
+    session[2] ?? records[0]?.[253];
 
   return {
     distance: (distanceMeters / 1000).toFixed(2),
     duration: secondsToTime(duration),
-    pace: secondsToPace(1000 / speed),
+    pace: secondsToPace(
+      speed ? 1000 / speed : 0
+    ),
+
     heartRate,
     cadence,
-    ascent: ascent ?? 0,
-    splits,
-    date: timestamp != null
-      ? new Date(FIT_EPOCH_MS + Number(timestamp) * 1000)
+
+    ascent: Math.round(ascent),
+splits,
+
+    date: timestamp
+      ? new Date(FIT_EPOCH_MS + timestamp * 1000)
       : null
   };
 }
 
+/** Повертає ключові показники бігового тренування з локального FIT-файлу. */
 async function parseFitFile(file) {
-  if (!file?.name?.toLowerCase().endsWith(".fit")) {
-    throw new Error("Потрібен файл Garmin у форматі .fit");
-  }
-
-  return calculateSummary(
-    decodeFit(await file.arrayBuffer())
-  );
+  if (!file?.name?.toLowerCase().endsWith('.fit')) throw new Error('Потрібен файл Garmin у форматі .fit');
+  return calculateSummary(decodeFit(await file.arrayBuffer()));
 }
 
 window.parseFitFile = parseFitFile;
