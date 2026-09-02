@@ -120,7 +120,60 @@ navTabs.forEach((tab) => tab.addEventListener('click', () => {
 }));
 calcTabs.forEach((tab) => tab.addEventListener('click', () => renderCalculator(tab.dataset.calculator)));
 if (calculatorFields) renderCalculator(activeCalculator);
+function detectWorkoutType(summary) {
+    const splits = summary.splits || [];
 
+    if (!splits.length) {
+        return 'Бігова тренування';
+    }
+
+    const distance = Number(summary.distance);
+    const paces = splits
+        .map(split => {
+            if (!split.pace) return null;
+
+            const [minutes, seconds] = split.pace.split(':').map(Number);
+            return minutes * 60 + seconds;
+        })
+        .filter(Number.isFinite);
+
+    if (distance >= 15) {
+        return 'Довга пробіжка';
+    }
+
+    if (paces.length >= 4) {
+        const averagePace =
+            paces.reduce((sum, pace) => sum + pace, 0) / paces.length;
+
+        const deviations = paces.map(pace =>
+            Math.abs(pace - averagePace) / averagePace
+        );
+
+        const variation =
+            deviations.reduce((sum, value) => sum + value, 0) /
+            deviations.length;
+
+        let paceChanges = 0;
+
+        for (let i = 1; i < paces.length; i++) {
+            const difference = Math.abs(paces[i] - paces[i - 1]);
+
+            if (difference >= 20) {
+                paceChanges++;
+            }
+        }
+
+        if (paceChanges >= 3 && variation >= 0.06) {
+            return 'Інтервальне тренування';
+        }
+
+        if (variation <= 0.035 && distance >= 5) {
+            return 'Темповий / рівномірний біг';
+        }
+    }
+
+    return 'Легкий / звичайний біг';
+}
 function formatMetric(value) {
   const separatorIndex = String(value).search(/[.:]/);
   return separatorIndex === -1 ? value : `${String(value).slice(0, separatorIndex)}<span>${String(value).slice(separatorIndex)}</span>`;
