@@ -286,9 +286,7 @@ runLabel.textContent = `${workoutType} · ${date}`;
     summary.ascent && `набір ${summary.ascent} м`
   ].filter(Boolean).join(' · ');
 
-  insightText.textContent = details
-    ? `Реальні дані з Garmin: ${details}. Детальний аналіз темпу та сплітів доступний нижче.`
-    : 'Реальні дані з Garmin завантажено. Детальний аналіз темпу та сплітів доступний нижче.';
+  insightText.textContent = generateWorkoutInsight(summary);
 
   renderSplits(summary.splits || []);
 }
