@@ -71,7 +71,11 @@ ${JSON.stringify(workout, null, 2)}
 
         return new Response(
           JSON.stringify({
-            analysis: data.output?.[0]?.content?.[0]?.text || 'Не вдалося отримати аналіз'
+            analysis:
+  data.output
+    ?.flatMap(item => item.content || [])
+    ?.find(item => item.type === 'output_text')
+    ?.text || 'Не вдалося отримати аналіз'
           }),
           {
             headers: { 'Content-Type': 'application/json' }
