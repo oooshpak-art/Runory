@@ -36,7 +36,6 @@ let currentWorkout = null;
 
 const aiAnalyzeButton = document.querySelector('#aiAnalyzeButton');
 const splitsSection = document.querySelector('#splitsSection');
-const splitsBody = document.querySelector('#splitsBody');
 const splitsCount = document.querySelector('#splitsCount');
 if (aiAnalyzeButton) {
   aiAnalyzeButton.addEventListener('click', async () => {
