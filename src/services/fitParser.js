@@ -72,6 +72,8 @@ function secondsToTime(seconds) {
 }
 function secondsToPace(seconds) { return !seconds || seconds < 0 ? '—' : `${Math.floor(seconds / 60)}:${String(Math.round(seconds % 60)).padStart(2, '0')}`; }
 function createSplit(km, records) {
+    if (!records.length) return null;
+
     const first = records[0];
     const last = records[records.length - 1];
 
@@ -85,18 +87,26 @@ function createSplit(km, records) {
 
     const heartRates = records
         .map(record => record[3])
-        .filter(value => Number.isFinite(value));
+        .filter(value => Number.isFinite(value) && value > 0 && value < 255);
 
-    const cadences = records
-        .map(record => record[4])
+    const cadenceValues = records
+        .map(record => {
+            if (!Number.isFinite(record[4])) return null;
+
+            const fractionalCadence =
+                Number.isFinite(record[53])
+                    ? record[53] / 128
+                    : 0;
+
+            return (record[4] + fractionalCadence) * 2;
+        })
         .filter(value => Number.isFinite(value) && value > 0 && value < 255);
 
     const altitudes = records
-        .map(record =>
-            Number.isFinite(record[2])
-                ? record[2] / 5 - 500
-                : null
-        )
+        .map(record => {
+            if (!Number.isFinite(record[2])) return null;
+            return record[2] / 5 - 500;
+        })
         .filter(value => Number.isFinite(value));
 
     let ascent = 0;
@@ -104,7 +114,7 @@ function createSplit(km, records) {
     for (let i = 1; i < altitudes.length; i++) {
         const difference = altitudes[i] - altitudes[i - 1];
 
-        if (difference > 1) {
+        if (difference > 2) {
             ascent += difference;
         }
     }
@@ -123,10 +133,10 @@ function createSplit(km, records) {
             )
             : null,
 
-        cadence: cadences.length
+        cadence: cadenceValues.length
             ? Math.round(
-                (cadences.reduce((sum, value) => sum + value, 0) /
-                cadences.length) * 2
+                cadenceValues.reduce((sum, value) => sum + value, 0) /
+                cadenceValues.length
             )
             : null,
 
