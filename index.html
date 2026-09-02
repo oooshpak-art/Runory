@@ -1,122 +1,566 @@
 <!doctype html>
 <html lang="uk">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Runory — зрозумілий аналіз бігових тренувань." />
-    <title>Runory — аналіз тренувань</title>
-    <link rel="icon" type="image/svg+xml" href="src/assets/favicon.svg" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="src/styles.css" />
-  </head>
-  <body>
-    <main class="page-shell">
-      <header class="topbar">
-      <a class="brand" href="#top" aria-label="Runory — головна">
-  <img class="brand-logo" src="src/assets/runory-logo.svg" alt="Runory" />
-</a>
-        <nav class="app-nav" aria-label="Розділи Runory">
-          <button class="nav-tab is-active" type="button" data-view="analysis">Аналіз тренування</button>
-          <a class="nav-tab" href="calculator.html" style="text-decoration:none;">Калькулятор бігу</a>
-        </nav>
-      </header>
 
-      <div class="view is-active" id="analysis" data-view-panel>
-      <section class="hero" id="top">
-        <p class="eyebrow">РОЗУМНИЙ ПІДХІД ДО ТВОЇХ ТРЕНУВАНЬ</p>
-        <h1>Кожен кілометр<br />має значення.</h1>
-        <p class="hero-copy">Runory — аналіз твоїх тренувань у цифрах.<br />Завантаж тренування з Garmin та дізнайся, що насправді відбулося під час пробіжки.</p>
+<head>
+  <meta charset="UTF-8" />
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
+
+  <meta
+    name="description"
+    content="Runory — зрозумілий аналіз бігових тренувань."
+  />
+
+  <title>Runory — аналіз тренувань</title>
+
+  <link
+    rel="icon"
+    type="image/svg+xml"
+    href="src/assets/favicon.svg"
+  />
+
+  <link
+    rel="preconnect"
+    href="https://fonts.googleapis.com"
+  />
+
+  <link
+    rel="preconnect"
+    href="https://fonts.gstatic.com"
+    crossorigin
+  />
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  />
+
+  <link
+    rel="stylesheet"
+    href="src/styles.css"
+  />
+
+  <style>
+    .splits-section {
+      margin-top: 20px;
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 36px;
+      box-shadow: 0 12px 35px rgba(31, 40, 31, .035);
+    }
+
+    .splits-heading {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 25px;
+      margin-bottom: 24px;
+    }
+
+    .splits-heading h3 {
+      margin: 0;
+      font-size: 26px;
+      letter-spacing: -1.4px;
+    }
+
+    .splits-table-wrap {
+      width: 100%;
+      overflow-x: auto;
+    }
+
+    .splits-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .splits-table th {
+      padding: 13px 12px;
+      text-align: left;
+      color: #64716a;
+      background: #f6f8f5;
+      border-bottom: 1px solid var(--line);
+      font: 600 10px 'DM Mono', monospace;
+      letter-spacing: .8px;
+      text-transform: uppercase;
+    }
+
+    .splits-table td {
+      padding: 14px 12px;
+      border-bottom: 1px solid #edf0ed;
+      color: var(--ink);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .splits-table tbody tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .splits-table tbody tr:hover {
+      background: #fafcf9;
+    }
+
+    .splits-table td:first-child {
+      font-weight: 800;
+    }
+
+    .splits-empty {
+      text-align: center !important;
+      color: #68746d !important;
+      padding: 28px 12px !important;
+    }
+
+    @media (max-width: 680px) {
+      .splits-section {
+        padding: 24px 18px;
+        border-radius: 15px;
+      }
+
+      .splits-heading h3 {
+        font-size: 23px;
+      }
+
+      .splits-table {
+        min-width: 520px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <main class="page-shell">
+
+    <header class="topbar">
+
+      <a
+        class="brand"
+        href="#top"
+        aria-label="Runory — головна"
+      >
+        <img
+          class="brand-logo"
+          src="src/assets/runory-logo.svg"
+          alt="Runory"
+        />
+      </a>
+
+      <nav
+        class="app-nav"
+        aria-label="Розділи Runory"
+      >
+
+        <a
+          class="nav-tab is-active"
+          href="index.html"
+          style="text-decoration:none;"
+        >
+          Аналіз тренування
+        </a>
+
+        <a
+          class="nav-tab"
+          href="calculator.html"
+          style="text-decoration:none;"
+        >
+          Калькулятор бігу
+        </a>
+
+      </nav>
+
+    </header>
+
+
+    <div
+      class="view is-active"
+      id="analysis"
+      data-view-panel
+    >
+
+      <section
+        class="hero"
+        id="top"
+      >
+
+        <p class="eyebrow">
+          РОЗУМНИЙ ПІДХІД ДО ТВОЇХ ТРЕНУВАНЬ
+        </p>
+
+        <h1>
+          Кожен кілометр<br />
+          має значення.
+        </h1>
+
+        <p class="hero-copy">
+          Runory — аналіз твоїх тренувань у цифрах.<br />
+          Завантаж тренування з Garmin та дізнайся,
+          що насправді відбулося під час пробіжки.
+        </p>
+
       </section>
 
-      <section class="upload-section" aria-labelledby="upload-title">
+
+      <section
+        class="upload-section"
+        aria-labelledby="upload-title"
+      >
+
         <div class="section-heading">
+
           <div>
-            <p class="eyebrow">НОВЕ ТРЕНУВАННЯ</p>
-            <h2 id="upload-title">Завантаж FIT-файл</h2>
+
+            <p class="eyebrow">
+              НОВЕ ТРЕНУВАННЯ
+            </p>
+
+            <h2 id="upload-title">
+              Завантаж FIT-файл
+            </h2>
+
           </div>
-          <p class="file-help">FIT-файл з Garmin Connect<br />Обробка лише на твоєму пристрої</p>
+
+          <p class="file-help">
+            FIT-файл з Garmin Connect<br />
+            Обробка лише на твоєму пристрої
+          </p>
+
         </div>
 
-        <div class="drop-zone" id="dropZone">
-          <input id="fileInput" type="file" accept=".fit,application/octet-stream" hidden />
-          <div class="upload-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none"><path d="M12 16V4m0 0 4 4m-4-4L8 8M5 14v4.2A1.8 1.8 0 0 0 6.8 20h10.4a1.8 1.8 0 0 0 1.8-1.8V14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+
+        <div
+          class="drop-zone"
+          id="dropZone"
+        >
+
+          <input
+            id="fileInput"
+            type="file"
+            accept=".fit,application/octet-stream"
+            hidden
+          />
+
+          <div
+            class="upload-icon"
+            aria-hidden="true"
+          >
+
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+            >
+              <path
+                d="M12 16V4m0 0 4 4m-4-4L8 8M5 14v4.2A1.8 1.8 0 0 0 6.8 20h10.4a1.8 1.8 0 0 0 1.8-1.8V14"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+
           </div>
+
+
           <div class="drop-content">
-            <p class="drop-title">Додай тренування з Garmin</p>
-            <label class="choose-button" for="fileInput">Обрати FIT-файл</label>
-            <p class="drop-subtitle">або перетягни файл у цю область</p>
+
+            <p class="drop-title">
+              Додай тренування з Garmin
+            </p>
+
+            <label
+              class="choose-button"
+              for="fileInput"
+            >
+              Обрати FIT-файл
+            </label>
+
+            <p class="drop-subtitle">
+              або перетягни файл у цю область
+            </p>
+
           </div>
-          <span class="fit-badge">.FIT</span>
+
+
+          <span class="fit-badge">
+            .FIT
+          </span>
+
         </div>
 
-        <div class="upload-state" id="uploadState" hidden aria-live="polite">
-          <div class="file-icon">FIT</div>
+
+        <div
+          class="upload-state"
+          id="uploadState"
+          hidden
+          aria-live="polite"
+        >
+
+          <div class="file-icon">
+            FIT
+          </div>
+
           <div class="file-details">
-            <p id="fileName">Тренування.fit</p>
-            <p id="fileStatus">Готово до аналізу</p>
+
+            <p id="fileName">
+              Тренування.fit
+            </p>
+
+            <p id="fileStatus">
+              Готово до аналізу
+            </p>
+
           </div>
-          <div class="progress-wrap"><div class="progress"><span id="progressBar"></span></div><span id="progressValue">0%</span></div>
-          <button class="reset-button" id="resetButton" aria-label="Видалити файл">×</button>
+
+          <div class="progress-wrap">
+
+            <div class="progress">
+              <span id="progressBar"></span>
+            </div>
+
+            <span id="progressValue">
+              0%
+            </span>
+
+          </div>
+
+          <button
+            class="reset-button"
+            id="resetButton"
+            aria-label="Видалити файл"
+            type="button"
+          >
+            ×
+          </button>
+
         </div>
+
       </section>
 
-      <section class="results" id="results" hidden aria-labelledby="results-title">
+
+      <section
+        class="results"
+        id="results"
+        hidden
+        aria-labelledby="results-title"
+      >
+
         <div class="results-heading">
+
           <div>
-            <p class="eyebrow">ТРЕНУВАННЯ ГОТОВЕ</p>
-            <h2 id="results-title">Твій забіг у цифрах</h2>
+
+            <p class="eyebrow">
+              ТРЕНУВАННЯ ГОТОВЕ
+            </p>
+
+            <h2 id="results-title">
+              Твій забіг у цифрах
+            </h2>
+
           </div>
-          <p class="run-label">Біг · сьогодні</p>
+
+          <p class="run-label">
+            Біг · сьогодні
+          </p>
+
         </div>
+
+
         <div class="metric-grid">
-          <article class="metric-card featured"><p>Дистанція</p><strong>10<span>.02</span></strong><em>кілометрів</em></article>
-          <article class="metric-card"><p>Час</p><strong>52<span>:18</span></strong><em>год : хв : сек</em></article>
-          <article class="metric-card"><p>Середній темп</p><strong>5<span>:13</span></strong><em>хвилин на км</em></article>
-          <article class="metric-card"><p>Середній пульс</p><strong>154</strong><em>ударів за хвилину</em></article>
-        </div>
-        <div class="splits-card">
-  <div class="splits-heading">
-    <div>
-      <p class="eyebrow">КІЛОМЕТРОВІ СПЛІТИ</p>
-      <h3>Як змінювався твій біг</h3>
-    </div>
-  </div>
 
-  <div class="splits-table-wrap">
-    <table class="splits-table">
-      <thead>
-        <tr>
-          <th>Км</th>
-          <th>Темп</th>
-          <th>Пульс</th>
-          <th>Каденс</th>
-          <th>Набір</th>
-        </tr>
-      </thead>
-      <tbody id="splitsBody"></tbody>
-    </table>
-  </div>
-</div>
-    
+          <article class="metric-card featured">
+
+            <p>
+              Дистанція
+            </p>
+
+            <strong>
+              10<span>.02</span>
+            </strong>
+
+            <em>
+              кілометрів
+            </em>
+
+          </article>
+
+
+          <article class="metric-card">
+
+            <p>
+              Час
+            </p>
+
+            <strong>
+              52<span>:18</span>
+            </strong>
+
+            <em>
+              год : хв : сек
+            </em>
+
+          </article>
+
+
+          <article class="metric-card">
+
+            <p>
+              Середній темп
+            </p>
+
+            <strong>
+              5<span>:13</span>
+            </strong>
+
+            <em>
+              хвилин на км
+            </em>
+
+          </article>
+
+
+          <article class="metric-card">
+
+            <p>
+              Середній пульс
+            </p>
+
+            <strong>
+              154
+            </strong>
+
+            <em>
+              ударів за хвилину
+            </em>
+
+          </article>
+
+        </div>
+
+
+        <section
+          class="splits-section"
+          id="splitsSection"
+          aria-labelledby="splits-title"
+        >
+
+          <div class="splits-heading">
+
+            <div>
+
+              <p class="eyebrow">
+                КІЛОМЕТРОВІ СПЛІТИ
+              </p>
+
+              <h3 id="splits-title">
+                Як змінювався твій біг
+              </h3>
+
+            </div>
+
+          </div>
+
+
+          <div class="splits-table-wrap">
+
+            <table class="splits-table">
+
+              <thead>
+
+                <tr>
+                  <th>КМ</th>
+                  <th>ТЕМП</th>
+                  <th>ПУЛЬС</th>
+                  <th>КАДЕНС</th>
+                  <th>НАБІР</th>
+                </tr>
+
+              </thead>
+
+              <tbody id="splitsBody">
+
+                <tr>
+                  <td colspan="5">
+                    Спліти з'являться після завантаження FIT-файлу.
+                  </td>
+                </tr>
+
+              </tbody>
+
+            </table>
+
+          </div>
+
+        </section>
+
+
         <div class="insight-card">
-          <div class="insight-icon">↗</div>
-          <div><p class="eyebrow">ПЕРШИЙ ПОГЛЯД</p><p class="insight-text">Рівний темп і хороший контроль зусилля. Ти прискорився на останніх 2 км — сильний фініш.</p></div>
-          <button class="ai-button" id="aiAnalyzeButton" type="button">
-  🤖 Проаналізувати тренування
-</button>
+
+          <div class="insight-icon">
+            ↗
+          </div>
+
+          <div>
+
+            <p class="eyebrow">
+              ПЕРШИЙ ПОГЛЯД
+            </p>
+
+            <p class="insight-text">
+              Завантаж тренування, щоб побачити реальні дані Garmin.
+            </p>
+
+          </div>
+
+          <span class="demo-note">
+            АНАЛІЗ FIT
+          </span>
+
         </div>
+
       </section>
 
-      <section class="future-strip" aria-label="Будущие возможности">
-        <span>Незабаром у Runory</span><i></i><span>Історія тренувань</span><i></i><span>Garmin Connect</span><i></i><span>AI-аналіз тренера</span>
-      </section>
-      </div>
 
-    </main>
-    <script src="src/services/fitParser.js"></script>
-    <script src="src/main.js"></script>
-  </body>
+      <section
+        class="future-strip"
+        aria-label="Майбутні можливості"
+      >
+
+        <span>
+          Незабаром у Runory
+        </span>
+
+        <i></i>
+
+        <span>
+          Історія тренувань
+        </span>
+
+        <i></i>
+
+        <span>
+          Garmin Connect
+        </span>
+
+        <i></i>
+
+        <span>
+          AI-аналіз тренера
+        </span>
+
+      </section>
+
+    </div>
+
+  </main>
+
+
+  <script src="src/services/fitParser.js"></script>
+
+  <script src="src/main.js"></script>
+
+</body>
+
 </html>
