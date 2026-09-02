@@ -125,7 +125,28 @@ function formatMetric(value) {
   const separatorIndex = String(value).search(/[.:]/);
   return separatorIndex === -1 ? value : `${String(value).slice(0, separatorIndex)}<span>${String(value).slice(separatorIndex)}</span>`;
 }
+function renderSplits(splits = []) {
+  if (!splitsBody) return;
 
+  if (!splits.length) {
+    splitsBody.innerHTML = `
+      <tr>
+        <td colspan="5">Спліти не знайдені</td>
+      </tr>
+    `;
+    return;
+  }
+
+  splitsBody.innerHTML = splits.map((split) => `
+    <tr>
+      <td><strong>${split.km}</strong></td>
+      <td>${split.pace ?? '—'}</td>
+      <td>${split.heartRate ?? '—'}</td>
+      <td>${split.cadence ?? '—'}</td>
+      <td>${split.ascent ?? 0} м</td>
+    </tr>
+  `).join('');
+}
 function renderSummary(summary) {
   distanceValue.innerHTML = formatMetric(summary.distance);
   durationValue.innerHTML = formatMetric(summary.duration);
