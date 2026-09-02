@@ -107,17 +107,24 @@ function calculateSummary({ sessions, records }) {
     })
     .filter((value) => Number.isFinite(value));
 
-  // Рахуємо реальний позитивний набір по треку.
-  // Маленькі коливання GPS до 1 м ігноруємо.
-  let ascent = 0;
+  // Набір висоти.
+// Спочатку беремо офіційний total_ascent із Session Garmin.
+// Якщо його немає — рахуємо набір по GPS-точках.
+let ascent = null;
 
-  for (let i = 1; i < altitudes.length; i++) {
-    const difference = altitudes[i] - altitudes[i - 1];
+if (session[22] != null && Number.isFinite(Number(session[22]))) {
+    ascent = Number(session[22]);
+} else if (altitudes.length > 1) {
+    ascent = 0;
 
-    if (difference > 1) {
-      ascent += difference;
+    for (let i = 1; i < altitudes.length; i++) {
+        const difference = altitudes[i] - altitudes[i - 1];
+
+        if (difference > 2) {
+            ascent += difference;
+        }
     }
-  }
+}
 
   // Середній пульс із Session
   const heartRate =
