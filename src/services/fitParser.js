@@ -221,7 +221,7 @@ const cadence = cadenceValues.length
       cadenceValues.length
     )
   : null;
-// Кілометрові спліти для детального AI-аналізу
+// Кілометрові спліти для детального аналізу
 const splits = [];
 
 if (records.length > 0) {
@@ -229,16 +229,20 @@ if (records.length > 0) {
     let kmRecords = [];
 
     for (const record of records) {
-        const distance = Number.isFinite(record[5])
+        const distanceMeters = Number.isFinite(record[5])
             ? record[5] / 100
             : null;
 
-        if (distance == null) continue;
+        if (distanceMeters == null) continue;
 
-        const km = Math.floor(distance / 1000) + 1;
+        const km = Math.floor(distanceMeters / 1000) + 1;
 
-        if (km !== currentKm && kmRecords.length > 0) {
-            splits.push(createSplit(currentKm, kmRecords));
+        if (km !== currentKm) {
+            if (kmRecords.length > 0) {
+                const split = createSplit(currentKm, kmRecords);
+                if (split) splits.push(split);
+            }
+
             kmRecords = [];
             currentKm = km;
         }
@@ -247,7 +251,8 @@ if (records.length > 0) {
     }
 
     if (kmRecords.length > 0) {
-        splits.push(createSplit(currentKm, kmRecords));
+        const split = createSplit(currentKm, kmRecords);
+        if (split) splits.push(split);
     }
 }
   const timestamp =
