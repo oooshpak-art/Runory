@@ -71,7 +71,7 @@ ${JSON.stringify(workout, null, 2)}
 
         return new Response(
           JSON.stringify({
-            analysis: data.output_text || 'Не вдалося отримати аналіз'
+            analysis: data.output?.[0]?.content?.[0]?.text || 'Не вдалося отримати аналіз'
           }),
           {
             headers: { 'Content-Type': 'application/json' }
