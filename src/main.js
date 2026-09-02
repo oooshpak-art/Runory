@@ -130,10 +130,55 @@ function renderSummary(summary) {
   durationValue.innerHTML = formatMetric(summary.duration);
   paceValue.innerHTML = formatMetric(summary.pace);
   heartRateValue.textContent = summary.heartRate ?? '—';
-  const date = summary.date?.toLocaleDateString('uk-UA', { day: 'numeric', month: 'long', year: 'numeric' }) ?? 'Завантажене тренування';
+
+  const date = summary.date?.toLocaleDateString('uk-UA', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  }) ?? 'Завантажене тренування';
+
   runLabel.textContent = `Біг · ${date}`;
-  const details = [summary.cadence && `каденс ${summary.cadence} кроків/хв`, summary.ascent && `набір ${summary.ascent} м`].filter(Boolean).join(' · ');
-  insightText.textContent = details ? `Реальні дані з Garmin: ${details}. Детальний аналіз темпу та сплітів — наступний крок.` : 'Реальні дані з Garmin завантажено. Детальний аналіз темпу та сплітів — наступний крок.';
+
+  const details = [
+    summary.cadence && `каденс ${summary.cadence} кроків/хв`,
+    summary.ascent && `набір ${summary.ascent} м`
+  ].filter(Boolean).join(' · ');
+
+  insightText.textContent = details
+    ? `Реальні дані з Garmin: ${details}. Детальний аналіз темпу та сплітів доступний нижче.`
+    : 'Реальні дані з Garmin завантажено. Детальний аналіз темпу та сплітів доступний нижче.';
+
+  renderSplits(summary.splits || []);
+}
+function renderSplits(splits) {
+  if (!splitsSection || !splitsBody) return;
+
+  splitsBody.innerHTML = '';
+
+  if (!splits.length) {
+    splitsSection.hidden = true;
+    return;
+  }
+
+  splitsSection.hidden = false;
+
+  if (splitsCount) {
+    splitsCount.textContent = `${splits.length} сплітів`;
+  }
+
+  splits.forEach((split) => {
+    const row = document.createElement('tr');
+
+    row.innerHTML = `
+      <td class="split-km">${split.km}</td>
+      <td class="split-pace">${split.pace || '—'}</td>
+      <td>${split.heartRate ?? '—'}</td>
+      <td>${split.cadence ?? '—'}</td>
+      <td>${split.ascent != null ? `${split.ascent} м` : '—'}</td>
+    `;
+
+    splitsBody.appendChild(row);
+  });
 }
 
 async function selectFile(file) {
