@@ -83,11 +83,6 @@ function createSplit(km, records) {
             ? Math.max(1, lastTime - firstTime)
             : null;
 
-    const paceSeconds =
-        duration != null
-            ? duration / 1000
-            : null;
-
     const heartRates = records
         .map(record => record[3])
         .filter(value => Number.isFinite(value));
@@ -116,8 +111,9 @@ function createSplit(km, records) {
 
     return {
         km,
-        pace: paceSeconds != null
-            ? secondsToPace(paceSeconds)
+
+        pace: duration != null
+            ? secondsToPace(duration)
             : null,
 
         heartRate: heartRates.length
