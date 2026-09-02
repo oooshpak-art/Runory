@@ -13,6 +13,7 @@ const paceValue = document.querySelector('.metric-card:nth-child(3) strong');
 const heartRateValue = document.querySelector('.metric-card:nth-child(4) strong');
 const runLabel = document.querySelector('.run-label');
 const insightText = document.querySelector('.insight-text');
+const splitsBody = document.querySelector('#splitsBody');
 const navTabs = document.querySelectorAll('.nav-tab');
 const views = document.querySelectorAll('[data-view-panel]');
 const calcTabs = document.querySelectorAll('.calc-tab');
