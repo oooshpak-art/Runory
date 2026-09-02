@@ -133,10 +133,19 @@ if (session[22] != null && Number.isFinite(Number(session[22]))) {
       : null;
 
   // Середній каденс
-  const cadence =
-    session[18] != null
-      ? Math.round(session[18] * 2)
-      : null;
+const cadenceValues = records
+    .map(record => record[4])
+    .filter(value => Number.isFinite(value) && value > 0 && value < 255);
+
+const cadence =
+    cadenceValues.length > 0
+        ? Math.round(
+            cadenceValues.reduce((sum, value) => sum + value, 0) /
+            cadenceValues.length
+        )
+        : session[18] != null
+            ? Math.round(session[18])
+            : null;
 
   const timestamp =
     session[2] ?? records[0]?.[253];
