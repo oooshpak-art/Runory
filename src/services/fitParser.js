@@ -21,49 +21,213 @@ function readField(view, offset, field, littleEndian) {
 
 function decodeFit(buffer) {
   const view = new DataView(buffer);
-  const headerSize = view.getUint8(0);
-  const magic = [8, 9, 10, 11].map((i) => view.getUint8(i)).join('');
-  if (headerSize < 12 || magic !== '46707384') throw new Error('Це не схоже на коректний FIT-файл Garmin');
 
-  const dataEnd = Math.min(headerSize + view.getUint32(4, true), buffer.byteLength);
+  if (buffer.byteLength < 12) {
+    throw new Error('FIT-файл занадто малий');
+  }
+
+  const headerSize = view.getUint8(0);
+
+  const magic = [8, 9, 10, 11]
+    .map((i) => view.getUint8(i))
+    .join('');
+
+  if (headerSize < 12 || headerSize > buffer.byteLength || magic !== '46707384') {
+    throw new Error('Це не схоже на коректний FIT-файл Garmin');
+  }
+
+  const dataSize = view.getUint32(4, true);
+  const dataEnd = Math.min(headerSize + dataSize, buffer.byteLength);
+
   let offset = headerSize;
   let lastTimestamp = null;
+
   const definitions = new Map();
   const sessions = [];
   const records = [];
 
   while (offset < dataEnd) {
+    const messageStart = offset;
+
+    if (offset + 1 > dataEnd) {
+      throw new Error('Пошкоджена структура FIT-файлу');
+    }
+
     const header = view.getUint8(offset++);
+
     const compressed = (header & 0x80) !== 0;
-    const definitionHeader = !compressed && (header & 0x40) !== 0;
-    const localMessage = compressed ? (header >> 5) & 0x03 : header & 0x0f;
+    const definitionHeader =
+      !compressed && (header & 0x40) !== 0;
+
+    const localMessage = compressed
+      ? (header >> 5) & 0x03
+      : header & 0x0f;
+
+    // -----------------------------
+    // Definition message
+    // -----------------------------
     if (definitionHeader) {
+      if (offset + 5 > dataEnd) {
+        throw new Error('Неповна структура FIT-файлу');
+      }
+
+      // Reserved byte
       offset += 1;
-      const littleEndian = view.getUint8(offset++) === 0;
-      const globalMessage = view.getUint16(offset, littleEndian); offset += 2;
+
+      const architecture = view.getUint8(offset++);
+
+      const littleEndian = architecture === 0;
+
+      const globalMessage = view.getUint16(
+        offset,
+        littleEndian
+      );
+
+      offset += 2;
+
       const fieldCount = view.getUint8(offset++);
+
       const fields = [];
-      for (let i = 0; i < fieldCount; i++) fields.push({ number: view.getUint8(offset++), size: view.getUint8(offset++), baseType: view.getUint8(offset++) });
-      if (header & 0x20) offset += 1 + view.getUint8(offset) * 3;
-      definitions.set(localMessage, { globalMessage, fields, littleEndian });
+
+      for (let i = 0; i < fieldCount; i++) {
+        if (offset + 3 > dataEnd) {
+          throw new Error('Пошкоджене визначення полів FIT');
+        }
+
+        const number = view.getUint8(offset++);
+        const size = view.getUint8(offset++);
+        const baseType = view.getUint8(offset++);
+
+        fields.push({
+          number,
+          size,
+          baseType
+        });
+      }
+
+      // Developer fields
+      let developerFieldsSize = 0;
+
+      if (header & 0x20) {
+        if (offset + 1 > dataEnd) {
+          throw new Error('Пошкоджені developer fields FIT');
+        }
+
+        const developerFieldCount = view.getUint8(offset++);
+
+        for (let i = 0; i < developerFieldCount; i++) {
+          if (offset + 3 > dataEnd) {
+            throw new Error('Пошкоджені developer fields FIT');
+          }
+
+          // field number
+          offset += 1;
+
+          // field size
+          const fieldSize = view.getUint8(offset++);
+
+          // developer data index
+          offset += 1;
+
+          developerFieldsSize += fieldSize;
+        }
+      }
+
+      definitions.set(localMessage, {
+        globalMessage,
+        fields,
+        littleEndian,
+        developerFieldsSize
+      });
+
       continue;
     }
+
+    // -----------------------------
+    // Data message
+    // -----------------------------
     const definition = definitions.get(localMessage);
-    if (!definition) throw new Error('Не вдалося прочитати структуру FIT-файлу');
+
+    if (!definition) {
+      throw new Error(
+        'Не вдалося прочитати структуру FIT-файлу'
+      );
+    }
+
     const message = {};
+
+    // Compressed timestamp
     if (compressed && lastTimestamp !== null) {
       const timeOffset = header & 0x1f;
-      message[253] = (lastTimestamp & ~0x1f) + timeOffset + (timeOffset < (lastTimestamp & 0x1f) ? 0x20 : 0);
+
+      message[253] =
+        (lastTimestamp & ~0x1f) +
+        timeOffset +
+        (
+          timeOffset < (lastTimestamp & 0x1f)
+            ? 0x20
+            : 0
+        );
     }
+
+    // Read normal fields
     for (const field of definition.fields) {
-      message[field.number] = readField(view, offset, field, definition.littleEndian);
+      if (offset + field.size > dataEnd) {
+        throw new Error(
+          'FIT-файл пошкоджений або має неповний запис'
+        );
+      }
+
+      message[field.number] = readField(
+        view,
+        offset,
+        field,
+        definition.littleEndian
+      );
+
       offset += field.size;
     }
-    if (message[253] != null) lastTimestamp = message[253];
-    if (definition.globalMessage === 18) sessions.push(message);
-    if (definition.globalMessage === 20) records.push(message);
+
+    // Skip developer fields.
+    // We don't need their values yet,
+    // but we MUST move the cursor past them.
+    if (definition.developerFieldsSize > 0) {
+      if (
+        offset + definition.developerFieldsSize >
+        dataEnd
+      ) {
+        throw new Error(
+          'FIT-файл має неповні developer fields'
+        );
+      }
+
+      offset += definition.developerFieldsSize;
+    }
+
+    if (message[253] != null) {
+      lastTimestamp = message[253];
+    }
+
+    if (definition.globalMessage === 18) {
+      sessions.push(message);
+    }
+
+    if (definition.globalMessage === 20) {
+      records.push(message);
+    }
+
+    // Safety check: every message MUST move the cursor.
+    if (offset <= messageStart) {
+      throw new Error(
+        'Не вдалося продовжити читання FIT-файлу'
+      );
+    }
   }
-  return { sessions, records };
+
+  return {
+    sessions,
+    records
+  };
 }
 
 function secondsToTime(seconds) {
