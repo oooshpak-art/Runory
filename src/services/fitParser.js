@@ -395,56 +395,33 @@ const cadence = cadenceValues.length
 const splits = [];
 
 if (records.length > 0) {
-    let currentKm = 1;
-    let kmRecords = [];
+  let currentKm = 1;
+  let kmRecords = [];
 
-    for (const record of records) {
-        const distanceMeters = Number.isFinite(record[5])
-            ? record[5] / 100
-            : null;
+  for (const record of records) {
+    const distance = Number.isFinite(record[5])
+      ? record[5] / 100
+      : null;
 
-        if (distanceMeters == null) continue;
+    if (distance == null) continue;
 
-        const km = Math.floor(distanceMeters / 1000) + 1;
+    const km = Math.floor(distance / 1000) + 1;
 
-        if (km !== currentKm) {
-            if (kmRecords.length > 0) {
-                const split = createSplit(currentKm, kmRecords);
-                if (split) splits.push(split);
-            }
+    if (km !== currentKm) {
+      if (kmRecords.length > 0) {
+        splits.push(createSplit(currentKm, kmRecords));
+      }
 
-            kmRecords = [];
-            currentKm = km;
-        }
-
-        kmRecords.push(record);
+      kmRecords = [];
+      currentKm = km;
     }
 
-    if (kmRecords.length > 0) {
-        const split = createSplit(currentKm, kmRecords);
-        if (split) splits.push(split);
-    }
-}
-  const timestamp =
-    session[2] ?? records[0]?.[253];
+    kmRecords.push(record);
+  }
 
-  return {
-    distance: (distanceMeters / 1000).toFixed(2),
-    duration: secondsToTime(duration),
-    pace: secondsToPace(
-      speed ? 1000 / speed : 0
-    ),
-
-    heartRate,
-    cadence,
-
-    ascent: Math.round(ascent),
-splits,
-
-    date: timestamp
-      ? new Date(FIT_EPOCH_MS + timestamp * 1000)
-      : null
-  };
+  if (kmRecords.length > 0) {
+    splits.push(createSplit(currentKm, kmRecords));
+  }
 }
 
 /** Повертає ключові показники бігового тренування з локального FIT-файлу. */
