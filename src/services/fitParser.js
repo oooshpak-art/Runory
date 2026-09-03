@@ -439,6 +439,9 @@ if (records.length > 0) {
 
     heartRate,
     cadence,
+    calories: session[11] != null && Number.isFinite(Number(session[11]))
+      ? Math.round(Number(session[11]))
+      : null,
     structure: analyzeWorkoutStructure({ laps, records }),
 
     ascent: Math.round(ascent),
