@@ -80,7 +80,7 @@ function secondsToPace(seconds) {
   return `${minutes}:${secs}`;
 }
 
-function createSplit(km, records, durationOverride = null) {
+function createSplit(km, records, durationOverride = null, ascentOverride = null) {
     if (!records.length) return null;
 
     const first = records[0];
@@ -151,7 +151,7 @@ function createSplit(km, records, durationOverride = null) {
             )
             : null,
 
-        ascent: Math.round(ascent)
+        ascent: Math.round(ascentOverride != null ? ascentOverride : ascent)
     };
 }
 function buildLapBasedSplitDurations(laps) {
@@ -194,6 +194,43 @@ function buildLapBasedSplitDurations(laps) {
   }
 
   return splitDurations;
+}
+
+function buildLapBasedSplitAscents(laps) {
+  const validLaps = (laps || [])
+    .map((lap) => ({
+      distance: Number.isFinite(lap[9]) ? lap[9] / 100 : null,
+      ascent: Number.isFinite(lap[21]) ? lap[21] : 0,
+    }))
+    .filter((lap) => lap.distance > 0);
+
+  if (!validLaps.length) return null;
+
+  const splitAscents = new Map();
+  let lapStartDistance = 0;
+
+  for (const lap of validLaps) {
+    const lapEndDistance = lapStartDistance + lap.distance;
+
+    for (
+      let km = Math.floor(lapStartDistance / 1000) + 1;
+      km <= Math.ceil(lapEndDistance / 1000);
+      km++
+    ) {
+      const splitStart = Math.max(lapStartDistance, (km - 1) * 1000);
+      const splitEnd = Math.min(lapEndDistance, km * 1000);
+      const overlap = splitEnd - splitStart;
+
+      if (overlap <= 0) continue;
+
+      const contribution = lap.ascent * (overlap / lap.distance);
+      splitAscents.set(km, (splitAscents.get(km) || 0) + contribution);
+    }
+
+    lapStartDistance = lapEndDistance;
+  }
+
+  return splitAscents;
 }
 
 function analyzeWorkoutStructure({ laps = [], records = [] }) {
@@ -416,6 +453,7 @@ const splits = [];
 
 if (records.length > 0) {
     const lapSplitDurations = buildLapBasedSplitDurations(laps);
+    const lapSplitAscents = buildLapBasedSplitAscents(laps);
     let currentKm = 1;
     let kmRecords = [];
 
@@ -431,7 +469,7 @@ if (records.length > 0) {
         if (km !== currentKm) {
             if (kmRecords.length > 0) {
                 const override = lapSplitDurations?.get(currentKm) ?? null;
-                const split = createSplit(currentKm, kmRecords, override);
+                const split = createSplit(currentKm, kmRecords, override, lapSplitAscents?.get(currentKm) ?? null);
                 if (split) splits.push(split);
             }
 
@@ -448,7 +486,7 @@ if (records.length > 0) {
             : 0;
 
         const override = lapSplitDurations?.get(currentKm) ?? null;
-        const split = createSplit(currentKm, kmRecords, override);
+        const split = createSplit(currentKm, kmRecords, override, lapSplitAscents?.get(currentKm) ?? null);
 
         // Отбрасываем хвост меньше 100 м после последнего полного километра.
         if (
