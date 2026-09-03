@@ -216,17 +216,6 @@
       color: #8a3434 !important;
     }
 
-
-    .structure-card { margin-top:20px; background:var(--white); border:1px solid var(--line); border-radius:20px; padding:32px; box-shadow:0 12px 35px rgba(31,40,31,.035); }
-    .structure-heading { margin-bottom:22px; } .structure-heading h3 { margin:0; font-size:25px; letter-spacing:-1px; }
-    .structure-body { display:grid; gap:12px; } .structure-block { border:1px solid #edf0ed; border-radius:14px; padding:16px; }
-    .structure-block-heading p { margin:0 0 4px; font-weight:800; } .structure-block-heading small { color:#68746d; }
-    .structure-rep { display:grid; grid-template-columns:32px 1fr minmax(190px,.7fr); gap:14px; align-items:center; padding:12px 0; border-top:1px solid #edf0ed; }
-    .structure-rep:first-of-type { margin-top:14px; } .structure-rep-number { width:28px; height:28px; border-radius:50%; display:grid; place-items:center; background:#f1f4f0; font:700 12px "DM Mono",monospace; }
-    .structure-rep strong { display:block; font-size:15px; } .structure-rep span { display:block; margin-top:3px; color:#68746d; font-size:12px; }
-    .structure-recovery { padding-left:16px; border-left:2px solid #edf0ed; }
-    @media (max-width:760px) { .structure-card { padding:24px 18px; border-radius:16px; } .structure-rep { grid-template-columns:28px 1fr; } .structure-recovery { grid-column:2; padding-left:0; border-left:0; } }
-
     @media (max-width: 760px) {
       .splits-card,
       .ai-analysis {
@@ -421,6 +410,23 @@
           </article>
         </div>
 
+        <section class="visual-report" aria-label="Візуальний звіт тренування">
+          <div class="visual-report-heading">
+            <div>
+              <p class="eyebrow">ВІЗУАЛЬНИЙ ЗВІТ</p>
+              <h3>Як пройшло тренування</h3>
+            </div>
+            <span class="visual-report-note">дані Garmin</span>
+          </div>
+
+          <div class="visual-grid">
+            <article class="chart-card chart-card-wide" id="paceChart"></article>
+            <article class="chart-card" id="elevationChart"></article>
+          </div>
+
+          <div class="visual-stats" id="visualStats"></div>
+        </section>
+
         <div class="structure-card" id="structureCard" hidden>
           <div class="structure-heading">
             <div><p class="eyebrow">СТРУКТУРА ТРЕНУВАННЯ</p><h3>Розминка · робота · відпочинок · заминка</h3></div>
@@ -444,7 +450,7 @@
                   <th>Темп</th>
                   <th>Пульс</th>
                   <th>Каденс</th>
-                  <th>Набір</th>
+                  <th>Набір висоти</th>
                 </tr>
               </thead>
 
