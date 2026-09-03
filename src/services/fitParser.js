@@ -232,6 +232,49 @@ function buildLapBasedSplitAscents(laps) {
   return splitAscents;
 }
 
+function buildLapBasedSplitElevations(laps) {
+  const validLaps = (laps || [])
+    .map(lap => ({
+      distance: Number.isFinite(lap[9]) ? lap[9] / 100 : null,
+      ascent: Number.isFinite(lap[21]) ? lap[21] : 0,
+      descent: Number.isFinite(lap[22]) ? lap[22] : 0,
+    }))
+    .filter(lap => lap.distance > 0);
+
+  if (!validLaps.length) return null;
+
+  const splitElevations = new Map();
+  let lapStartDistance = 0;
+
+  for (const lap of validLaps) {
+    const lapEndDistance = lapStartDistance + lap.distance;
+
+    for (let km = Math.floor(lapStartDistance / 1000) + 1; km <= Math.ceil(lapEndDistance / 1000); km++) {
+      const splitStart = Math.max(lapStartDistance, (km - 1) * 1000);
+      const splitEnd = Math.min(lapEndDistance, km * 1000);
+      const overlap = splitEnd - splitStart;
+      if (overlap <= 0) continue;
+
+      const share = overlap / lap.distance;
+      const current = splitElevations.get(km) || { ascent: 0, descent: 0 };
+      current.ascent += lap.ascent * share;
+      current.descent += lap.descent * share;
+      splitElevations.set(km, current);
+    }
+
+    lapStartDistance = lapEndDistance;
+  }
+
+  for (const [km, value] of splitElevations) {
+    value.ascent = Math.round(value.ascent);
+    value.descent = Math.round(value.descent);
+    value.elevation = value.ascent >= value.descent ? value.ascent : -value.descent;
+    splitElevations.set(km, value);
+  }
+
+  return splitElevations;
+}
+
 function analyzeWorkoutStructure({ laps = [], records = [] }) {
   const validLaps = (laps || []).map((lap, index) => ({
     index,
@@ -240,12 +283,14 @@ function analyzeWorkoutStructure({ laps = [], records = [] }) {
     heartRate: Number.isFinite(lap[15]) ? Math.round(lap[15]) : null,
     cadence: Number.isFinite(lap[17]) ? Math.round(lap[17] * 2) : null,
     ascent: Number.isFinite(lap[21]) ? Math.round(lap[21]) : 0,
+    descent: Number.isFinite(lap[22]) ? Math.round(lap[22]) : 0,
   })).filter(lap => lap.duration > 0 && lap.distance > 0 && (lap.distance >= 50 || lap.duration >= 20));
 
   const stats = lap => ({
     duration: Math.round(lap.duration), distance: Math.round(lap.distance),
     pace: lap.distance > 1 ? secondsToPace(lap.duration / (lap.distance / 1000)) : '—',
-    heartRate: lap.heartRate, cadence: lap.cadence, ascent: lap.ascent
+    heartRate: lap.heartRate, cadence: lap.cadence, ascent: lap.ascent, descent: lap.descent,
+    elevation: lap.ascent >= lap.descent ? lap.ascent : -lap.descent
   });
 
   if (validLaps.length >= 4) {
@@ -267,7 +312,7 @@ function analyzeWorkoutStructure({ laps = [], records = [] }) {
           const distance = items.reduce((s,l) => s+l.distance,0);
           const hr = items.map(l=>l.heartRate).filter(Number.isFinite);
           const cad = items.map(l=>l.cadence).filter(Number.isFinite);
-          return { duration:Math.round(duration), distance:Math.round(distance), pace:distance>1?secondsToPace(duration/(distance/1000)):'—', heartRate:hr.length?Math.round(hr.reduce((a,b)=>a+b,0)/hr.length):null, cadence:cad.length?Math.round(cad.reduce((a,b)=>a+b,0)/cad.length):null, ascent:items.reduce((s,l)=>s+l.ascent,0) };
+          const ascent = items.reduce((s,l)=>s+l.ascent,0); const descent = items.reduce((s,l)=>s+l.descent,0); const elevation = ascent >= descent ? ascent : -descent; return { duration:Math.round(duration), distance:Math.round(distance), pace:distance>1?secondsToPace(duration/(distance/1000)):'—', heartRate:hr.length?Math.round(hr.reduce((a,b)=>a+b,0)/hr.length):null, cadence:cad.length?Math.round(cad.reduce((a,b)=>a+b,0)/cad.length):null, ascent, descent, elevation };
         };
         const result=[];
         const warmup=validLaps.slice(0,firstWork), cooldown=validLaps.slice(lastWork+1);
@@ -287,8 +332,8 @@ function analyzeWorkoutStructure({ laps = [], records = [] }) {
   }
 
   if(validLaps.length){
-    const total=validLaps.reduce((a,l)=>{a.duration+=l.duration;a.distance+=l.distance;a.ascent+=l.ascent;if(Number.isFinite(l.heartRate))a.hr.push(l.heartRate);if(Number.isFinite(l.cadence))a.cad.push(l.cadence);return a},{duration:0,distance:0,ascent:0,hr:[],cad:[]});
-    return [{type:'easy',label:'Непрерывный бег',duration:Math.round(total.duration),distance:Math.round(total.distance),pace:total.distance>1?secondsToPace(total.duration/(total.distance/1000)):'—',heartRate:total.hr.length?Math.round(total.hr.reduce((a,b)=>a+b,0)/total.hr.length):null,cadence:total.cad.length?Math.round(total.cad.reduce((a,b)=>a+b,0)/total.cad.length):null,ascent:total.ascent,repetitions:1}];
+    const total=validLaps.reduce((a,l)=>{a.duration+=l.duration;a.distance+=l.distance;a.ascent+=l.ascent;a.descent+=l.descent;if(Number.isFinite(l.heartRate))a.hr.push(l.heartRate);if(Number.isFinite(l.cadence))a.cad.push(l.cadence);return a},{duration:0,distance:0,ascent:0,descent:0,hr:[],cad:[]});
+    return [{type:'easy',label:'Непрерывный бег',duration:Math.round(total.duration),distance:Math.round(total.distance),pace:total.distance>1?secondsToPace(total.duration/(total.distance/1000)):'—',heartRate:total.hr.length?Math.round(total.hr.reduce((a,b)=>a+b,0)/total.hr.length):null,cadence:total.cad.length?Math.round(total.cad.reduce((a,b)=>a+b,0)/total.cad.length):null,ascent:total.ascent,descent:total.descent,elevation:total.ascent >= total.descent ? total.ascent : -total.descent,repetitions:1}];
   }
   if(records.length<2) return [];
   return [{type:'easy',label:'Тренировка',duration:0,distance:0,pace:'—',heartRate:null,cadence:null,ascent:0,repetitions:1}];
@@ -378,6 +423,7 @@ const splits = [];
 if (records.length > 0) {
     const lapSplitDurations = buildLapBasedSplitDurations(laps);
     const lapSplitAscents = buildLapBasedSplitAscents(laps);
+    const lapSplitElevations = buildLapBasedSplitElevations(laps);
     let currentKm = 1;
     let kmRecords = [];
 
@@ -395,6 +441,7 @@ if (records.length > 0) {
                 const override = lapSplitDurations?.get(currentKm) ?? null;
                 const split = createSplit(currentKm, kmRecords, override);
                 if (split && lapSplitAscents?.has(currentKm)) split.ascent = Math.round(lapSplitAscents.get(currentKm));
+                if (split && lapSplitElevations?.has(currentKm)) { const elevation = lapSplitElevations.get(currentKm); split.ascent = elevation.elevation; split.descent = elevation.descent; split.elevation = elevation.elevation; }
                 if (split) splits.push(split);
             }
 
@@ -413,6 +460,7 @@ if (records.length > 0) {
         const override = lapSplitDurations?.get(currentKm) ?? null;
         const split = createSplit(currentKm, kmRecords, override);
                 if (split && lapSplitAscents?.has(currentKm)) split.ascent = Math.round(lapSplitAscents.get(currentKm));
+                if (split && lapSplitElevations?.has(currentKm)) { const elevation = lapSplitElevations.get(currentKm); split.ascent = elevation.elevation; split.descent = elevation.descent; split.elevation = elevation.elevation; }
 
         // Отбрасываем хвост меньше 100 м после последнего полного километра.
         if (
