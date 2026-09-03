@@ -92,9 +92,9 @@ function createSplit(km, records, durationOverride = null) {
     const duration =
         durationOverride != null
             ? Math.max(1, durationOverride)
-            : (firstTime != null && lastTime != null
+            : firstTime != null && lastTime != null
                 ? Math.max(1, lastTime - firstTime)
-                : null);
+                : null;
 
     const heartRates = records
         .map(record => record[3])
@@ -113,10 +113,14 @@ function createSplit(km, records, durationOverride = null) {
         })
         .filter(value => Number.isFinite(value) && value > 0 && value < 255);
 
+    // Набор высоты конкретного сплита.
+    // Garmin может передавать обычную altitude (field 2)
+    // или enhanced_altitude (field 78).
     const altitudes = records
         .map(record => {
-            if (!Number.isFinite(record[2])) return null;
-            return record[2] / 5 - 500;
+            if (Number.isFinite(record[78])) return record[78] / 5 - 500;
+            if (Number.isFinite(record[2])) return record[2] / 5 - 500;
+            return null;
         })
         .filter(value => Number.isFinite(value));
 
@@ -125,17 +129,13 @@ function createSplit(km, records, durationOverride = null) {
     for (let i = 1; i < altitudes.length; i++) {
         const difference = altitudes[i] - altitudes[i - 1];
 
-        if (difference > 2) {
-            ascent += difference;
-        }
+        // Игнорируем небольшие колебания высоты.
+        if (difference > 2) ascent += difference;
     }
 
     return {
         km,
-
-        pace: duration != null
-            ? secondsToPace(duration)
-            : null,
+        pace: duration != null ? secondsToPace(duration) : null,
 
         heartRate: heartRates.length
             ? Math.round(
@@ -369,34 +369,23 @@ function calculateSummary({ sessions, laps, records }) {
     .filter((value) => Number.isFinite(value));
 
   // Набір висоти.
-  // Спочатку беремо офіційний total_ascent із Session Garmin (field 22).
-  // Якщо його немає — рахуємо по altitude / enhanced_altitude у Record.
-  let ascent = null;
+// Спочатку беремо офіційний total_ascent із Session Garmin.
+// Якщо його немає — рахуємо набір по GPS-точках.
+let ascent = null;
 
-  if (session[22] != null && Number.isFinite(Number(session[22]))) {
+if (session[22] != null && Number.isFinite(Number(session[22]))) {
     ascent = Number(session[22]);
-  } else {
-    const recordAltitudes = records
-      .map((record) => {
-        if (Number.isFinite(record[78])) return record[78] / 5 - 500;
-        if (Number.isFinite(record[2])) return record[2] / 5 - 500;
-        return null;
-      })
-      .filter((value) => Number.isFinite(value));
+} else if (altitudes.length > 1) {
+    ascent = 0;
 
-    if (recordAltitudes.length > 1) {
-      ascent = 0;
+    for (let i = 1; i < altitudes.length; i++) {
+        const difference = altitudes[i] - altitudes[i - 1];
 
-      for (let i = 1; i < recordAltitudes.length; i++) {
-        const difference = recordAltitudes[i] - recordAltitudes[i - 1];
-        if (difference > 2) ascent += difference;
-      }
-    } else {
-      ascent = 0;
+        if (difference > 2) {
+            ascent += difference;
+        }
     }
-  }
-
-  ascent = Math.round(Number(ascent) || 0);
+}
 
   // Середній пульс із Session
   const heartRate =
@@ -504,3 +493,4 @@ async function parseFitFile(file) {
 }
 
 window.parseFitFile = parseFitFile;
+
