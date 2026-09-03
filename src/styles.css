@@ -345,3 +345,15 @@
     min-width: 520px;
   }
 }
+
+.structure-card { margin-top:14px; padding:24px; border:1px solid var(--line); border-radius:12px; background:#fff; }
+.structure-card h3 { margin:0; font-size:22px; letter-spacing:-1px; }
+.structure-list { margin-top:18px; display:grid; gap:7px; }
+.structure-row { display:grid; grid-template-columns:minmax(150px, 1fr) 2fr; gap:14px; align-items:center; padding:12px 14px; border:1px solid var(--line); border-radius:9px; }
+.structure-label { font-weight:800; font-size:12px; }
+.structure-meta { color:#637069; font:500 10px 'DM Mono',monospace; text-align:right; }
+.structure-work { background:#f3f9e7; border-color:#dcebc1; }
+.structure-recovery { background:#f7f8f7; }
+.structure-warmup,.structure-cooldown { background:#fbfcfa; }
+@media (max-width:680px) { .structure-card { padding:18px; } .structure-row { grid-template-columns:1fr; gap:6px; } .structure-meta { text-align:left; } }
+
