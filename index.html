@@ -386,149 +386,105 @@
         hidden
         aria-labelledby="results-title"
       >
-        <div class="results-heading">
-          <div>
-            <p class="eyebrow">ТРЕНУВАННЯ ГОТОВЕ</p>
-            <h2 id="results-title">Твій забіг у цифрах</h2>
-          </div>
+        <div class="results-layout">
+          <aside class="results-sidebar" aria-label="Підсумок тренування">
+            <section class="summary-panel">
+              <h3>ПІДСУМОК ТРЕНУВАННЯ</h3>
 
-          <p class="run-label">Біг · сьогодні</p>
-        </div>
-
-        <div class="metric-grid">
-          <article class="metric-card featured">
-            <p>Дистанція</p>
-            <strong>10<span>.02</span></strong>
-            <em>кілометрів</em>
-          </article>
-
-          <article class="metric-card">
-            <p>Час</p>
-            <strong>52<span>:18</span></strong>
-            <em>год : хв : сек</em>
-          </article>
-
-          <article class="metric-card">
-            <p>Середній темп</p>
-            <strong>5<span>:13</span></strong>
-            <em>хвилин на км</em>
-          </article>
-
-          <article class="metric-card">
-            <p>Середній пульс</p>
-            <strong>154</strong>
-            <em>ударів за хвилину</em>
-          </article>
-        </div>
-
-        <section class="visual-dashboard" id="visualDashboard" hidden aria-label="Візуальний аналіз тренування">
-          <div class="chart-card chart-card-wide">
-            <div class="chart-card-head">
-              <div>
-                <p class="eyebrow">ДИНАМІКА ТЕМПУ</p>
-                <h3>Як змінювався темп</h3>
-              </div>
-              <span class="chart-head-value" id="fastestSplitValue">—</span>
-            </div>
-            <div class="chart-wrap" id="paceChart"></div>
-          </div>
-
-          <div class="chart-row">
-            <div class="chart-card">
-              <div class="chart-card-head">
-                <div>
-                  <p class="eyebrow">РЕЛЬЄФ</p>
-                  <h3>Набір висоти</h3>
+              <div class="summary-metrics">
+                <div class="summary-metric summary-metric-distance">
+                  <span class="summary-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 8h9.5M5 12h14M5 16h9.5"/><circle cx="18" cy="8" r="2"/><circle cx="6" cy="12" r="2"/><circle cx="18" cy="16" r="2"/></svg></span>
+                  <div><small>Дистанція</small><strong id="summaryDistance">—</strong></div>
                 </div>
-                <span class="chart-head-value" id="ascentChartValue">—</span>
+                <div class="summary-metric summary-metric-time">
+                  <span class="summary-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3 2"/></svg></span>
+                  <div><small>Час</small><strong id="summaryDuration">—</strong></div>
+                </div>
+                <div class="summary-metric summary-metric-pace">
+                  <span class="summary-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 13h4l2-8 3 14 2-9 2 5h5"/></svg></span>
+                  <div><small>Середній темп</small><strong id="summaryPace">—</strong></div>
+                </div>
+                <div class="summary-metric summary-metric-hr">
+                  <span class="summary-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20 9c0 5-8 10-8 10S4 14 4 9a4 4 0 0 1 7-2 4 4 0 0 1 9 2Z"/></svg></span>
+                  <div><small>Середній пульс</small><strong id="summaryHeartRate">—</strong></div>
+                </div>
+                <div class="summary-metric summary-metric-calories">
+                  <span class="summary-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21c4 0 6-2.5 6-5.5 0-2.5-1.5-4-3.5-6 .2 2-1 3-2.5 3.5.3-3-1.2-5.1-3-7C9 9 6 11.5 6 15.5 6 18.5 8 21 12 21Z"/></svg></span>
+                  <div><small>Калорії</small><strong id="summaryCalories">—</strong></div>
+                </div>
+                <div class="summary-metric summary-metric-ascent">
+                  <span class="summary-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m4 18 6-8 3 4 3-5 4 9H4Z"/><path d="M6 18h12"/></svg></span>
+                  <div><small>Набір висоти</small><strong id="summaryAscent">—</strong></div>
+                </div>
               </div>
-              <div class="chart-wrap chart-wrap-small" id="ascentChart"></div>
+            </section>
+
+            <section class="structure-sidebar" id="structureCard" hidden>
+              <h3>СТРУКТУРА ТРЕНУВАННЯ</h3>
+              <div id="structureBody" class="structure-timeline"></div>
+            </section>
+
+            <div class="sidebar-note">
+              <span class="sidebar-note-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 17v.1M9.2 9.5a3 3 0 1 1 5.2 2c-1.3 1.1-2.4 1.5-2.4 3"/><circle cx="12" cy="12" r="9"/></svg></span>
+              <p>Аналіз інтервалів визначено автоматично на основі даних Garmin.</p>
+            </div>
+          </aside>
+
+          <div class="results-main">
+            <div class="results-heading">
+              <div>
+                <p class="eyebrow">ТРЕНУВАННЯ ГОТОВЕ</p>
+                <h2 id="results-title">Твій забіг у цифрах</h2>
+              </div>
+              <p class="run-label">Біг · сьогодні</p>
             </div>
 
-            <div class="chart-card highlight-card">
-              <p class="eyebrow">КЛЮЧОВИЙ ПОКАЗНИК</p>
-              <h3 id="bestSplitTitle">Найшвидший кілометр</h3>
-              <div class="highlight-number" id="bestSplitValue">—</div>
-              <p id="bestSplitMeta">—</p>
-              <div class="highlight-track"><span id="bestSplitTrack"></span></div>
-            </div>
-          </div>
-        </section>
+            <div class="splits-card">
+              <div class="splits-heading">
+                <div>
+                  <p class="eyebrow">КІЛОМЕТРОВІ СПЛІТИ</p>
+                  <h3>Як змінювався твій біг</h3>
+                </div>
+              </div>
 
-        <div class="structure-card" id="structureCard" hidden>
-          <div class="structure-heading">
-            <div><p class="eyebrow">СТРУКТУРА ТРЕНУВАННЯ</p><h3>Розминка · робота · відпочинок · заминка</h3></div>
+              <div class="splits-table-wrap">
+                <table class="splits-table">
+                  <thead>
+                    <tr>
+                      <th>Км</th>
+                      <th>Темп</th>
+                      <th>Пульс</th>
+                      <th>Каденс</th>
+                      <th>Набір</th>
+                    </tr>
+                  </thead>
+                  <tbody id="splitsBody">
+                    <tr><td colspan="5">Спліти з'являться після завантаження FIT-файлу.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="insight-card">
+              <div class="insight-icon">↗</div>
+              <div>
+                <p class="eyebrow">ПЕРШИЙ ПОГЛЯД</p>
+                <p class="insight-text">Завантаж тренування, щоб побачити реальні дані Garmin.</p>
+              </div>
+              <button class="ai-button" id="aiAnalyzeButton" type="button">
+                <span class="ai-button-icon">✦</span>
+                <span>Проаналізувати тренування</span>
+              </button>
+            </div>
+
+            <section class="ai-analysis" id="aiAnalysis" hidden aria-live="polite">
+              <div class="ai-analysis-heading">
+                <div><p class="eyebrow">AI-АНАЛІЗ ТРЕНЕРА</p><h3>Що говорить твоє тренування</h3></div>
+              </div>
+              <div id="aiAnalysisText"></div>
+            </section>
           </div>
-          <div id="structureBody" class="structure-body"></div>
         </div>
-
-        <div class="splits-card">
-          <div class="splits-heading">
-            <div>
-              <p class="eyebrow">КІЛОМЕТРОВІ СПЛІТИ</p>
-              <h3>Як змінювався твій біг</h3>
-            </div>
-          </div>
-
-          <div class="splits-table-wrap">
-            <table class="splits-table">
-              <thead>
-                <tr>
-                  <th>Км</th>
-                  <th>Темп</th>
-                  <th>Пульс</th>
-                  <th>Каденс</th>
-                  <th>Набір</th>
-                </tr>
-              </thead>
-
-              <tbody id="splitsBody">
-                <tr>
-                  <td colspan="5">Спліти з'являться після завантаження FIT-файлу.</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div class="insight-card">
-          <div class="insight-icon">↗</div>
-
-          <div>
-            <p class="eyebrow">ПЕРШИЙ ПОГЛЯД</p>
-            <p class="insight-text">
-              Завантаж тренування, щоб побачити реальні дані Garmin.
-            </p>
-          </div>
-
-          <button
-            class="ai-button"
-            id="aiAnalyzeButton"
-            type="button"
-          >
-            <span class="ai-button-icon">✦</span>
-            <span>Проаналізувати тренування</span>
-          </button>
-        </div>
-
-        <section
-          class="ai-analysis"
-          id="aiAnalysis"
-          hidden
-          aria-live="polite"
-        >
-          <div class="ai-analysis-heading">
-            <div>
-              <p class="eyebrow">AI-АНАЛІЗ ТРЕНЕРА</p>
-              <h3>Що говорить твоє тренування</h3>
-            </div>
-          </div>
-
-          <div
-            class="ai-analysis-text"
-            id="aiAnalysisText"
-          ></div>
-        </section>
       </section>
 
       <section
@@ -551,4 +507,3 @@
   <script src="src/main.js"></script>
 </body>
 </html>
-
