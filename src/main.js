@@ -8,6 +8,16 @@ const progressBar = document.querySelector("#progressBar");
 const progressValue = document.querySelector("#progressValue");
 const resetButton = document.querySelector("#resetButton");
 
+const distanceValue = document.querySelconst dropZone = document.querySelector("#dropZone");
+const input = document.querySelector("#fileInput");
+const uploadState = document.querySelector("#uploadState");
+const results = document.querySelector("#results");
+const fileName = document.querySelector("#fileName");
+const fileStatus = document.querySelector("#fileStatus");
+const progressBar = document.querySelector("#progressBar");
+const progressValue = document.querySelector("#progressValue");
+const resetButton = document.querySelector("#resetButton");
+
 const distanceValue = document.querySelector(".metric-card:nth-child(1) strong");
 const durationValue = document.querySelector(".metric-card:nth-child(2) strong");
 const paceValue = document.querySelector(".metric-card:nth-child(3) strong");
@@ -15,6 +25,8 @@ const heartRateValue = document.querySelector(".metric-card:nth-child(4) strong"
 const runLabel = document.querySelector(".run-label");
 const insightText = document.querySelector(".insight-text");
 const splitsBody = document.querySelector("#splitsBody");
+const workoutStructure = document.querySelector("#workoutStructure");
+const structureList = document.querySelector("#structureList");
 const aiAnalyzeButton = document.querySelector("#aiAnalyzeButton");
 const aiAnalysis = document.querySelector("#aiAnalysis");
 const aiAnalysisText = document.querySelector("#aiAnalysisText");
@@ -152,6 +164,52 @@ function renderSplits(splits = []) {
   }
 }
 
+function renderWorkoutStructure(structure = []) {
+  if (!workoutStructure || !structureList) return;
+
+  structureList.innerHTML = "";
+
+  if (!structure.length) {
+    workoutStructure.hidden = true;
+    return;
+  }
+
+  const hasIntervals = structure.some((segment) =>
+    segment.type === "work" || segment.type === "recovery"
+  );
+
+  if (!hasIntervals) {
+    workoutStructure.hidden = true;
+    return;
+  }
+
+  for (const segment of structure) {
+    const row = document.createElement("div");
+    row.className = `structure-row structure-${segment.type}`;
+
+    const distanceKm = Number(segment.distance || 0) / 1000;
+    const distanceLabel = distanceKm >= 1
+      ? `${distanceKm.toFixed(2).replace(/\\.00$/, "")} км`
+      : `${Math.round(segment.distance || 0)} м`;
+
+    const meta = [
+      distanceLabel,
+      segment.pace && segment.pace !== "—" ? segment.pace + "/км" : null,
+      segment.heartRate != null ? `${segment.heartRate} уд/хв` : null,
+      segment.ascent != null ? `+${Math.round(segment.ascent)} м` : null,
+    ].filter(Boolean).join(" · ");
+
+    row.innerHTML = `
+      <div class="structure-label">${segment.label}</div>
+      <div class="structure-meta">${meta}</div>
+    `;
+
+    structureList.appendChild(row);
+  }
+
+  workoutStructure.hidden = false;
+}
+
 function renderSummary(summary) {
   distanceValue.innerHTML = formatMetric(summary.distance);
   durationValue.innerHTML = formatMetric(summary.duration);
@@ -173,6 +231,7 @@ function renderSummary(summary) {
     generateWorkoutInsight(summary);
 
   renderSplits(summary.splits);
+  renderWorkoutStructure(summary.structure);
 
   if (aiAnalysis) aiAnalysis.hidden = true;
   if (aiAnalysisText) aiAnalysisText.innerHTML = "";
@@ -330,4 +389,7 @@ resetButton?.addEventListener("click", () => {
 
   if (aiAnalysis) aiAnalysis.hidden = true;
   if (splitsBody) splitsBody.innerHTML = "";
+  if (structureList) structureList.innerHTML = "";
+  if (workoutStructure) workoutStructure.hidden = true;
 });
+
