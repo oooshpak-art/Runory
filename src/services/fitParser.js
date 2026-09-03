@@ -80,7 +80,7 @@ function secondsToPace(seconds) {
   return `${minutes}:${secs}`;
 }
 
-function createSplit(km, records, durationOverride = null, ascentOverride = null) {
+function createSplit(km, records, durationOverride = null) {
     if (!records.length) return null;
 
     const first = records[0];
@@ -151,7 +151,7 @@ function createSplit(km, records, durationOverride = null, ascentOverride = null
             )
             : null,
 
-        ascent: Math.round(ascentOverride != null ? ascentOverride : ascent)
+        ascent: Math.round(ascent)
     };
 }
 function buildLapBasedSplitDurations(laps) {
@@ -198,11 +198,11 @@ function buildLapBasedSplitDurations(laps) {
 
 function buildLapBasedSplitAscents(laps) {
   const validLaps = (laps || [])
-    .map((lap) => ({
+    .map(lap => ({
       distance: Number.isFinite(lap[9]) ? lap[9] / 100 : null,
       ascent: Number.isFinite(lap[21]) ? lap[21] : 0,
     }))
-    .filter((lap) => lap.distance > 0);
+    .filter(lap => lap.distance > 0);
 
   if (!validLaps.length) return null;
 
@@ -220,11 +220,10 @@ function buildLapBasedSplitAscents(laps) {
       const splitStart = Math.max(lapStartDistance, (km - 1) * 1000);
       const splitEnd = Math.min(lapEndDistance, km * 1000);
       const overlap = splitEnd - splitStart;
-
       if (overlap <= 0) continue;
 
-      const contribution = lap.ascent * (overlap / lap.distance);
-      splitAscents.set(km, (splitAscents.get(km) || 0) + contribution);
+      const share = lap.ascent * (overlap / lap.distance);
+      splitAscents.set(km, (splitAscents.get(km) || 0) + share);
     }
 
     lapStartDistance = lapEndDistance;
@@ -234,140 +233,65 @@ function buildLapBasedSplitAscents(laps) {
 }
 
 function analyzeWorkoutStructure({ laps = [], records = [] }) {
-  const validLaps = laps
-    .map((lap) => ({
-      duration: Number.isFinite(lap[8])
-        ? lap[8] / 1000
-        : (Number.isFinite(lap[7]) ? lap[7] / 1000 : null),
-      distance: Number.isFinite(lap[9]) ? lap[9] / 100 : null,
-      heartRate: Number.isFinite(lap[15]) ? Math.round(lap[15]) : null,
-      cadence: Number.isFinite(lap[17]) ? Math.round(lap[17] * 2) : null,
-      ascent: Number.isFinite(lap[21]) ? Math.round(lap[21]) : 0,
-    }))
-    .filter(
-      (lap) =>
-        lap.duration > 0 &&
-        lap.distance > 0 &&
-        (lap.distance >= 50 || lap.duration >= 20)
-    );
+  const validLaps = (laps || []).map((lap, index) => ({
+    index,
+    duration: Number.isFinite(lap[8]) ? lap[8] / 1000 : (Number.isFinite(lap[7]) ? lap[7] / 1000 : null),
+    distance: Number.isFinite(lap[9]) ? lap[9] / 100 : null,
+    heartRate: Number.isFinite(lap[15]) ? Math.round(lap[15]) : null,
+    cadence: Number.isFinite(lap[17]) ? Math.round(lap[17] * 2) : null,
+    ascent: Number.isFinite(lap[21]) ? Math.round(lap[21]) : 0,
+  })).filter(lap => lap.duration > 0 && lap.distance > 0 && (lap.distance >= 50 || lap.duration >= 20));
 
-  if (validLaps.length >= 3) {
-    const longLaps = validLaps
-      .filter((lap) => lap.distance >= 700)
-      .map((lap) => ({
-        ...lap,
-        paceSeconds:
-          lap.duration / (lap.distance / 1000),
-      }));
+  const stats = lap => ({
+    duration: Math.round(lap.duration), distance: Math.round(lap.distance),
+    pace: lap.distance > 1 ? secondsToPace(lap.duration / (lap.distance / 1000)) : '—',
+    heartRate: lap.heartRate, cadence: lap.cadence, ascent: lap.ascent
+  });
 
-    if (longLaps.length >= 2) {
-      // Рабочие отрезки в интервальной тренировке обычно являются
-      // повторяющимися быстрыми длинными laps. Используем медиану
-      // их длительности/темпа и требуем следующий lap-восстановление.
-      const medianPace = [...longLaps]
-        .sort((a, b) => a.paceSeconds - b.paceSeconds)
-        [Math.floor(longLaps.length / 2)].paceSeconds;
-
-      const recoveryLimit = Math.max(
-        600,
-        Math.min(700, Math.max(400, medianPace * 1000 / 4.5) * 0.65)
-      );
-
-      const isRecovery = (lap) =>
-        lap.distance > 0 && lap.distance <= recoveryLimit;
-
-      const workIndices = [];
-
-      for (let i = 0; i < validLaps.length - 1; i++) {
-        const lap = validLaps[i];
-        const next = validLaps[i + 1];
-
-        if (lap.distance < 700) continue;
-
-        const pace = lap.duration / (lap.distance / 1000);
-
-        // Не считаем длинный медленный lap разминкой/заминкой.
-        // Рабочий lap должен быть существенно быстрее типичного
-        // длинного lap и завершаться восстановлением.
-        if (pace <= medianPace * 1.12 && isRecovery(next)) {
-          workIndices.push(i);
-        }
+  if (validLaps.length >= 4) {
+    const candidates = [];
+    for (let i = 0; i < validLaps.length - 1; i++) {
+      const lap = validLaps[i], next = validLaps[i + 1];
+      if (lap.distance >= 700 && next.distance >= 100 && next.distance < 700) {
+        candidates.push({ index: i, pace: lap.duration / (lap.distance / 1000) });
       }
-
+    }
+    if (candidates.length >= 2) {
+      const sorted = candidates.map(x => x.pace).sort((a,b) => a-b);
+      const median = sorted[Math.floor(sorted.length / 2)];
+      const workIndices = candidates.filter(x => x.pace <= median * 1.12).map(x => x.index);
       if (workIndices.length >= 2) {
-        const firstWork = workIndices[0];
-        const lastWork = workIndices.at(-1);
-        const result = [];
-        let workNumber = 0;
-        let recoveryNumber = 0;
-
-        for (let i = 0; i < validLaps.length; i++) {
-          const lap = validLaps[i];
-
-          const stats = {
-            duration: Math.round(lap.duration),
-            distance: Math.round(lap.distance),
-            pace:
-              lap.distance > 1
-                ? secondsToPace(lap.duration / (lap.distance / 1000))
-                : "—",
-            heartRate: lap.heartRate,
-            cadence: lap.cadence,
-            ascent: lap.ascent,
-          };
-
-          if (i < firstWork) {
-            result.push({ type: "warmup", label: "Разминка", ...stats });
-          } else if (i > lastWork) {
-            result.push({ type: "cooldown", label: "Заминка", ...stats });
-          } else if (workIndices.includes(i)) {
-            workNumber++;
-            result.push({
-              type: "work",
-              label: `Работа ${workNumber}`,
-              ...stats,
-              repetitions: workIndices.length,
-            });
-          } else {
-            recoveryNumber++;
-            result.push({
-              type: "recovery",
-              label: `Отдых ${recoveryNumber}`,
-              ...stats,
-            });
-          }
+        const firstWork = workIndices[0], lastWork = workIndices.at(-1);
+        const combine = items => {
+          const duration = items.reduce((s,l) => s+l.duration,0);
+          const distance = items.reduce((s,l) => s+l.distance,0);
+          const hr = items.map(l=>l.heartRate).filter(Number.isFinite);
+          const cad = items.map(l=>l.cadence).filter(Number.isFinite);
+          return { duration:Math.round(duration), distance:Math.round(distance), pace:distance>1?secondsToPace(duration/(distance/1000)):'—', heartRate:hr.length?Math.round(hr.reduce((a,b)=>a+b,0)/hr.length):null, cadence:cad.length?Math.round(cad.reduce((a,b)=>a+b,0)/cad.length):null, ascent:items.reduce((s,l)=>s+l.ascent,0) };
+        };
+        const result=[];
+        const warmup=validLaps.slice(0,firstWork), cooldown=validLaps.slice(lastWork+1);
+        if(warmup.length) result.push({type:'warmup',label:'Разминка',...combine(warmup)});
+        const repetitions=[];
+        for(let i=firstWork;i<=lastWork;i++){
+          if(!workIndices.includes(i)) continue;
+          const w=validLaps[i], r=validLaps[i+1];
+          repetitions.push({number:repetitions.length+1,work:stats(w),recovery:r&&r.distance<700?stats(r):null});
         }
-
+        const workDistance=repetitions[0]?.work.distance||0;
+        result.push({type:'intervals',label:`Работа ${repetitions.length} × ${Math.round(workDistance)} м`,repetitions,workCount:repetitions.length});
+        if(cooldown.length) result.push({type:'cooldown',label:'Заминка',...combine(cooldown)});
         return result;
       }
     }
   }
 
-  if (records.length < 2) return [];
-
-  const points = records
-    .map((record) => ({
-      timestamp: Number.isFinite(record[253]) ? record[253] : null,
-      distance: Number.isFinite(record[5]) ? record[5] / 100 : null,
-    }))
-    .filter((point) => point.timestamp != null && point.distance != null);
-
-  if (points.length < 2) return [];
-
-  const duration = Math.max(1, points.at(-1).timestamp - points[0].timestamp);
-  const distance = Math.max(0, points.at(-1).distance - points[0].distance);
-
-  return [{
-    type: "easy",
-    label: "Тренировка",
-    duration,
-    distance,
-    pace: distance > 0 ? secondsToPace(duration / (distance / 1000)) : "—",
-    heartRate: null,
-    cadence: null,
-    ascent: 0,
-    repetitions: 1,
-  }];
+  if(validLaps.length){
+    const total=validLaps.reduce((a,l)=>{a.duration+=l.duration;a.distance+=l.distance;a.ascent+=l.ascent;if(Number.isFinite(l.heartRate))a.hr.push(l.heartRate);if(Number.isFinite(l.cadence))a.cad.push(l.cadence);return a},{duration:0,distance:0,ascent:0,hr:[],cad:[]});
+    return [{type:'easy',label:'Непрерывный бег',duration:Math.round(total.duration),distance:Math.round(total.distance),pace:total.distance>1?secondsToPace(total.duration/(total.distance/1000)):'—',heartRate:total.hr.length?Math.round(total.hr.reduce((a,b)=>a+b,0)/total.hr.length):null,cadence:total.cad.length?Math.round(total.cad.reduce((a,b)=>a+b,0)/total.cad.length):null,ascent:total.ascent,repetitions:1}];
+  }
+  if(records.length<2) return [];
+  return [{type:'easy',label:'Тренировка',duration:0,distance:0,pace:'—',heartRate:null,cadence:null,ascent:0,repetitions:1}];
 }
 
 function calculateSummary({ sessions, laps, records }) {
@@ -469,7 +393,8 @@ if (records.length > 0) {
         if (km !== currentKm) {
             if (kmRecords.length > 0) {
                 const override = lapSplitDurations?.get(currentKm) ?? null;
-                const split = createSplit(currentKm, kmRecords, override, lapSplitAscents?.get(currentKm) ?? null);
+                const split = createSplit(currentKm, kmRecords, override);
+                if (split && lapSplitAscents?.has(currentKm)) split.ascent = Math.round(lapSplitAscents.get(currentKm));
                 if (split) splits.push(split);
             }
 
@@ -486,7 +411,8 @@ if (records.length > 0) {
             : 0;
 
         const override = lapSplitDurations?.get(currentKm) ?? null;
-        const split = createSplit(currentKm, kmRecords, override, lapSplitAscents?.get(currentKm) ?? null);
+        const split = createSplit(currentKm, kmRecords, override);
+                if (split && lapSplitAscents?.has(currentKm)) split.ascent = Math.round(lapSplitAscents.get(currentKm));
 
         // Отбрасываем хвост меньше 100 м после последнего полного километра.
         if (
