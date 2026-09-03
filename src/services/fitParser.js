@@ -369,23 +369,34 @@ function calculateSummary({ sessions, laps, records }) {
     .filter((value) => Number.isFinite(value));
 
   // Набір висоти.
-// Спочатку беремо офіційний total_ascent із Session Garmin.
-// Якщо його немає — рахуємо набір по GPS-точках.
-let ascent = null;
+  // Спочатку беремо офіційний total_ascent із Session Garmin (field 22).
+  // Якщо його немає — рахуємо по altitude / enhanced_altitude у Record.
+  let ascent = null;
 
-if (session[22] != null && Number.isFinite(Number(session[22]))) {
+  if (session[22] != null && Number.isFinite(Number(session[22]))) {
     ascent = Number(session[22]);
-} else if (altitudes.length > 1) {
-    ascent = 0;
+  } else {
+    const recordAltitudes = records
+      .map((record) => {
+        if (Number.isFinite(record[78])) return record[78] / 5 - 500;
+        if (Number.isFinite(record[2])) return record[2] / 5 - 500;
+        return null;
+      })
+      .filter((value) => Number.isFinite(value));
 
-    for (let i = 1; i < altitudes.length; i++) {
-        const difference = altitudes[i] - altitudes[i - 1];
+    if (recordAltitudes.length > 1) {
+      ascent = 0;
 
-        if (difference > 2) {
-            ascent += difference;
-        }
+      for (let i = 1; i < recordAltitudes.length; i++) {
+        const difference = recordAltitudes[i] - recordAltitudes[i - 1];
+        if (difference > 2) ascent += difference;
+      }
+    } else {
+      ascent = 0;
     }
-}
+  }
+
+  ascent = Math.round(Number(ascent) || 0);
 
   // Середній пульс із Session
   const heartRate =
