@@ -234,7 +234,15 @@ function renderSummary(summary) {
   if (heartRateValue) heartRateValue.textContent = summary.heartRate != null ? `${summary.heartRate} уд/хв` : "—";
   if (caloriesValue) {
     const calories = summary.calories ?? summary.totalCalories ?? null;
-    caloriesValue.textContent = calories != null ? `${Math.round(calories).toLocaleString("uk-UA")} ккал` : "—";
+    const caloriesMetric = caloriesValue.closest(".summary-metric");
+
+    if (calories != null && Number.isFinite(Number(calories))) {
+      caloriesValue.textContent = `${Math.round(Number(calories)).toLocaleString("uk-UA")} ккал`;
+      if (caloriesMetric) caloriesMetric.hidden = false;
+    } else {
+      // Якщо Garmin не передав калорії — не показуємо порожній показник.
+      if (caloriesMetric) caloriesMetric.hidden = true;
+    }
   }
   if (ascentValue) {
     ascentValue.textContent = summary.ascent != null ? `${Math.round(summary.ascent)} м` : "—";
@@ -351,11 +359,7 @@ async function selectFile(file) {
   }, 85);
 
   try {
-    const parser = window.parseFitFile;
-    if (typeof parser !== "function") {
-      throw new Error("FIT-парсер не завантажився. Перезавантаж сторінку та спробуй ще раз.");
-    }
-    const summary = await parser(file);
+    const summary = await parseFitFile(file);
 
     window.clearInterval(timer);
     currentWorkout = summary;
@@ -385,8 +389,7 @@ async function selectFile(file) {
 }
 
 input?.addEventListener("change", event => {
-  const file = event.target.files?.[0];
-  selectFile(file);
+  selectFile(event.target.files[0]);
 });
 
 ["dragenter", "dragover"].forEach(eventName => {
@@ -421,4 +424,3 @@ resetButton?.addEventListener("click", () => {
   if (structureBody) structureBody.innerHTML = "";
   if (structureCard) structureCard.hidden = true;
 });
-
