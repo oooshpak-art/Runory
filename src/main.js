@@ -9,9 +9,22 @@ const progressValue = document.querySelector("#progressValue");
 const resetButton = document.querySelector("#resetButton");
 
 const distanceValue = document.querySelector(".metric-card:nth-child(1) strong");
-const durationValue = document.querySelector(".metric-card:nth-child(2) strong");
-const paceValue = document.querySelector(".metric-card:nth-child(3) strong");
-const heartRateValue = document.querySelector(".metric-card:nth-child(4) strong");
+const durationValue = document.querySelector(".metrconst dropZone = document.querySelector("#dropZone");
+const input = document.querySelector("#fileInput");
+const uploadState = document.querySelector("#uploadState");
+const results = document.querySelector("#results");
+const fileName = document.querySelector("#fileName");
+const fileStatus = document.querySelector("#fileStatus");
+const progressBar = document.querySelector("#progressBar");
+const progressValue = document.querySelector("#progressValue");
+const resetButton = document.querySelector("#resetButton");
+
+const distanceValue = document.querySelector("#summaryDistance");
+const durationValue = document.querySelector("#summaryDuration");
+const paceValue = document.querySelector("#summaryPace");
+const heartRateValue = document.querySelector("#summaryHeartRate");
+const caloriesValue = document.querySelector("#summaryCalories");
+const ascentValue = document.querySelector("#summaryAscent");
 const runLabel = document.querySelector(".run-label");
 const insightText = document.querySelector(".insight-text");
 const splitsBody = document.querySelector("#splitsBody");
@@ -20,14 +33,6 @@ const structureBody = document.querySelector("#structureBody");
 const aiAnalyzeButton = document.querySelector("#aiAnalyzeButton");
 const aiAnalysis = document.querySelector("#aiAnalysis");
 const aiAnalysisText = document.querySelector("#aiAnalysisText");
-const visualDashboard = document.querySelector("#visualDashboard");
-const paceChart = document.querySelector("#paceChart");
-const ascentChart = document.querySelector("#ascentChart");
-const fastestSplitValue = document.querySelector("#fastestSplitValue");
-const ascentChartValue = document.querySelector("#ascentChartValue");
-const bestSplitValue = document.querySelector("#bestSplitValue");
-const bestSplitMeta = document.querySelector("#bestSplitMeta");
-const bestSplitTrack = document.querySelector("#bestSplitTrack");
 
 let currentWorkout = null;
 
@@ -165,140 +170,86 @@ function renderSplits(splits = []) {
 function renderStructure(structure = []) {
   if (!structureCard || !structureBody) return;
   structureBody.innerHTML = "";
-  if (!structure.length || (structure.length === 1 && structure[0].type === "easy")) { structureCard.hidden = true; return; }
+
+  if (!structure.length || (structure.length === 1 && structure[0].type === "easy")) {
+    structureCard.hidden = true;
+    return;
+  }
+
   structureCard.hidden = false;
+
+  const averageStats = (items = []) => {
+    const valid = items.filter(Boolean);
+    const distance = valid.reduce((sum, item) => sum + Number(item.distance || 0), 0);
+    const duration = valid.reduce((sum, item) => {
+      const pace = paceToSeconds(item.pace);
+      return sum + (Number.isFinite(pace) ? pace * (Number(item.distance || 0) / 1000) : 0);
+    }, 0);
+    return {
+      distance,
+      pace: distance > 0 ? `${Math.floor(duration / (distance / 1000) / 60)}:${String(Math.round(duration / (distance / 1000)) % 60).padStart(2, "0")}` : "—",
+      heartRate: valid.length ? Math.round(valid.reduce((sum, item) => sum + Number(item.heartRate || 0), 0) / valid.filter(item => Number.isFinite(Number(item.heartRate))).length || 0) : null,
+      cadence: valid.length ? Math.round(valid.reduce((sum, item) => sum + Number(item.cadence || 0), 0) / valid.filter(item => Number.isFinite(Number(item.cadence))).length || 0) : null,
+      ascent: valid.reduce((sum, item) => sum + Number(item.ascent || 0), 0)
+    };
+  };
+
+  const addTimelineItem = (type, title, meta) => {
+    const item = document.createElement("div");
+    item.className = `timeline-item timeline-${type}`;
+    item.innerHTML = `
+      <span class="timeline-dot" aria-hidden="true"></span>
+      <div class="timeline-content">
+        <strong>${title}</strong>
+        <span>${meta}</span>
+      </div>`;
+    structureBody.appendChild(item);
+  };
+
   for (const block of structure) {
-    const section = document.createElement("div");
-    section.className = `structure-block structure-${block.type}`;
     if (block.type === "intervals") {
-      const rows = (block.repetitions || []).map(rep => `
-        <div class="structure-rep">
-          <div class="structure-rep-number">${rep.number}</div>
-          <div><strong>Работа · ${rep.work.pace}</strong><span>${(rep.work.distance / 1000).toFixed(2)} км · ${rep.work.heartRate ?? "—"} уд/хв · +${rep.work.ascent ?? 0} м</span></div>
-          ${rep.recovery ? `<div class="structure-recovery"><strong>Отдых · ${rep.recovery.pace}</strong><span>${(rep.recovery.distance / 1000).toFixed(2)} км · ${rep.recovery.heartRate ?? "—"} уд/хв · +${rep.recovery.ascent ?? 0} м</span></div>` : ""}
-        </div>`).join("");
-      section.innerHTML = `<div class="structure-block-heading"><p>${block.label}</p><small>${block.workCount} повторений</small></div>${rows}`;
-    } else {
-      section.innerHTML = `<div class="structure-block-heading"><p>${block.label}</p><small>${(block.distance / 1000).toFixed(2)} км · ${block.pace} · +${block.ascent ?? 0} м</small></div>`;
+      const reps = block.repetitions || [];
+      const work = averageStats(reps.map(rep => rep.work));
+      const recoveries = reps.map(rep => rep.recovery).filter(Boolean);
+      const recovery = averageStats(recoveries);
+      const workDistance = reps[0]?.work?.distance || 1000;
+      const recoveryDistance = recoveries[0]?.distance || 400;
+
+      addTimelineItem(
+        "work",
+        `Робота (${block.workCount || reps.length} × ${Math.round(workDistance)} м)`,
+        `${(work.distance / 1000).toFixed(2)} км · ${work.pace} /км · Набір +${Math.round(work.ascent)} м`
+      );
+
+      if (recoveries.length) {
+        addTimelineItem(
+          "recovery",
+          `Відпочинок (${recoveries.length} × ${Math.round(recoveryDistance)} м)`,
+          `${(recovery.distance / 1000).toFixed(2)} км · ${recovery.pace} /км · Набір +${Math.round(recovery.ascent)} м`
+        );
+      }
+      continue;
     }
-    structureBody.appendChild(section);
-  }
-}
 
-
-function escapeHtml(value) {
-  return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
-function renderPaceChart(splits = []) {
-  if (!paceChart) return;
-  const data = splits
-    .map((split, index) => ({
-      km: split.km ?? index + 1,
-      pace: paceToSeconds(split.pace),
-      label: split.pace ?? "—"
-    }))
-    .filter(item => Number.isFinite(item.pace));
-
-  if (!data.length) {
-    paceChart.innerHTML = '<div class="chart-empty">Недостатньо даних для графіка</div>';
-    return;
-  }
-
-  const width = 760;
-  const height = 240;
-  const pad = { top: 22, right: 22, bottom: 38, left: 44 };
-  const min = Math.min(...data.map(d => d.pace));
-  const max = Math.max(...data.map(d => d.pace));
-  const range = Math.max(10, max - min);
-  const yMin = min - range * .12;
-  const yMax = max + range * .12;
-  const x = i => data.length === 1 ? width / 2 : pad.left + i * ((width - pad.left - pad.right) / (data.length - 1));
-  const y = value => pad.top + ((value - yMin) / (yMax - yMin)) * (height - pad.top - pad.bottom);
-  const points = data.map((d, i) => `${x(i).toFixed(1)},${y(d.pace).toFixed(1)}`).join(' ');
-  const area = `${pad.left},${height-pad.bottom} ${points} ${x(data.length-1).toFixed(1)},${height-pad.bottom}`;
-  const gridValues = [0, .5, 1].map(t => yMin + (yMax-yMin)*t);
-
-  const dots = data.map((d, i) => `
-    <g class="chart-point">
-      <circle cx="${x(i)}" cy="${y(d.pace)}" r="4.5"></circle>
-      <title>Км ${d.km}: ${escapeHtml(d.label)}/км</title>
-    </g>`).join('');
-  const labels = data.map((d, i) => {
-    if (data.length > 14 && i % 2 !== 0 && i !== data.length - 1) return '';
-    return `<text x="${x(i)}" y="${height-12}" text-anchor="middle">${d.km}</text>`;
-  }).join('');
-  const grid = gridValues.map(v => `<line x1="${pad.left}" y1="${y(v)}" x2="${width-pad.right}" y2="${y(v)}" class="chart-grid"></line>`).join('');
-
-  paceChart.innerHTML = `<svg class="data-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="Графік темпу по кілометрах" preserveAspectRatio="none">
-    <defs><linearGradient id="paceFill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-opacity=".22"></stop><stop offset="100%" stop-opacity="0"></stop></linearGradient></defs>
-    ${grid}
-    <polygon points="${area}" class="chart-area"></polygon>
-    <polyline points="${points}" class="chart-line"></polyline>
-    ${dots}
-    ${labels}
-  </svg>`;
-
-  const fastest = data.reduce((best, item) => item.pace < best.pace ? item : best, data[0]);
-  if (fastestSplitValue) fastestSplitValue.textContent = `Км ${fastest.km} · ${fastest.label}/км`;
-}
-
-function renderAscentChart(splits = []) {
-  if (!ascentChart) return;
-  const data = splits.map((split, index) => ({
-    km: split.km ?? index + 1,
-    ascent: Number(split.ascent) || 0
-  }));
-  if (!data.length) {
-    ascentChart.innerHTML = '<div class="chart-empty">Недостатньо даних для графіка</div>';
-    return;
-  }
-  const width = 760;
-  const height = 190;
-  const pad = { top: 16, right: 18, bottom: 32, left: 18 };
-  const max = Math.max(1, ...data.map(d => d.ascent));
-  const gap = 7;
-  const barWidth = Math.max(6, ((width - pad.left - pad.right) - gap * (data.length - 1)) / data.length);
-  const usable = height - pad.top - pad.bottom;
-  const bars = data.map((d, i) => {
-    const h = Math.max(2, (d.ascent / max) * usable);
-    const bx = pad.left + i * (barWidth + gap);
-    const by = height - pad.bottom - h;
-    return `<g><rect x="${bx}" y="${by}" width="${barWidth}" height="${h}" rx="5" class="ascent-bar"><title>Км ${d.km}: набір +${d.ascent} м</title></rect><text x="${bx+barWidth/2}" y="${height-10}" text-anchor="middle">${d.km}</text></g>`;
-  }).join('');
-  ascentChart.innerHTML = `<svg class="data-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="Набір висоти по кілометрах" preserveAspectRatio="none">
-    <line x1="${pad.left}" y1="${height-pad.bottom}" x2="${width-pad.right}" y2="${height-pad.bottom}" class="chart-axis"></line>${bars}
-  </svg>`;
-  const total = data.reduce((sum, d) => sum + d.ascent, 0);
-  if (ascentChartValue) ascentChartValue.textContent = `+${total} м`;
-}
-
-function renderVisualDashboard(summary) {
-  if (!visualDashboard) return;
-  const splits = summary.splits || [];
-  if (!splits.length) { visualDashboard.hidden = true; return; }
-  visualDashboard.hidden = false;
-  renderPaceChart(splits);
-  renderAscentChart(splits);
-  const timed = splits.map((s, i) => ({...s, seconds: paceToSeconds(s.pace), index: i})).filter(s => Number.isFinite(s.seconds));
-  if (timed.length) {
-    const best = timed.reduce((a,b) => b.seconds < a.seconds ? b : a, timed[0]);
-    if (bestSplitValue) bestSplitValue.textContent = best.pace;
-    if (bestSplitMeta) bestSplitMeta.textContent = `Кілометр ${best.km} · ${best.heartRate ?? '—'} уд/хв · Набір +${best.ascent ?? 0} м`;
-    if (bestSplitTrack) bestSplitTrack.style.width = `${Math.max(18, Math.min(100, 100 - ((best.seconds - Math.min(...timed.map(s => s.seconds))) / Math.max(1, Math.max(...timed.map(s => s.seconds)) - Math.min(...timed.map(s => s.seconds)))) * 82))}%`;
+    const label = block.type === "warmup" ? "Розминка" : block.type === "cooldown" ? "Заминка" : block.label;
+    const type = block.type === "warmup" ? "warmup" : block.type === "cooldown" ? "cooldown" : "work";
+    const meta = `${(block.distance / 1000).toFixed(2)} км · ${block.pace} /км · Набір +${Math.round(block.ascent || 0)} м`;
+    addTimelineItem(type, label, meta);
   }
 }
 
 function renderSummary(summary) {
-  distanceValue.innerHTML = formatMetric(summary.distance);
-  durationValue.innerHTML = formatMetric(summary.duration);
-  paceValue.innerHTML = formatMetric(summary.pace);
-  heartRateValue.textContent = summary.heartRate ?? "—";
+  if (distanceValue) distanceValue.textContent = summary.distance != null ? `${String(summary.distance).replace(".", ",")} км` : "—";
+  if (durationValue) durationValue.textContent = summary.duration ?? "—";
+  if (paceValue) paceValue.textContent = summary.pace != null ? `${summary.pace} /км` : "—";
+  if (heartRateValue) heartRateValue.textContent = summary.heartRate != null ? `${summary.heartRate} уд/хв` : "—";
+  if (caloriesValue) {
+    const calories = summary.calories ?? summary.totalCalories ?? null;
+    caloriesValue.textContent = calories != null ? `${Math.round(calories).toLocaleString("uk-UA")} ккал` : "—";
+  }
+  if (ascentValue) {
+    ascentValue.textContent = summary.ascent != null ? `${Math.round(summary.ascent)} м` : "—";
+  }
 
   const date = summary.date instanceof Date && !Number.isNaN(summary.date.getTime())
     ? summary.date.toLocaleDateString("uk-UA", {
@@ -315,7 +266,6 @@ function renderSummary(summary) {
     generateWorkoutInsight(summary);
 
   renderSplits(summary.splits);
-  renderVisualDashboard(summary);
   renderStructure(summary.structure);
 
   if (aiAnalysis) aiAnalysis.hidden = true;
@@ -474,7 +424,7 @@ resetButton?.addEventListener("click", () => {
 
   if (aiAnalysis) aiAnalysis.hidden = true;
   if (splitsBody) splitsBody.innerHTML = "";
-  if (visualDashboard) visualDashboard.hidden = true;
   if (structureBody) structureBody.innerHTML = "";
   if (structureCard) structureCard.hidden = true;
 });
+
