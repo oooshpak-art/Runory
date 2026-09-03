@@ -31,11 +31,12 @@ const MESSAGE_NAMES = {
 
 const INTENSITIES = {
   0: "active",
-  1: "warmup",
-  2: "cooldown",
-  3: "recovery",
-  4: "interval",
-  5: "other"
+  1: "rest",
+  2: "warmup",
+  3: "cooldown",
+  4: "recovery",
+  5: "interval",
+  6: "other"
 };
 
 function readField(view, offset, field, littleEndian) {
@@ -219,13 +220,23 @@ function numberOrNull(value) {
   return Number.isFinite(Number(value)) ? Number(value) : null;
 }
 
-function cadenceFromGarmin(value) {
+function cadenceFromGarmin(value, sport = null) {
   const n = numberOrNull(value);
   if (n == null) return null;
-  // In Garmin FIT exports used by Runory, running cadence is stored as
-  // half-steps/min. Converting to the value Garmin displays is decoding,
-  // not a recalculation from the activity data.
-  return Math.round(n * 2);
+
+  // Garmin stores running cadence in the session/lap as strides per minute.
+  // Runory displays steps per minute, so running cadence is ×2.
+  return sport === 1 ? Math.round(n * 2) : Math.round(n);
+}
+
+function recordCadenceFromGarmin(value, fractionalValue, sport = 1) {
+  const base = numberOrNull(value);
+  if (base == null) return null;
+
+  // Record cadence has a 0.5 rpm base resolution; fractional_cadence is 1/128 rpm.
+  const fractional = numberOrNull(fractionalValue);
+  const rpm = base + (fractional != null ? fractional / 128 : 0);
+  return sport === 1 ? rpm * 2 : rpm;
 }
 
 function speedFromGarmin(value) {
@@ -237,22 +248,26 @@ function speedFromGarmin(value) {
 function normalizeSession(session) {
   if (!session) return null;
 
+  const sport = session[5];
+  const enhancedAvgSpeed = speedFromGarmin(session[124]);
+  const enhancedMaxSpeed = speedFromGarmin(session[125]);
+
   return {
-    sport: session[5],
+    sport,
     subSport: session[6],
     startTime: fitTimeToDate(session[2]),
     totalElapsedTime: numberOrNull(session[7]) != null ? session[7] / 1000 : null,
     totalTimerTime: numberOrNull(session[8]) != null ? session[8] / 1000 : null,
     distance: numberOrNull(session[9]) != null ? session[9] / 100 : null,
     calories: numberOrNull(session[11]),
-    avgSpeed: speedFromGarmin(session[14]),
-    maxSpeed: speedFromGarmin(session[15]),
+    avgSpeed: enhancedAvgSpeed ?? speedFromGarmin(session[14]),
+    maxSpeed: enhancedMaxSpeed ?? speedFromGarmin(session[15]),
     avgHeartRate: numberOrNull(session[16]),
     maxHeartRate: numberOrNull(session[17]),
-    avgCadence: cadenceFromGarmin(session[18]),
-    maxCadence: cadenceFromGarmin(session[19]),
-    totalAscent: numberOrNull(session[21]),
-    totalDescent: numberOrNull(session[22])
+    avgCadence: cadenceFromGarmin(session[18], sport),
+    maxCadence: cadenceFromGarmin(session[19], sport),
+    totalAscent: numberOrNull(session[22]),
+    totalDescent: numberOrNull(session[23])
   };
 }
 
@@ -263,33 +278,37 @@ function normalizeLap(lap, index) {
   const elapsed = numberOrNull(lap[7]);
   const timer = numberOrNull(lap[8]);
   const seconds = timer != null ? timer / 1000 : elapsed != null ? elapsed / 1000 : null;
+  const sport = numberOrNull(lap[25]);
 
   if (distance == null || distance <= 0 || seconds == null || seconds <= 0) {
     return null;
   }
 
-  const speed = speedFromGarmin(lap[13]);
+  const speed = speedFromGarmin(lap[124]) ?? speedFromGarmin(lap[13]);
 
   return {
     index,
+    messageIndex: numberOrNull(lap[254]),
+    workoutStepIndex: numberOrNull(lap[71]),
     startTime: fitTimeToDate(lap[2]),
     endTime: fitTimeToDate(lap[253]),
     distance: distance / 100,
     duration: seconds,
     pace: speed != null
       ? secondsToPace(1000 / speed)
-      : secondsToPace(seconds / (distance / 100)),
+      : secondsToPace(seconds / (distance / 100000)),
     avgSpeed: speed,
     maxSpeed: speedFromGarmin(lap[14]),
     avgHeartRate: numberOrNull(lap[15]),
-    maxHeartRate: numberOrNull(lap[17]),
-    avgCadence: numberOrNull(lap[16]),
-    maxCadence: numberOrNull(lap[18]),
+    maxHeartRate: numberOrNull(lap[16]),
+    avgCadence: cadenceFromGarmin(lap[17], sport),
+    maxCadence: cadenceFromGarmin(lap[18], sport),
     ascent: numberOrNull(lap[21]),
     descent: numberOrNull(lap[22]),
+    intensity: INTENSITIES[numberOrNull(lap[23])] ?? "unknown",
     calories: numberOrNull(lap[11]),
     lapTrigger: numberOrNull(lap[24]),
-    sport: lap[25],
+    sport,
     subSport: lap[26]
   };
 }
@@ -302,28 +321,22 @@ function normalizeWorkoutStep(step, index) {
   const intensity = numberOrNull(step[7]);
 
   const durationUnit =
+    durationType === 0 ? "time" :
     durationType === 1 ? "distance" :
-    durationType === 2 ? "time" :
-    durationType === 3 ? "lap.button" :
-    durationType === 4 ? "repeat_until_steps_cmplt" :
-    durationType === 5 ? "repeat_until_time" :
-    durationType === 6 ? "repeat_until_distance" :
-    durationType === 7 ? "repeat_until_calories" :
-    durationType === 8 ? "repeat_until_hr_less_than" :
-    durationType === 9 ? "repeat_until_hr_greater_than" :
-    durationType === 10 ? "repeat_until_calories" :
+    durationType === 2 ? "heart_rate_less_than" :
+    durationType === 3 ? "heart_rate_greater_than" :
+    durationType === 4 ? "calories" :
+    durationType === 5 ? "open" :
+    durationType === 6 ? "repeat_until_steps_complete" :
+    durationType === 7 ? "repeat_until_time" :
+    durationType === 8 ? "repeat_until_distance" :
+    durationType === 9 ? "repeat_until_calories" :
+    durationType === 10 ? "repeat_until_heart_rate_less_than" :
+    durationType === 11 ? "repeat_until_heart_rate_greater_than" :
+    durationType === 12 ? "repeat_until_power_less_than" :
+    durationType === 13 ? "repeat_until_power_greater_than" :
+    durationType === 14 ? "repeat_until_repetitions" :
     "unknown";
-
-  let distance = null;
-  let duration = null;
-
-  if (durationType === 1 && durationValue != null) {
-    distance = durationValue / 100;
-  }
-
-  if (durationType === 2 && durationValue != null) {
-    duration = durationValue / 1000;
-  }
 
   return {
     index,
@@ -332,8 +345,8 @@ function normalizeWorkoutStep(step, index) {
     durationType,
     durationUnit,
     durationValue,
-    distance,
-    duration,
+    distance: durationType === 1 && durationValue != null ? durationValue / 100 : null,
+    duration: durationType === 0 && durationValue != null ? durationValue / 1000 : null,
     targetType: numberOrNull(step[3]),
     targetValue: numberOrNull(step[4]),
     customTargetLow: numberOrNull(step[5]),
@@ -342,122 +355,165 @@ function normalizeWorkoutStep(step, index) {
   };
 }
 
-function interpolate(a, b, fraction) {
-  if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
-  return a + (b - a) * fraction;
+function altitudeFromRecord(record) {
+  const enhanced = numberOrNull(record[78]);
+  const altitude = numberOrNull(record[2]);
+  if (enhanced != null) return enhanced / 5 - 500;
+  if (altitude != null) return altitude / 5 - 500;
+  return null;
 }
 
-function buildKmSplits(records, totalDistanceMeters) {
-  if (!records?.length) return [];
-
+function buildKmSplits(records, sport, authoritativeAscent = null) {
   const points = records
-    .map((record) => ({
+    .map(record => ({
       timestamp: numberOrNull(record[253]),
       distance: numberOrNull(record[5]) != null ? record[5] / 100 : null,
       heartRate: numberOrNull(record[3]),
-      cadence: cadenceFromGarmin(record[4]),
-      altitude: numberOrNull(record[78]) != null
-        ? record[78] / 5 - 500
-        : numberOrNull(record[2]) != null
-          ? record[2] / 5 - 500
-          : null
+      cadence: recordCadenceFromGarmin(record[4], record[53], sport),
+      altitude: altitudeFromRecord(record)
     }))
-    .filter((p) => Number.isFinite(p.timestamp) && Number.isFinite(p.distance))
+    .filter(point =>
+      Number.isFinite(point.timestamp) &&
+      Number.isFinite(point.distance)
+    )
     .sort((a, b) => a.timestamp - b.timestamp);
 
   if (points.length < 2) return [];
 
-  const activityDistance = Number.isFinite(totalDistanceMeters)
-    ? totalDistanceMeters
-    : points.at(-1).distance;
-  const fullKmCount = Math.floor(activityDistance / 1000);
-  const splits = [];
+  const totalDistance = points.at(-1).distance;
+  if (!Number.isFinite(totalDistance) || totalDistance <= 0) return [];
 
-  let pointIndex = 0;
-  let previousBoundary = 0;
+  const buildRange = (startDistance, endDistance) => {
+    let distance = 0;
+    let time = 0;
+    let hrSum = 0;
+    let hrTime = 0;
+    let cadenceSum = 0;
+    let cadenceTime = 0;
+    let rawAscent = 0;
 
-  const aggregate = (fromDistance, toDistance, splitNumber, partial) => {
-    const samples = [];
-    let totalTime = 0;
-    let weightedHr = 0;
-    let weightedCadence = 0;
-    let weightedMetricTime = 0;
-    let ascent = 0;
+    for (let i = 1; i < points.length; i++) {
+      const previous = points[i - 1];
+      const current = points[i];
+      const segmentDistance = current.distance - previous.distance;
+      const segmentTime = current.timestamp - previous.timestamp;
 
-    let i = Math.max(0, pointIndex - 1);
-    while (i < points.length && points[i].distance < fromDistance) i++;
+      if (!Number.isFinite(segmentDistance) || segmentDistance <= 0 ||
+          !Number.isFinite(segmentTime) || segmentTime < 0) continue;
 
-    const startPoint = (() => {
-      for (let j = Math.max(0, i - 1); j < points.length - 1; j++) {
-        const a = points[j], b = points[j + 1];
-        if (a.distance <= fromDistance && b.distance >= fromDistance && b.distance > a.distance) {
-          const f = (fromDistance - a.distance) / (b.distance - a.distance);
-          return { ...a, timestamp: interpolate(a.timestamp, b.timestamp, f), distance: fromDistance, heartRate: interpolate(a.heartRate, b.heartRate, f), cadence: interpolate(a.cadence, b.cadence, f), altitude: interpolate(a.altitude, b.altitude, f) };
-        }
+      const overlapStart = Math.max(startDistance, previous.distance);
+      const overlapEnd = Math.min(endDistance, current.distance);
+      const overlap = overlapEnd - overlapStart;
+
+      if (overlap <= 0) continue;
+
+      const startFraction = (overlapStart - previous.distance) / segmentDistance;
+      const endFraction = (overlapEnd - previous.distance) / segmentDistance;
+      const fraction = endFraction - startFraction;
+      const partTime = segmentTime * fraction;
+      const midpointFraction = (startFraction + endFraction) / 2;
+
+      distance += overlap;
+      time += partTime;
+
+      if (Number.isFinite(previous.heartRate) && Number.isFinite(current.heartRate)) {
+        const hr = previous.heartRate +
+          (current.heartRate - previous.heartRate) * midpointFraction;
+        hrSum += hr * partTime;
+        hrTime += partTime;
       }
-      return points[Math.min(i, points.length - 1)];
-    })();
 
-    const endPoint = (() => {
-      for (let j = Math.max(0, i - 1); j < points.length - 1; j++) {
-        const a = points[j], b = points[j + 1];
-        if (a.distance <= toDistance && b.distance >= toDistance && b.distance > a.distance) {
-          const f = (toDistance - a.distance) / (b.distance - a.distance);
-          return { ...a, timestamp: interpolate(a.timestamp, b.timestamp, f), distance: toDistance, heartRate: interpolate(a.heartRate, b.heartRate, f), cadence: interpolate(a.cadence, b.cadence, f), altitude: interpolate(a.altitude, b.altitude, f) };
-        }
+      if (Number.isFinite(previous.cadence) && Number.isFinite(current.cadence)) {
+        const cadence = previous.cadence +
+          (current.cadence - previous.cadence) * midpointFraction;
+        cadenceSum += cadence * partTime;
+        cadenceTime += partTime;
       }
-      return points.at(-1);
-    })();
 
-    if (!startPoint || !endPoint || endPoint.timestamp <= startPoint.timestamp) return null;
-
-    const relevant = [startPoint];
-    for (const p of points) {
-      if (p.distance > fromDistance && p.distance < toDistance) relevant.push(p);
-    }
-    relevant.push(endPoint);
-
-    for (let j = 1; j < relevant.length; j++) {
-      const a = relevant[j - 1], b = relevant[j];
-      const dt = b.timestamp - a.timestamp;
-      if (!Number.isFinite(dt) || dt < 0) continue;
-      totalTime += dt;
-      const hr = interpolate(a.heartRate, b.heartRate, 0.5);
-      const cad = interpolate(a.cadence, b.cadence, 0.5);
-      if (Number.isFinite(hr) && hr > 0 && hr < 255) weightedHr += hr * dt;
-      if (Number.isFinite(cad) && cad > 0 && cad < 255) weightedCadence += cad * dt;
-      if (Number.isFinite(hr) || Number.isFinite(cad)) weightedMetricTime += dt;
-      if (Number.isFinite(a.altitude) && Number.isFinite(b.altitude)) {
-        const diff = b.altitude - a.altitude;
-        if (diff > 2) ascent += diff;
+      if (Number.isFinite(previous.altitude) && Number.isFinite(current.altitude)) {
+        const altitudeChange = current.altitude - previous.altitude;
+        if (altitudeChange > 0) rawAscent += altitudeChange * fraction;
       }
     }
 
-    const distance = toDistance - fromDistance;
-    const pace = totalTime > 0 ? totalTime / (distance / 1000) : null;
     return {
-      km: partial ? `${splitNumber}*` : splitNumber,
       distance,
-      duration: totalTime,
-      pace: pace != null ? secondsToPace(pace) : null,
-      heartRate: totalTime && weightedHr ? Math.round(weightedHr / totalTime) : null,
-      cadence: totalTime && weightedCadence ? Math.round(weightedCadence / totalTime) : null,
-      ascent: Math.round(ascent)
+      time,
+      heartRate: hrTime ? Math.round(hrSum / hrTime) : null,
+      cadence: cadenceTime ? Math.round(cadenceSum / cadenceTime) : null,
+      rawAscent
     };
   };
 
-  for (let km = 1; km <= fullKmCount; km++) {
-    const split = aggregate((km - 1) * 1000, km * 1000, km, false);
-    if (split) splits.push(split);
+  const rawSplits = [];
+  let km = 1;
+  let start = 0;
+
+  while (start < totalDistance - 0.01) {
+    const end = Math.min(km * 1000, totalDistance);
+    const range = buildRange(start, end);
+
+    if (range.distance >= 50 && range.time > 0) {
+      rawSplits.push({
+        km: end >= km * 1000 - 0.01 ? km : `${km}*`,
+        ...range
+      });
+    }
+
+    start = end;
+    km += 1;
   }
 
-  const remainder = activityDistance - fullKmCount * 1000;
-  if (remainder >= 50) {
-    const split = aggregate(fullKmCount * 1000, activityDistance, fullKmCount + 1, true);
-    if (split) splits.push(split);
+  const rawTotal = rawSplits.reduce(
+    (sum, split) => sum + Math.max(0, split.rawAscent || 0),
+    0
+  );
+  const targetAscent = Number.isFinite(authoritativeAscent)
+    ? authoritativeAscent
+    : null;
+
+  const output = rawSplits.map(split => {
+    const scaledAscent = targetAscent != null && rawTotal > 0
+      ? split.rawAscent * (targetAscent / rawTotal)
+      : split.rawAscent;
+
+    return {
+      km: split.km,
+      pace: secondsToPace(split.time / (split.distance / 1000)),
+      heartRate: split.heartRate,
+      cadence: split.cadence,
+      ascent: Math.max(0, Math.floor(scaledAscent)),
+      _ascentFraction: Math.max(0, scaledAscent - Math.floor(scaledAscent)),
+      distance: Number((split.distance / 1000).toFixed(3)),
+      duration: split.time
+    };
+  });
+
+  if (targetAscent != null && rawTotal > 0 && output.length) {
+    let roundedSum = output.reduce((sum, split) => sum + split.ascent, 0);
+    let difference = Math.round(targetAscent) - roundedSum;
+    const order = [...output].sort((a, b) => b._ascentFraction - a._ascentFraction);
+    let cursor = 0;
+
+    while (difference > 0) {
+      order[cursor % order.length].ascent += 1;
+      difference -= 1;
+      cursor += 1;
+    }
+
+    cursor = 0;
+    while (difference < 0) {
+      const candidate = order[cursor % order.length];
+      if (candidate.ascent > 0) {
+        candidate.ascent -= 1;
+        difference += 1;
+      }
+      cursor += 1;
+      if (cursor > order.length * 10 && difference < 0) break;
+    }
   }
 
-  return splits;
+  return output.map(({ _ascentFraction, ...split }) => split);
 }
 
 function buildSegments(laps, workoutSteps) {
@@ -469,63 +525,63 @@ function buildSegments(laps, workoutSteps) {
     .map((step, i) => normalizeWorkoutStep(step, i))
     .filter(Boolean);
 
-  /*
-   * Important:
-   * We never invent a 400 m recovery from pace changes.
-   * A recovery/work segment is only considered authoritative when Garmin
-   * explicitly stores workout-step information or an explicit non-distance lap.
-   */
+  const stepByIndex = new Map(normalizedSteps.map(step => [step.index, step]));
 
-  const explicitNonKmLaps = normalizedLaps.filter(
-    lap => !(lap.distance >= 0.98 && lap.distance <= 1.02)
-  );
+  // Executed Garmin laps are the authoritative structure of what actually happened.
+  // Workout steps describe the prescription; wkt_step_index on each lap connects
+  // the prescription to the executed segment, including repeated 400 m recoveries.
+  const segments = normalizedLaps.map(lap => {
+    const step = lap.workoutStepIndex != null
+      ? stepByIndex.get(lap.workoutStepIndex)
+      : null;
 
-  const segments = [];
-
-  if (normalizedSteps.length) {
-    for (const step of normalizedSteps) {
-      segments.push({
-        type: step.intensity,
-        source: "garmin_workout_step",
-        index: step.index,
-        distance: step.distance,
-        duration: step.duration,
-        targetType: step.targetType,
-        targetValue: step.targetValue,
-        targetLow: step.customTargetLow,
-        targetHigh: step.customTargetHigh
-      });
-    }
-  }
-
-  // Preserve every Garmin lap as a second, lossless layer.
-  // This lets AI see all actual lap data even when workout steps are sparse.
-  const garminLaps = normalizedLaps.map(lap => ({
-    type: "lap",
-    source: "garmin_lap",
-    index: lap.index,
-    distance: lap.distance,
-    duration: lap.duration,
-    pace: lap.pace,
-    avgSpeed: lap.avgSpeed,
-    maxSpeed: lap.maxSpeed,
-    heartRate: lap.avgHeartRate,
-    maxHeartRate: lap.maxHeartRate,
-    cadence: lap.avgCadence,
-    maxCadence: lap.maxCadence,
-    ascent: lap.ascent,
-    descent: lap.descent,
-    calories: lap.calories,
-    startTime: lap.startTime,
-    endTime: lap.endTime,
-    lapTrigger: lap.lapTrigger
-  }));
+    return {
+      type: lap.intensity !== "unknown" ? lap.intensity : step?.intensity ?? "unknown",
+      source: "garmin_lap",
+      lapIndex: lap.index,
+      workoutStepIndex: lap.workoutStepIndex,
+      distance: lap.distance,
+      duration: lap.duration,
+      pace: lap.pace,
+      heartRate: lap.avgHeartRate,
+      maxHeartRate: lap.maxHeartRate,
+      cadence: lap.avgCadence,
+      maxCadence: lap.maxCadence,
+      ascent: lap.ascent,
+      descent: lap.descent,
+      calories: lap.calories,
+      targetType: step?.targetType ?? null,
+      targetValue: step?.targetValue ?? null,
+      targetLow: step?.customTargetLow ?? null,
+      targetHigh: step?.customTargetHigh ?? null
+    };
+  });
 
   return {
     workoutSteps: normalizedSteps,
-    explicitNonKmLaps,
+    explicitNonKmLaps: normalizedLaps.filter(lap => !(lap.distance >= 980 && lap.distance <= 1020)),
     segments,
-    garminLaps
+    garminLaps: normalizedLaps.map(lap => ({
+      type: lap.intensity,
+      source: "garmin_lap",
+      index: lap.index,
+      workoutStepIndex: lap.workoutStepIndex,
+      distance: lap.distance,
+      duration: lap.duration,
+      pace: lap.pace,
+      avgSpeed: lap.avgSpeed,
+      maxSpeed: lap.maxSpeed,
+      heartRate: lap.avgHeartRate,
+      maxHeartRate: lap.maxHeartRate,
+      cadence: lap.avgCadence,
+      maxCadence: lap.maxCadence,
+      ascent: lap.ascent,
+      descent: lap.descent,
+      calories: lap.calories,
+      startTime: lap.startTime,
+      endTime: lap.endTime,
+      lapTrigger: lap.lapTrigger
+    }))
   };
 }
 
@@ -537,7 +593,7 @@ function buildGarminRecordSummary(records) {
     .filter(v => v != null && v > 0 && v < 255);
 
   const cadences = records
-    .map(r => cadenceFromGarmin(r[4]))
+    .map(r => recordCadenceFromGarmin(r[4], r[53], 1))
     .filter(v => v != null && v > 0 && v < 255);
 
   const distances = records
@@ -587,11 +643,10 @@ function calculateSummary(messages) {
   const events = messages.event || [];
   const workout = messages.workout || [];
 
-  const segments = buildSegments(laps, workoutSteps);
-  const splits = buildKmSplits(records, session.distance);
+  const structure = buildSegments(laps, workoutSteps);
+  const splits = buildKmSplits(records, session.sport, session.totalAscent);
 
   return {
-    // Existing fields kept for current UI/API compatibility.
     distance: (session.distance / 1000).toFixed(2),
     duration: secondsToTime(session.totalTimerTime),
     pace: session.avgSpeed != null
@@ -602,30 +657,31 @@ function calculateSummary(messages) {
     ascent: session.totalAscent ?? 0,
     date: session.startTime,
 
-    // Garmin is the source of truth.
+    // Garmin is the source of truth for summary and executed workout structure.
     garmin: {
       session,
       workout,
-      workoutSteps: segments.workoutSteps,
+      workoutSteps: structure.workoutSteps,
       laps: laps.map((lap, i) => normalizeLap(lap, i + 1)).filter(Boolean),
       events,
       recordSummary: buildGarminRecordSummary(records)
     },
 
-    // UI: kilometer splits.
+    // Kilometer splits are derived from Garmin record distance/timestamp samples.
     splits,
 
-    // AI: complete training structure + all authoritative lap/workout data.
-    segments: segments.segments,
-    garminLaps: segments.garminLaps,
+    // Structured workout: every executed Garmin lap, including short recoveries.
+    segments: structure.segments,
+    garminLaps: structure.garminLaps,
 
     metadata: {
-      hasWorkoutSteps: segments.workoutSteps.length > 0,
-      hasExplicitNonKmLaps: segments.explicitNonKmLaps.length > 0,
+      hasWorkoutSteps: structure.workoutSteps.length > 0,
+      hasExplicitNonKmLaps: structure.explicitNonKmLaps.length > 0,
       lapCount: laps.length,
       recordCount: records.length,
       eventCount: events.length,
-      workoutStepCount: workoutSteps.length
+      workoutStepCount: workoutSteps.length,
+      sourceOfTruth: "Garmin FIT"
     }
   };
 }
