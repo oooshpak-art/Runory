@@ -346,108 +346,43 @@
   }
 }
 
+/* Runory visual workout report */
+.visual-dashboard { display:grid; gap:14px; margin-top:14px; }
+.chart-row { display:grid; grid-template-columns:minmax(0,1.55fr) minmax(280px,.75fr); gap:14px; }
+.chart-card { min-width:0; padding:25px 26px 20px; border:1px solid var(--line); border-radius:16px; background:var(--white); box-shadow:0 10px 30px rgba(31,40,31,.035); }
+.chart-card-wide { padding-bottom:16px; }
+.chart-card-head { display:flex; align-items:flex-start; justify-content:space-between; gap:18px; margin-bottom:12px; }
+.chart-card h3 { margin:0; font-size:21px; letter-spacing:-.8px; }
+.chart-head-value { flex:0 0 auto; padding:8px 11px; border-radius:9px; background:#f1f8e6; color:#2e6c2f; font:700 11px "DM Mono",monospace; }
+.chart-wrap { width:100%; min-height:240px; }
+.chart-wrap-small { min-height:190px; }
+.data-chart { width:100%; height:100%; min-height:190px; display:block; overflow:visible; }
+.chart-line { fill:none; stroke:#2d8a3b; stroke-width:4; stroke-linecap:round; stroke-linejoin:round; }
+.chart-area { fill:url(#paceFill); }
+.chart-point circle { fill:#fff; stroke:#2d8a3b; stroke-width:3; }
+.chart-grid { stroke:#edf1ed; stroke-width:1; stroke-dasharray:4 6; }
+.chart-axis { stroke:#dfe5df; stroke-width:1; }
+.data-chart text { fill:#78837d; font:500 10px "DM Mono",monospace; }
+.ascent-bar { fill:#b8e37d; transition:opacity .2s ease, transform .2s ease; transform-origin:center bottom; }
+.ascent-bar:hover { opacity:.78; }
+.chart-empty { min-height:190px; display:grid; place-items:center; color:#7a847e; font-size:13px; }
+.highlight-card { display:flex; flex-direction:column; justify-content:center; min-height:255px; background:linear-gradient(145deg,#1b221e 0%,#273329 100%); color:#fff; border-color:#273329; }
+.highlight-card .eyebrow { color:#b9c8bd; }
+.highlight-card h3 { margin-top:3px; color:#fff; }
+.highlight-number { margin-top:20px; font-size:58px; line-height:1; font-weight:800; letter-spacing:-3px; }
+.highlight-card > p:last-of-type { margin:12px 0 18px; color:#bcc7c0; font-size:12px; line-height:1.6; }
+.highlight-track { height:7px; width:100%; border-radius:99px; overflow:hidden; background:rgba(255,255,255,.1); }
+.highlight-track span { display:block; height:100%; border-radius:inherit; background:var(--lime); }
+.structure-card { overflow:hidden; }
+.structure-rep { border-top:1px solid #edf0ed; }
+.structure-rep-number { background:#edf8e8; color:#2e7134; }
+.structure-recovery { background:#f7f9f7; border-radius:10px; padding:11px 14px; border-left:0; }
 
-/* Workout structure — Ukrainian UI, kept visually close to the reference */
-.structure-card {
-  margin-top: 20px;
-  background: var(--white);
-  border: 1px solid var(--line);
-  border-radius: 20px;
-  padding: 32px;
-  box-shadow: 0 12px 35px rgba(31,40,31,.035);
-}
-.structure-heading { margin-bottom: 22px; }
-.structure-heading h3 { margin: 0; font-size: 25px; letter-spacing: -1px; }
-.structure-body { display: grid; gap: 12px; }
-.structure-block {
-  border: 1px solid #edf0ed;
-  border-radius: 14px;
-  padding: 16px;
-  background: #fff;
-}
-.structure-block-heading p { margin: 0 0 4px; font-weight: 800; font-size: 15px; }
-.structure-block-heading small { color: #68746d; font-size: 12px; }
-.structure-rep {
-  display: grid;
-  grid-template-columns: 32px minmax(0, 1fr) minmax(210px, .72fr);
-  gap: 14px;
-  align-items: center;
-  padding: 12px 0;
-  border-top: 1px solid #edf0ed;
-}
-.structure-rep:first-of-type { margin-top: 14px; }
-.structure-rep-number {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  background: #f1f4f0;
-  font: 700 12px "DM Mono", monospace;
-}
-.structure-rep strong { display: block; font-size: 15px; line-height: 1.25; }
-.structure-rep span {
-  display: block;
-  margin-top: 5px;
-  color: #68746d;
-  font-size: 12px;
-  line-height: 1.4;
-}
-.structure-recovery {
-  min-width: 0;
-  padding: 9px 0 9px 16px;
-  border-left: 2px solid #edf0ed;
-  background: #f7f8f7;
-}
-.structure-recovery strong { font-size: 15px; }
-.structure-warmup, .structure-cooldown { background: #fbfcfa; }
-@media (max-width: 760px) {
-  .structure-card { padding: 24px 18px; border-radius: 16px; }
-  .structure-rep { grid-template-columns: 28px 1fr; gap: 12px; }
-  .structure-recovery { grid-column: 2; padding-left: 0; border-left: 0; border-top: 1px solid #edf0ed; background: transparent; }
-}
-
-/* Visual workout report */
-.visual-report {
-  margin-top: 20px;
-  padding: 28px;
-  border: 1px solid var(--line);
-  border-radius: 20px;
-  background: #fff;
-  box-shadow: 0 12px 35px rgba(31,40,31,.035);
-}
-.visual-report-heading { display:flex; justify-content:space-between; align-items:flex-end; gap:20px; margin-bottom:20px; }
-.visual-report-heading h3 { margin:0; font-size:25px; letter-spacing:-1px; }
-.visual-report-note { color:#78827d; font:10px 'DM Mono',monospace; text-transform:uppercase; letter-spacing:.5px; }
-.visual-grid { display:grid; grid-template-columns:minmax(0,1.55fr) minmax(300px,.85fr); gap:12px; }
-.chart-card { min-width:0; border:1px solid #edf0ed; border-radius:15px; padding:17px 18px 10px; background:#fbfcfa; overflow:hidden; }
-.chart-topline { display:flex; justify-content:space-between; align-items:center; gap:15px; margin-bottom:4px; }
-.chart-topline div { display:flex; flex-direction:column; gap:4px; }
-.chart-topline span { color:#68746d; font-size:11px; }
-.chart-topline strong { font-size:16px; letter-spacing:-.4px; }
-.chart-legend { display:flex; align-items:center; gap:6px; font:9px 'DM Mono',monospace !important; color:#69766f; text-transform:uppercase; }
-.chart-legend i { width:7px; height:7px; display:inline-block; border-radius:50%; background:var(--lime); }
-.chart-card svg { display:block; width:100%; height:auto; margin-top:8px; }
-.chart-card svg text { fill:#8a938e; font:9px 'DM Mono',monospace; }
-.chart-gridline { stroke:#e6ebe6; stroke-width:1; }
-.pace-line { fill:none; stroke:var(--ink); stroke-width:3.5; stroke-linecap:round; stroke-linejoin:round; }
-.pace-area { fill:url(#paceFill); stroke:none; }
-.pace-dot { fill:var(--lime); stroke:var(--ink); stroke-width:2; }
-.elev-bar { fill:#dfe9d7; }
-.chart-empty { min-height:220px; display:grid; place-items:center; color:#7b857f; font-size:12px; }
-.visual-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:12px; }
-.visual-stats div { padding:14px 16px; border-radius:12px; background:#f5f7f4; }
-.visual-stats span { display:block; color:#68746d; font-size:10px; margin-bottom:5px; }
-.visual-stats strong { display:block; font-size:15px; letter-spacing:-.3px; }
-
-@media (max-width: 800px) {
-  .visual-grid { grid-template-columns:1fr; }
-}
-@media (max-width: 680px) {
-  .visual-report { padding:20px 14px; border-radius:16px; }
-  .visual-report-heading h3 { font-size:22px; }
-  .visual-report-note { display:none; }
-  .visual-stats { grid-template-columns:1fr; gap:8px; }
-  .chart-card { padding:14px 12px 8px; }
-  .chart-topline strong { font-size:14px; }
+@media (max-width:760px) {
+  .chart-row { grid-template-columns:1fr; }
+  .chart-card { padding:21px 17px 16px; }
+  .highlight-card { min-height:220px; }
+  .highlight-number { font-size:48px; }
+  .chart-wrap { min-height:205px; }
+  .data-chart { min-height:165px; }
 }
