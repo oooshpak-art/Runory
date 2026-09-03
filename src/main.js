@@ -149,11 +149,25 @@ function renderSplits(splits = []) {
       <td class="split-pace">${split.pace ?? "—"}</td>
       <td>${split.heartRate ?? "—"}</td>
       <td>${split.cadence ?? "—"}</td>
-      <td>${split.ascent != null ? `${split.ascent} м` : "—"}</td>
+      <td class="split-elevation ${Number(split.ascent) < 0 ? "is-down" : ""}">${split.ascent != null ? `${split.ascent > 0 ? '+' : ''}${split.ascent} м` : "—"}</td>
     `;
 
     splitsBody.appendChild(row);
   }
+}
+
+function formatElevation(value) {
+  if (!Number.isFinite(Number(value))) return "—";
+  const n = Math.round(Number(value));
+  if (n === 0) return "0 м";
+  return `${n > 0 ? '+' : ''}${n} м`;
+}
+
+function formatTerrain(value) {
+  if (!Number.isFinite(Number(value))) return "Рельєф —";
+  const n = Math.round(Number(value));
+  if (n === 0) return "Рівно 0 м";
+  return n > 0 ? `Набір +${n} м` : `Спуск −${Math.abs(n)} м`;
 }
 
 function renderStructure(structure = []) {
@@ -222,7 +236,7 @@ function renderStructure(structure = []) {
 
     const label = block.type === "warmup" ? "Розминка" : block.type === "cooldown" ? "Заминка" : block.label;
     const type = block.type === "warmup" ? "warmup" : block.type === "cooldown" ? "cooldown" : "work";
-    const meta = `${(block.distance / 1000).toFixed(2)} км · ${block.pace} /км · Набір +${Math.round(block.ascent || 0)} м`;
+    const meta = `${(block.distance / 1000).toFixed(2)} км · ${block.pace} /км · ${formatTerrain(block.elevation ?? block.ascent)}`;
     addTimelineItem(type, label, meta);
   }
 }
