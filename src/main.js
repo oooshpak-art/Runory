@@ -149,7 +149,7 @@ function renderSplits(splits = []) {
       <td class="split-pace">${split.pace ?? "—"}</td>
       <td>${split.heartRate ?? "—"}</td>
       <td>${split.cadence ?? "—"}</td>
-      <td class="split-elevation ${Number(split.ascent) < 0 ? "is-down" : ""}">${split.ascent != null ? `${split.ascent > 0 ? '+' : ''}${split.ascent} м` : "—"}</td>
+      <td class="split-elevation ${Number(split.elevation) < 0 ? "is-down" : ""}">${Number.isFinite(Number(split.elevation)) ? `${Number(split.elevation) > 0 ? '+' : Number(split.elevation) < 0 ? '−' : ''}${Math.abs(Math.round(Number(split.elevation)))} м` : "—"}</td>
     `;
 
     splitsBody.appendChild(row);
