@@ -508,4 +508,3 @@ async function parseFitFile(file) {
 }
 
 window.parseFitFile = parseFitFile;
-
