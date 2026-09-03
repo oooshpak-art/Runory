@@ -422,30 +422,36 @@
 
 .splits-table th,
 .splits-table td {
-  width: auto;
+  box-sizing: border-box;
   white-space: nowrap;
-  text-align: right;
+  text-align: left !important;
   vertical-align: middle;
-}
-
-.splits-table th:first-child,
-.splits-table td:first-child {
-  text-align: left;
+  padding-left: 12px;
+  padding-right: 12px;
 }
 
 .splits-table th {
-  padding-left: 12px;
-  padding-right: 12px;
+  padding-top: 10px;
+  padding-bottom: 10px;
 }
 
 .splits-table td {
-  padding-left: 12px;
-  padding-right: 12px;
+  padding-top: 13px;
+  padding-bottom: 13px;
 }
 
 .splits-table .split-km,
 .splits-table .split-pace {
   font-variant-numeric: tabular-nums;
+}
+
+
+.splits-table .split-elevation {
+  font-variant-numeric: tabular-nums;
+}
+
+.splits-table .split-elevation.is-down {
+  color: #3f6f9b;
 }
 
 @media (max-width: 760px) {
