@@ -8,17 +8,6 @@ const progressBar = document.querySelector("#progressBar");
 const progressValue = document.querySelector("#progressValue");
 const resetButton = document.querySelector("#resetButton");
 
-const distanceValue = document.querySelector(".metric-card:nth-child(1) strong");
-const durationValue = document.querySelector(".metrconst dropZone = document.querySelector("#dropZone");
-const input = document.querySelector("#fileInput");
-const uploadState = document.querySelector("#uploadState");
-const results = document.querySelector("#results");
-const fileName = document.querySelector("#fileName");
-const fileStatus = document.querySelector("#fileStatus");
-const progressBar = document.querySelector("#progressBar");
-const progressValue = document.querySelector("#progressValue");
-const resetButton = document.querySelector("#resetButton");
-
 const distanceValue = document.querySelector("#summaryDistance");
 const durationValue = document.querySelector("#summaryDuration");
 const paceValue = document.querySelector("#summaryPace");
@@ -362,7 +351,11 @@ async function selectFile(file) {
   }, 85);
 
   try {
-    const summary = await parseFitFile(file);
+    const parser = window.parseFitFile;
+    if (typeof parser !== "function") {
+      throw new Error("FIT-парсер не завантажився. Перезавантаж сторінку та спробуй ще раз.");
+    }
+    const summary = await parser(file);
 
     window.clearInterval(timer);
     currentWorkout = summary;
@@ -392,7 +385,8 @@ async function selectFile(file) {
 }
 
 input?.addEventListener("change", event => {
-  selectFile(event.target.files[0]);
+  const file = event.target.files?.[0];
+  selectFile(file);
 });
 
 ["dragenter", "dragover"].forEach(eventName => {
