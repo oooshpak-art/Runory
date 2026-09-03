@@ -441,7 +441,7 @@ if (records.length > 0) {
                 const override = lapSplitDurations?.get(currentKm) ?? null;
                 const split = createSplit(currentKm, kmRecords, override);
                 if (split && lapSplitAscents?.has(currentKm)) split.ascent = Math.round(lapSplitAscents.get(currentKm));
-                if (split && lapSplitElevations?.has(currentKm)) { const elevation = lapSplitElevations.get(currentKm); split.ascent = elevation.elevation; split.descent = elevation.descent; split.elevation = elevation.elevation; }
+                if (split && lapSplitElevations?.has(currentKm)) { const elevation = lapSplitElevations.get(currentKm); split.ascent = elevation.ascent; split.descent = elevation.descent; split.elevation = elevation.elevation; }
                 if (split) splits.push(split);
             }
 
@@ -460,7 +460,7 @@ if (records.length > 0) {
         const override = lapSplitDurations?.get(currentKm) ?? null;
         const split = createSplit(currentKm, kmRecords, override);
                 if (split && lapSplitAscents?.has(currentKm)) split.ascent = Math.round(lapSplitAscents.get(currentKm));
-                if (split && lapSplitElevations?.has(currentKm)) { const elevation = lapSplitElevations.get(currentKm); split.ascent = elevation.elevation; split.descent = elevation.descent; split.elevation = elevation.elevation; }
+                if (split && lapSplitElevations?.has(currentKm)) { const elevation = lapSplitElevations.get(currentKm); split.ascent = elevation.ascent; split.descent = elevation.descent; split.elevation = elevation.elevation; }
 
         // Отбрасываем хвост меньше 100 м после последнего полного километра.
         if (
