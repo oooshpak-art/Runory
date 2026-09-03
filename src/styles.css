@@ -404,3 +404,52 @@
 /* Sidebar icon SVG polish */
 .summary-icon svg,.sidebar-note-icon svg { width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
 .sidebar-note-icon svg { width:17px; height:17px; }
+
+
+/* === Final split table alignment === */
+.splits-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.splits-table .col-km { width: 10%; }
+.splits-table .col-pace { width: 22%; }
+.splits-table .col-heart-rate { width: 20%; }
+.splits-table .col-cadence { width: 24%; }
+.splits-table .col-ascent { width: 24%; }
+
+.splits-table th,
+.splits-table td {
+  width: auto;
+  white-space: nowrap;
+  text-align: right;
+  vertical-align: middle;
+}
+
+.splits-table th:first-child,
+.splits-table td:first-child {
+  text-align: left;
+}
+
+.splits-table th {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+.splits-table td {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+.splits-table .split-km,
+.splits-table .split-pace {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 760px) {
+  .splits-table {
+    min-width: 560px;
+  }
+}
