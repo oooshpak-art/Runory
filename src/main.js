@@ -40,104 +40,16 @@ function paceToSeconds(pace) {
   return parts[0] * 60 + parts[1];
 }
 
-function formatInlineMarkdown(text) {
-  return String(text ?? "")
+function formatAiText(text) {
+  const escaped = String(text ?? "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/\\*\\*(.*?)\\*\\*/g, "<strong>$1</strong>")
-    .replace(/`([^`]+)`/g, '<span class="ai-inline-code">$1</span>');
-}
+    .replace(/>/g, "&gt;");
 
-function renderAiBlocks(text) {
-  const source = String(text ?? "").replace(/\\r\\n/g, "\\n").trim();
-  if (!source) return '<div class="ai-empty">Аналіз не отримано.</div>';
-
-  const lines = source.split("\\n");
-  const blocks = [];
-  let current = null;
-  let listItems = [];
-
-  const flushList = () => {
-    if (!listItems.length) return;
-    blocks.push(
-      `<ul class="ai-list">${listItems.map(item => `<li>${formatInlineMarkdown(item)}</li>`).join("")}</ul>`
-    );
-    listItems = [];
-  };
-
-  const flushSection = () => {
-    flushList();
-    if (!current) return;
-
-    const body = current.body.join("\\n").trim();
-
-    if (current.type === "section") {
-      blocks.push(`
-        <details class="ai-accordion" open>
-          <summary>
-            <span class="ai-summary-title">${formatInlineMarkdown(current.title)}</span>
-            <span class="ai-summary-chevron" aria-hidden="true">⌄</span>
-          </summary>
-          <div class="ai-section-body">${body ? renderAiBlocks(body) : ""}</div>
-        </details>
-      `);
-    } else {
-      blocks.push(`
-        <section class="ai-section ai-section-highlight">
-          <h3>${formatInlineMarkdown(current.title)}</h3>
-          <div class="ai-section-body">${body ? renderAiBlocks(body) : ""}</div>
-        </section>
-      `);
-    }
-
-    current = null;
-  };
-
-  for (const rawLine of lines) {
-    const line = rawLine.trim();
-
-    if (!line) {
-      flushList();
-      continue;
-    }
-
-    const heading = line.match(/^#{1,3}\\s*(.+)$/);
-    if (heading) {
-      flushSection();
-      const title = heading[1].trim();
-      current = {
-        type: /оцінка/i.test(title) ? "highlight" : "section",
-        title,
-        body: []
-      };
-      continue;
-    }
-
-    const bullet = line.match(/^(?:[-*•]|\\d+[.)])\\s+(.+)$/);
-    if (bullet) {
-      if (!current) {
-        current = { type: "section", title: "Аналіз", body: [] };
-      }
-      listItems.push(bullet[1]);
-      continue;
-    }
-
-    if (!current) {
-      current = { type: "section", title: "Висновок тренера", body: [] };
-    }
-
-    flushList();
-    current.body.push(line);
-  }
-
-  flushSection();
-
-  return blocks.join("");
-}
-
-function formatAiText(text) {
-  return renderAiBlocks(text);
+  return escaped
+    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\n\n+/g, "</p><p>")
+    .replace(/\n/g, "<br>");
 }
 
 function detectWorkoutType(summary) {
@@ -406,7 +318,7 @@ async function analyzeWithAI() {
 
     if (aiAnalysisText) {
       aiAnalysisText.innerHTML =
-        formatAiText(data.analysis || "Не вдалося отримати аналіз.");
+        `<p>${formatAiText(data.analysis || "Не вдалося отримати аналіз.")}</p>`;
     }
 
     if (aiAnalysis) {
