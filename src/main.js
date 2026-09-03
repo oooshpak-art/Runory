@@ -40,16 +40,196 @@ function paceToSeconds(pace) {
   return parts[0] * 60 + parts[1];
 }
 
-function formatAiText(text) {
-  const escaped = String(text ?? "")
+function escapeHtml(value) {
+  return String(value ?? "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
 
-  return escaped
+function formatInlineMarkdown(text) {
+  return escapeHtml(text)
     .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-    .replace(/\n\n+/g, "</p><p>")
-    .replace(/\n/g, "<br>");
+    .replace(/`([^`]+)`/g, '<span class="ai-code">$1</span>');
+}
+
+function splitAiSections(text) {
+  const normalized = String(text ?? "")
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .trim();
+
+  const matches = [...normalized.matchAll(/(?:^|\n)\s*(?:#{1,6}\s*)?(\d+)\.\s+([^\n]+)\s*/g)];
+
+  if (!matches.length) {
+    return [{ number: 0, title: "Аналіз", body: normalized }];
+  }
+
+  return matches.map((match, index) => {
+    const bodyStart = match.index + match[0].length;
+    const bodyEnd = index + 1 < matches.length ? matches[index + 1].index : normalized.length;
+    return {
+      number: Number(match[1]),
+      title: match[2].trim(),
+      body: normalized.slice(bodyStart, bodyEnd).trim()
+    };
+  });
+}
+
+function extractScore(title, body) {
+  const source = `${title} ${body}`;
+  const match = source.match(/(?:оцінка|оценка)\s*[—:-]?\s*(\d+(?:[.,]\d+)?)\s*\/\s*10/i)
+    || source.match(/(\d+(?:[.,]\d+)?)\s*\/\s*10/);
+  if (!match) return null;
+  const score = Number(String(match[1]).replace(",", "."));
+  return Number.isFinite(score) ? Math.max(0, Math.min(10, score)) : null;
+}
+
+function cleanSectionTitle(title) {
+  return String(title ?? "")
+    .replace(/^#{1,6}\s*/, "")
+    .replace(/^\d+\.\s*/, "")
+    .replace(/\s*[—:-]\s*\d+(?:[.,]\d+)?\s*\/\s*10\s*$/i, "")
+    .trim();
+}
+
+function parseBodyBlocks(body) {
+  const lines = String(body ?? "")
+    .split("\n")
+    .map(line => line.trim())
+    .filter(Boolean);
+
+  const blocks = [];
+  let list = [];
+
+  const flushList = () => {
+    if (!list.length) return;
+    blocks.push({ type: "list", items: list });
+    list = [];
+  };
+
+  for (const line of lines) {
+    const subheading = line.match(/^#{1,6}\s+(.+)$/);
+    if (subheading) {
+      flushList();
+      blocks.push({ type: "heading", text: subheading[1].trim() });
+      continue;
+    }
+
+    if (/^(?:[-*•]|\d+[.)])\s+/.test(line)) {
+      list.push(line.replace(/^(?:[-*•]|\d+[.)])\s+/, "").trim());
+      continue;
+    }
+
+    flushList();
+    blocks.push({ type: "paragraph", text: line });
+  }
+
+  flushList();
+  return blocks;
+}
+
+function renderAiBlocks(body, options = {}) {
+  const blocks = parseBodyBlocks(body);
+  return blocks.map(block => {
+    if (block.type === "heading") {
+      return `<h5>${formatInlineMarkdown(block.text)}</h5>`;
+    }
+    if (block.type === "list") {
+      const items = block.items.map(item => `
+        <li><span class="ai-list-icon" aria-hidden="true">${options.icon || "✓"}</span><span>${formatInlineMarkdown(item)}</span></li>
+      `).join("");
+      return `<ul class="ai-list">${items}</ul>`;
+    }
+    return `<p>${formatInlineMarkdown(block.text)}</p>`;
+  }).join("");
+}
+
+function renderAiAnalysis(text) {
+  const sections = splitAiSections(text);
+  const scoreSection = sections.find(section => section.number === 1) || sections[0];
+  const score = extractScore(scoreSection?.title, scoreSection?.body);
+  const parts = [];
+
+  if (score != null) {
+    const scoreLabel = score >= 8.5
+      ? "Відмінна робота"
+      : score >= 7
+        ? "Сильне тренування"
+        : score >= 5
+          ? "Є що покращити"
+          : "Потрібен обережніший підхід";
+
+    parts.push(`
+      <div class="ai-score-card">
+        <div class="ai-score-ring" style="--score:${score * 36}deg" aria-label="Оцінка ${score} з 10">
+          <strong>${String(score).replace(".", ",")}</strong><span>/10</span>
+        </div>
+        <div class="ai-score-copy">
+          <p class="eyebrow">ОЦІНКА ТРЕНЕРА</p>
+          <h4>${escapeHtml(scoreLabel)}</h4>
+          <p>Оцінка сформована на основі темпу, пульсу, каденсу, обсягу та динаміки сплітів.</p>
+        </div>
+      </div>
+    `);
+  }
+
+  for (const section of sections) {
+    const title = cleanSectionTitle(section.title);
+    const body = section.body;
+    if (!body && section.number !== 1) continue;
+    if (section.number === 1) continue;
+
+    if (section.number === 3) {
+      parts.push(`
+        <details class="ai-accordion">
+          <summary>
+            <span><b>03</b><strong>${escapeHtml(title)}</strong></span>
+            <span class="ai-accordion-toggle" aria-hidden="true">+</span>
+          </summary>
+          <div class="ai-accordion-body">${renderAiBlocks(body)}</div>
+        </details>
+      `);
+      continue;
+    }
+
+    const variant = section.number === 5
+      ? " is-positive"
+      : section.number === 6
+        ? " is-warning"
+        : section.number === 8
+          ? " is-recovery"
+          : section.number === 9
+            ? " is-conclusion"
+            : "";
+    const icon = section.number === 5
+      ? "✓"
+      : section.number === 6
+        ? "!"
+        : section.number === 8
+          ? "↻"
+          : section.number === 9
+            ? "→"
+            : "";
+
+    parts.push(`
+      <article class="ai-section${variant}">
+        <div class="ai-section-heading">
+          <span class="ai-section-number">${String(section.number).padStart(2, "0")}</span>
+          <div>
+            <p class="eyebrow">РОЗДІЛ ${String(section.number).padStart(2, "0")}</p>
+            <h4>${escapeHtml(title)}</h4>
+          </div>
+          ${icon ? `<span class="ai-section-icon" aria-hidden="true">${icon}</span>` : ""}
+        </div>
+        <div class="ai-section-body">${renderAiBlocks(body, { icon: section.number === 5 ? "✓" : section.number === 6 ? "!" : "•" })}</div>
+      </article>
+    `);
+  }
+
+  return parts.join("");
 }
 
 function detectWorkoutType(summary) {
@@ -318,7 +498,7 @@ async function analyzeWithAI() {
 
     if (aiAnalysisText) {
       aiAnalysisText.innerHTML =
-        `<p>${formatAiText(data.analysis || "Не вдалося отримати аналіз.")}</p>`;
+        renderAiAnalysis(data.analysis || "Не вдалося отримати аналіз.");
     }
 
     if (aiAnalysis) {
@@ -331,7 +511,7 @@ async function analyzeWithAI() {
   } catch (error) {
     if (aiAnalysisText) {
       aiAnalysisText.innerHTML =
-        `<p class="ai-error">${String(error.message || "Не вдалося виконати AI-аналіз")}</p>`;
+        `<p class="ai-error">${escapeHtml(error.message || "Не вдалося виконати AI-аналіз")}</p>`;
     }
     if (aiAnalysis) aiAnalysis.classList.remove("is-loading");
   } finally {
