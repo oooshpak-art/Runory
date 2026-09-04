@@ -207,8 +207,13 @@ const translations = {
 let currentLanguage = localStorage.getItem("runory-language") || "uk";
 if (!translations[currentLanguage]) currentLanguage = "uk";
 
+function normalizeTranslationKey(key) {
+  return String(key ?? "").replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
+}
+
 function t(key, vars = {}) {
-  let value = translations[currentLanguage]?.[key] ?? translations.uk[key] ?? key;
+  const normalizedKey = normalizeTranslationKey(key);
+  let value = translations[currentLanguage]?.[normalizedKey] ?? translations.uk[normalizedKey] ?? key;
   Object.entries(vars).forEach(([name, replacement]) => {
     value = value.replaceAll(`{${name}}`, String(replacement));
   });
