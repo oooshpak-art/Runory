@@ -517,3 +517,62 @@
     font-size: 9.5px;
   }
 }
+
+
+/* === Final mobile + AI polish === */
+.ai-score-ring strong {
+  font-size: 30px;
+  font-weight: 800;
+}
+.ai-score-ring span {
+  font-size: 30px;
+  font-weight: 400;
+  line-height: 1;
+  bottom: 8px;
+}
+.ai-section.is-recovery .ai-section-icon {
+  display: none;
+}
+
+@media (max-width: 680px) {
+  /* All five split columns fit inside the phone viewport. */
+  .splits-table-wrap {
+    overflow-x: hidden;
+  }
+  .splits-table {
+    width: 100% !important;
+    min-width: 0 !important;
+    table-layout: fixed !important;
+    font-size: 11px;
+  }
+  .splits-table th,
+  .splits-table td {
+    padding-left: 5px !important;
+    padding-right: 5px !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: clip;
+  }
+  .splits-table th {
+    font-size: 8px;
+    letter-spacing: .2px;
+  }
+  .splits-table td {
+    font-size: 11px;
+  }
+  .splits-table .col-km { width: 12%; }
+  .splits-table .col-pace { width: 23%; }
+  .splits-table .col-heart-rate { width: 19%; }
+  .splits-table .col-cadence { width: 23%; }
+  .splits-table .col-ascent { width: 23%; }
+
+  .ai-score-ring strong {
+    font-size: 25px;
+    font-weight: 800;
+  }
+  .ai-score-ring span {
+    font-size: 25px;
+    font-weight: 400;
+    bottom: 5px;
+  }
+}
