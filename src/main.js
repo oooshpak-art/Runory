@@ -716,11 +716,12 @@ function renderStructure(structure = [], summary = null) {
         pace: split?.pace || "—",
         heartRate: split?.heartRate ?? null,
         cadence: split?.cadence ?? null,
+        ascent: Number.isFinite(Number(split?.ascent)) ? Number(split.ascent) : 0,
+        descent: Number.isFinite(Number(split?.descent)) ? Number(split.descent) : 0,
         elevation: Number.isFinite(Number(split?.elevation))
           ? Number(split.elevation)
-          : Number.isFinite(Number(split?.ascent))
-            ? Number(split.ascent)
-            : 0,
+          : (Number.isFinite(Number(split?.ascent)) ? Number(split.ascent) : 0)
+            - (Number.isFinite(Number(split?.descent)) ? Number(split.descent) : 0),
         index
       };
     };
