@@ -483,6 +483,17 @@ function detectWorkoutType(summary) {
     .map(s => paceToSeconds(s.pace))
     .filter(Number.isFinite);
 
+  // Garmin workout structure has priority over total distance.
+  // A long session can still be an interval workout, so never label
+  // it as a long run before checking the explicit structure.
+  const hasIntervals = Array.isArray(summary.structure)
+    && summary.structure.some(block =>
+      block?.type === "intervals"
+      && Array.isArray(block.repetitions)
+      && block.repetitions.length > 0
+    );
+
+  if (hasIntervals) return t("workoutIntervals");
   if (distance >= 15) return t("workoutLong");
 
   if (paces.length >= 4) {
