@@ -576,3 +576,17 @@
     bottom: 5px;
   }
 }
+
+
+/* Language switcher */
+.topbar-right { display:flex; align-items:center; gap:14px; margin-left:auto; }
+.topbar-right .app-nav { margin-left:0; }
+.language-switcher { display:flex; align-items:center; gap:5px; padding:3px; border:1px solid var(--line); border-radius:9px; background:#fff; color:#9aa39d; font:700 10px 'DM Mono',monospace; }
+.language-button { border:0; background:transparent; color:#758078; padding:6px 7px; border-radius:6px; font:700 10px 'DM Mono',monospace; cursor:pointer; transition:.15s ease; }
+.language-button:hover { color:var(--ink); background:#f1f4f0; }
+.language-button.is-active { background:var(--ink); color:#fff; }
+@media (max-width:680px) {
+  .topbar-right { width:100%; flex-wrap:wrap; gap:8px; }
+  .topbar-right .app-nav { order:2; width:auto; flex:1; margin:10px 0 0; }
+  .language-switcher { order:1; margin-left:auto; }
+}
