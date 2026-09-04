@@ -54,6 +54,7 @@ You must analyze their dynamics:
 - where there were accelerations or slowdowns;
 - how heart rate changed with pace;
 - whether heart rate increased at the same or slower pace;
+- always include "bpm" after every heart-rate value or range (for example, "163 bpm" or "170–176 bpm");
 - whether there are signs of a positive or negative split;
 - how cadence changed;
 - whether climbs could have affected pace;
