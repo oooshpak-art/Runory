@@ -7,10 +7,10 @@
 
   <meta
     name="description"
-    content="Runory — калькулятор бігу: час, дистанція та темп."
+    content="Runory — калькулятор бігу: час, дистанція та темп." data-i18n-content="metaDescription"
   />
 
-  <title>Runory — калькулятор бігу</title>
+  <title data-i18n-title="pageTitle">Runory — калькулятор бігу</title>
 <link rel="icon" href="src/assets/favicon.svg" type="image/svg+xml" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -28,50 +28,37 @@
 <main class="page-shell">
 
   <header class="topbar">
-
-    <a class="brand" href="index.html" aria-label="Runory — головна">
-     <img class="brand-logo" src="src/assets/runory-logo.svg" alt="Runory" />
-    </a>
-
-    <nav class="app-nav" aria-label="Розділи Runory">
-
-      <a
-        class="nav-tab"
-        href="index.html"
-        style="text-decoration:none;"
-      >
-        Аналіз тренування
+      <a class="brand" href="index.html" aria-label="Runory — головна" data-i18n-aria="ariaHome">
+        <img class="brand-logo" src="src/assets/runory-logo.svg" alt="Runory" />
       </a>
 
-      <a
-        class="nav-tab is-active"
-        href="calculator.html"
-        style="text-decoration:none;"
-      >
-        Калькулятор бігу
-      </a>
+      <div class="topbar-right">
+        <nav class="app-nav" aria-label="Розділи Runory" data-i18n-aria="ariaNav">
+          <a class="nav-tab" href="index.html" style="text-decoration:none;">
+            <span data-i18n="navAnalysis">Аналіз тренування</span>
+          </a>
+          <a class="nav-tab is-active" href="calculator.html" style="text-decoration:none;">
+            <span data-i18n="navCalculator">Калькулятор бігу</span>
+          </a>
+        </nav>
 
-    </nav>
-
-
-
-  </header>
+        <div class="language-switcher" role="group" aria-label="Мова" data-i18n-aria="language">
+          <button type="button" class="language-button is-active" data-lang="uk" aria-pressed="true">UA</button>
+          <button type="button" class="language-button" data-lang="en" aria-pressed="false">EN</button>
+        </div>
+      </div>
+    </header>
 
 
   <section class="calculator-view">
 
     <div class="calculator-intro">
 
-      <p class="eyebrow">ІНСТРУМЕНТ БІГУНА</p>
+      <p class="eyebrow" data-i18n="calculatorEyebrow">ІНСТРУМЕНТ БІГУНА</p>
 
-      <h1>
-        Плануй забіг<br />
-        у цифрах.
-      </h1>
+      <h1 data-i18n="heroTitle">Плануй забіг<br />у цифрах.</h1>
 
-      <p>
-        Введи два значення — Runory одразу порахує третє.
-      </p>
+      <p data-i18n="heroCopy">Введи два значення — Runory одразу порахує третє.</p>
 
     </div>
 
@@ -79,32 +66,14 @@
     <div
       class="calculator-tabs"
       role="tablist"
-      aria-label="Тип розрахунку"
+      aria-label="Тип розрахунку" data-i18n-aria="calculatorType"
     >
 
-      <button
-        class="calc-tab is-active"
-        data-calculator="time"
-        type="button"
-      >
-        Знайти час
-      </button>
+      <button class="calc-tab is-active" data-calculator="time" type="button" data-i18n="tabTime">Знайти час</button>
 
-      <button
-        class="calc-tab"
-        data-calculator="distance"
-        type="button"
-      >
-        Знайти дистанцію
-      </button>
+      <button class="calc-tab" data-calculator="distance" type="button" data-i18n="tabDistance">Знайти дистанцію</button>
 
-      <button
-        class="calc-tab"
-        data-calculator="pace"
-        type="button"
-      >
-        Знайти темп
-      </button>
+      <button class="calc-tab" data-calculator="pace" type="button" data-i18n="tabPace">Знайти темп</button>
 
     </div>
 
@@ -137,12 +106,7 @@
           id="calculatorFields"
         ></div>
 
-        <button
-          class="calculate-button"
-          type="submit"
-        >
-          Розрахувати
-        </button>
+        <button class="calculate-button" type="submit" data-i18n="calculate">Розрахувати</button>
 
       </form>
 
@@ -154,9 +118,7 @@
         aria-live="polite"
       >
 
-        <p id="result-label">
-          Твій орієнтовний час
-        </p>
+        <p id="result-label" data-i18n="resultTime">Твій орієнтовний час</p>
 
         <strong id="result-value">
           —
@@ -174,7 +136,128 @@
 
 
 <script>
+const calculatorTranslations = {
+  uk: {
+    pageTitle: "Runory — калькулятор бігу",
+    metaDescription: "Runory — калькулятор бігу: час, дистанція та темп.",
+    ariaHome: "Runory — головна",
+    ariaNav: "Розділи Runory",
+    language: "Мова",
+    navAnalysis: "Аналіз тренування",
+    navCalculator: "Калькулятор бігу",
+    calculatorEyebrow: "ІНСТРУМЕНТ БІГУНА",
+    heroTitle: "Плануй забіг<br />у цифрах.",
+    heroCopy: "Введи два значення — Runory одразу порахує третє.",
+    calculatorType: "Тип розрахунку",
+    tabTime: "Знайти час",
+    tabDistance: "Знайти дистанцію",
+    tabPace: "Знайти темп",
+    timeEyebrow: "ДИСТАНЦІЯ + ТЕМП",
+    timeTitle: "Який буде час?",
+    timeDescription: "Вкажи дистанцію та бажаний темп.",
+    timeLabel: "Твій орієнтовний час",
+    distanceEyebrow: "ЧАС + ТЕМП",
+    distanceTitle: "Яка буде дистанція?",
+    distanceDescription: "Вкажи час, який маєш, і свій темп.",
+    distanceLabel: "Твоя орієнтовна дистанція",
+    paceEyebrow: "ДИСТАНЦІЯ + ЧАС",
+    paceTitle: "Який потрібен темп?",
+    paceDescription: "Вкажи дистанцію та бажаний фінішний час.",
+    paceLabel: "Твій потрібний темп",
+    distance: "Дистанція",
+    time: "Час",
+    pace: "Темп на кілометр",
+    exampleDistance: "Наприклад, 21.1",
+    hours: "год",
+    minutes: "хв",
+    seconds: "сек",
+    calculate: "Розрахувати",
+    resultTime: "Твій орієнтовний час",
+    checkValues: "Перевір введені значення",
+    rangeError: "Хвилини та секунди мають бути від 0 до 59.",
+    km: "км",
+    perKm: "/ км"
+  },
+  en: {
+    pageTitle: "Runory — running calculator",
+    metaDescription: "Runory — running calculator for time, distance and pace.",
+    ariaHome: "Runory — home",
+    ariaNav: "Runory sections",
+    language: "Language",
+    navAnalysis: "Workout analysis",
+    navCalculator: "Running calculator",
+    calculatorEyebrow: "RUNNER'S TOOL",
+    heroTitle: "Plan your run<br />with numbers.",
+    heroCopy: "Enter two values — Runory will calculate the third instantly.",
+    calculatorType: "Calculation type",
+    tabTime: "Find time",
+    tabDistance: "Find distance",
+    tabPace: "Find pace",
+    timeEyebrow: "DISTANCE + PACE",
+    timeTitle: "What will the time be?",
+    timeDescription: "Enter the distance and target pace.",
+    timeLabel: "Your estimated time",
+    distanceEyebrow: "TIME + PACE",
+    distanceTitle: "What will the distance be?",
+    distanceDescription: "Enter the time you have and your pace.",
+    distanceLabel: "Your estimated distance",
+    paceEyebrow: "DISTANCE + TIME",
+    paceTitle: "What pace do you need?",
+    paceDescription: "Enter the distance and target finish time.",
+    paceLabel: "Your required pace",
+    distance: "Distance",
+    time: "Time",
+    pace: "Pace per kilometer",
+    exampleDistance: "For example, 21.1",
+    hours: "hr",
+    minutes: "min",
+    seconds: "sec",
+    calculate: "Calculate",
+    resultTime: "Your estimated time",
+    checkValues: "Check the entered values",
+    rangeError: "Minutes and seconds must be between 0 and 59.",
+    km: "km",
+    perKm: "/ km"
+  }
+};
 
+let currentLanguage = localStorage.getItem("runory-language") || "uk";
+if (!calculatorTranslations[currentLanguage]) currentLanguage = "uk";
+
+const t = key => calculatorTranslations[currentLanguage][key] ?? calculatorTranslations.uk[key] ?? key;
+
+function applyLanguage() {
+  document.documentElement.lang = currentLanguage;
+  document.title = t("pageTitle");
+
+  const meta = document.querySelector('meta[data-i18n-content="metaDescription"]');
+  if (meta) meta.setAttribute("content", t("metaDescription"));
+
+  document.querySelectorAll("[data-i18n]").forEach(el => {
+    el.innerHTML = t(el.dataset.i18n);
+  });
+  document.querySelectorAll("[data-i18n-aria]").forEach(el => {
+    el.setAttribute("aria-label", t(el.dataset.i18nAria));
+  });
+  document.querySelectorAll(".language-button").forEach(button => {
+    const active = button.dataset.lang === currentLanguage;
+    button.classList.toggle("is-active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
+
+  renderCalculator(activeCalculator);
+}
+
+function setLanguage(language) {
+  if (!calculatorTranslations[language] || language === currentLanguage) return;
+  currentLanguage = language;
+  localStorage.setItem("runory-language", currentLanguage);
+  applyLanguage();
+}
+
+</script>
+
+<script>
 const calculatorForm =
   document.querySelector('#calculatorForm');
 
@@ -209,26 +292,26 @@ const calcTabs =
 const calculators = {
 
   time: {
-    eyebrow: 'ДИСТАНЦІЯ + ТЕМП',
-    title: 'Який буде час?',
-    description: 'Вкажи дистанцію та бажаний темп.',
-    label: 'Твій орієнтовний час',
+    eyebrow: "timeEyebrow",
+    title: "timeTitle",
+    description: "timeDescription",
+    label: "timeLabel",
     fields: ['distance', 'pace']
   },
 
   distance: {
-    eyebrow: 'ЧАС + ТЕМП',
-    title: 'Яка буде дистанція?',
-    description: 'Вкажи час, який маєш, і свій темп.',
-    label: 'Твоя орієнтовна дистанція',
+    eyebrow: "distanceEyebrow",
+    title: "distanceTitle",
+    description: "distanceDescription",
+    label: "distanceLabel",
     fields: ['time', 'pace']
   },
 
   pace: {
-    eyebrow: 'ДИСТАНЦІЯ + ЧАС',
-    title: 'Який потрібен темп?',
-    description: 'Вкажи дистанцію та бажаний фінішний час.',
-    label: 'Твій потрібний темп',
+    eyebrow: "paceEyebrow",
+    title: "paceTitle",
+    description: "paceDescription",
+    label: "paceLabel",
     fields: ['distance', 'time']
   }
 
@@ -256,13 +339,13 @@ function renderCalculator(type) {
 
 
   calcEyebrow.textContent =
-    calculator.eyebrow;
+    t(calculator.eyebrow);
 
   calcTitle.textContent =
-    calculator.title;
+    t(calculator.title);
 
   calcDescription.textContent =
-    calculator.description;
+    t(calculator.description);
 
 
   calculatorFields.innerHTML =
@@ -273,7 +356,7 @@ function renderCalculator(type) {
         return `
           <label class="calc-field">
 
-            <span>Дистанція</span>
+            <span>${t("distance")}</span>
 
             <div>
 
@@ -281,7 +364,7 @@ function renderCalculator(type) {
                 name="distance"
                 inputmode="decimal"
                 autocomplete="off"
-                placeholder="Наприклад, 21.1"
+                placeholder="${t("exampleDistance")}"
                 required
               />
 
@@ -300,7 +383,7 @@ function renderCalculator(type) {
         return `
           <fieldset class="calc-field time-field">
 
-            <legend>Час</legend>
+            <legend>${t("time")}</legend>
 
             <div class="split-inputs">
 
@@ -312,7 +395,7 @@ function renderCalculator(type) {
                   inputmode="numeric"
                   placeholder="0"
                 />
-                <span>год</span>
+                <span>${t("hours")}</span>
               </label>
 
               <label>
@@ -324,7 +407,7 @@ function renderCalculator(type) {
                   inputmode="numeric"
                   placeholder="00"
                 />
-                <span>хв</span>
+                <span>${t("minutes")}</span>
               </label>
 
               <label>
@@ -336,7 +419,7 @@ function renderCalculator(type) {
                   inputmode="numeric"
                   placeholder="00"
                 />
-                <span>сек</span>
+                <span>${t("seconds")}</span>
               </label>
 
             </div>
@@ -350,9 +433,7 @@ function renderCalculator(type) {
       return `
         <fieldset class="calc-field time-field">
 
-          <legend>
-            Темп на кілометр
-          </legend>
+          <legend>${t("pace")}</legend>
 
           <div class="split-inputs">
 
@@ -365,7 +446,7 @@ function renderCalculator(type) {
                 placeholder="5"
                 required
               />
-              <span>хв</span>
+              <span>${t("minutes")}</span>
             </label>
 
             <label>
@@ -378,7 +459,7 @@ function renderCalculator(type) {
                 placeholder="30"
                 required
               />
-              <span>сек</span>
+              <span>${t("seconds")}</span>
             </label>
 
           </div>
@@ -524,25 +605,22 @@ calculatorForm.addEventListener(
       paceSeconds > 59
     ) {
 
-      resultLabel.textContent =
-        'Перевір введені значення';
+      resultLabel.textContent = t("checkValues");
 
       resultValue.textContent =
         '—';
 
-      resultDetail.textContent =
-        'Хвилини та секунди мають бути від 0 до 59.';
+      resultDetail.textContent = t("rangeError");
 
     } else {
 
-      resultLabel.textContent =
-        calculators[activeCalculator].label;
+      resultLabel.textContent = t(calculators[activeCalculator].label);
 
       resultValue.textContent =
         activeCalculator === 'distance'
-          ? `${value} км`
+          ? `${value} ${t("km")}`
           : activeCalculator === 'pace'
-            ? `${value} / км`
+            ? `${value} ${t("perKm")}`
             : value;
 
       resultDetail.textContent =
@@ -569,7 +647,12 @@ calcTabs.forEach(tab => {
 });
 
 
-renderCalculator('time');
+document.querySelectorAll(".language-button").forEach(button => {
+  button.addEventListener("click", () => setLanguage(button.dataset.lang));
+});
+
+renderCalculator("time");
+applyLanguage();
 
 </script>
 
