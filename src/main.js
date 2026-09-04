@@ -483,17 +483,6 @@ function detectWorkoutType(summary) {
     .map(s => paceToSeconds(s.pace))
     .filter(Number.isFinite);
 
-  // Garmin workout structure has priority over total distance.
-  // A long session can still be an interval workout, so never label
-  // it as a long run before checking the explicit structure.
-  const hasIntervals = Array.isArray(summary.structure)
-    && summary.structure.some(block =>
-      block?.type === "intervals"
-      && Array.isArray(block.repetitions)
-      && block.repetitions.length > 0
-    );
-
-  if (hasIntervals) return t("workoutIntervals");
   if (distance >= 15) return t("workoutLong");
 
   if (paces.length >= 4) {
@@ -585,7 +574,7 @@ function renderSplits(splits = []) {
       <td class="split-pace">${split.pace ?? "—"}</td>
       <td>${split.heartRate ?? "—"}</td>
       <td>${split.cadence ?? "—"}</td>
-      <td class="split-elevation ${Number(split.ascent) < 0 ? "is-down" : ""}">${split.ascent != null ? `${split.ascent > 0 ? '+' : ''}${split.ascent} ${currentLanguage === "uk" ? "м" : "m"}` : "—"}</td>
+      <td class="split-elevation ${Number(split.elevation) < 0 ? "is-down" : ""}">${split.elevation != null ? `${split.elevation > 0 ? '+' : ''}${split.elevation} ${currentLanguage === "uk" ? "м" : "m"}` : "—"}</td>
     `;
 
     splitsBody.appendChild(row);
@@ -687,7 +676,7 @@ function renderStructure(structure = []) {
         : null,
       ascent,
       descent,
-      elevation: ascent >= descent ? ascent : -descent
+      elevation: ascent - descent
     };
   };
 
