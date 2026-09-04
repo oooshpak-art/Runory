@@ -188,16 +188,24 @@
     }
 
     .ai-score-ring strong {
-      font-size: 28px;
-      letter-spacing: -1.8px;
+      display: block;
+      font-size: 30px;
+      letter-spacing: -1px;
       line-height: 1;
+      text-align: center;
     }
 
     .ai-score-ring span {
-      margin: 12px 0 0 2px;
-      font-size: 11px;
+      position: absolute;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%);
+      margin: 0;
+      font-size: 9px;
+      line-height: 1;
       color: #68746d;
-      font-weight: 700;
+      font-weight: 800;
+      white-space: nowrap;
     }
 
     .ai-score-copy h4,
@@ -224,27 +232,20 @@
     }
 
     .ai-section-heading {
-      display: grid;
-      grid-template-columns: 34px minmax(0, 1fr) auto;
-      gap: 12px;
+      display: flex;
       align-items: center;
+      justify-content: space-between;
+      gap: 12px;
       margin-bottom: 14px;
     }
 
-    .ai-section-number {
-      width: 34px;
-      height: 34px;
-      display: grid;
-      place-items: center;
-      border-radius: 10px;
-      background: #f1f4f0;
-      color: #5c6961;
-      font: 700 11px "DM Mono", monospace;
+    .ai-section-title-wrap {
+      min-width: 0;
     }
 
+    .ai-section-number,
     .ai-section-heading .eyebrow {
-      margin: 0 0 3px;
-      font-size: 9px;
+      display: none;
     }
 
     .ai-section-body,
@@ -502,13 +503,12 @@
       }
 
       .ai-score-ring::before { inset: 6px; }
-      .ai-score-ring strong { font-size: 23px; }
-      .ai-score-ring span { margin-top: 10px; font-size: 10px; }
+      .ai-score-ring strong { font-size: 25px; }
+      .ai-score-ring span { bottom: 15px; font-size: 8px; }
       .ai-score-copy h4 { font-size: 15px; }
       .ai-score-copy p:last-child { font-size: 11px; }
       .ai-section { padding: 16px; }
-      .ai-section-heading { grid-template-columns: 30px minmax(0,1fr) auto; gap: 9px; }
-      .ai-section-number { width: 30px; height: 30px; }
+      .ai-section-heading { gap: 9px; }
       .ai-section-heading h4 { font-size: 15px; }
       .ai-section-icon { width: 27px; height: 27px; }
       .ai-accordion summary { padding: 16px; }
