@@ -945,10 +945,16 @@ function renderStructure(structure = [], summary = null) {
           ? "cooldown"
           : "work";
 
+    // Для автоматически определённых warmup/cooldown статистика хранится
+    // внутри items, поэтому агрегируем её так же, как и tempo-блок.
+    const blockStats = Array.isArray(block.items)
+      ? averageStats(block.items)
+      : block;
+
     addTimelineItem(
       type,
       label,
-      formatStats(block)
+      formatStats(blockStats)
     );
   }
 }
