@@ -192,7 +192,7 @@ function renderAiAnalysis(text) {
       parts.push(`
         <details class="ai-accordion">
           <summary>
-            <span><strong>${escapeHtml(title)}</strong></span>
+            <span><strong>${formatInlineMarkdown(title)}</strong></span>
             <span class="ai-accordion-toggle" aria-hidden="true">+</span>
           </summary>
           <div class="ai-accordion-body">${renderAiBlocks(body)}</div>
@@ -214,17 +214,15 @@ function renderAiAnalysis(text) {
       ? "✓"
       : section.number === 6
         ? "!"
-        : section.number === 8
-          ? "↻"
-          : section.number === 9
-            ? "→"
-            : "";
+        : section.number === 9
+          ? "→"
+          : "";
 
     parts.push(`
       <article class="ai-section${variant}">
         <div class="ai-section-heading">
           <div class="ai-section-title-wrap">
-            <h4>${escapeHtml(title)}</h4>
+            <h4>${formatInlineMarkdown(title)}</h4>
           </div>
           ${icon ? `<span class="ai-section-icon" aria-hidden="true">${icon}</span>` : ""}
         </div>
@@ -293,7 +291,7 @@ function generateWorkoutInsight(summary) {
   const details = [];
 
   if (summary.heartRate != null) {
-    details.push(`середній пульс ${summary.heartRate} уд/хв`);
+    details.push(`Середній пульс ${summary.heartRate} уд/хв`);
   }
 
   if (summary.cadence != null) {
