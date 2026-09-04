@@ -48,7 +48,7 @@ const translations = {
     calories: "Калорії",
     ascent: "Набір висоти",
     structureTitle: "СТРУКТУРА ТРЕНУВАННЯ",
-    structureNote: "Аналіз інтервалів визначено автоматично на основі даних Garmin.",
+    structureNote: "Структуру тренування визначено автоматично на основі даних Garmin та динаміки сплітів.",
     resultsEyebrow: "ТРЕНУВАННЯ ГОТОВЕ",
     resultsTitle: "Твій забіг у цифрах",
     splitsEyebrow: "КІЛОМЕТРОВІ СПЛІТИ",
@@ -79,6 +79,9 @@ const translations = {
     workoutLong: "Довга пробіжка",
     workoutIntervals: "Інтервальне тренування",
     workoutTempo: "Темповий / рівномірний біг",
+    workoutFartlek: "Фартлек",
+    fastSegment: "Швидкий відрізок",
+    slowSegment: "Повільний відрізок",
     workoutRun: "Бігове тренування",
     insightUnavailable: "Реальні дані з Garmin завантажено. Детальний аналіз сплітів недоступний.",
     insightFaster: "Ти поступово прискорювався — друга половина тренування була швидшою.",
@@ -136,7 +139,7 @@ const translations = {
     calories: "Calories",
     ascent: "Elevation gain",
     structureTitle: "WORKOUT STRUCTURE",
-    structureNote: "Interval structure is automatically detected from Garmin data.",
+    structureNote: "Workout structure is automatically detected from Garmin data and split dynamics.",
     resultsEyebrow: "WORKOUT ANALYZED",
     resultsTitle: "Your run in numbers",
     splitsEyebrow: "KILOMETER SPLITS",
@@ -167,6 +170,9 @@ const translations = {
     workoutLong: "Long run",
     workoutIntervals: "Interval workout",
     workoutTempo: "Tempo / steady run",
+    workoutFartlek: "Fartlek",
+    fastSegment: "Fast segment",
+    slowSegment: "Slow segment",
     workoutRun: "Running workout",
     insightUnavailable: "Real Garmin data was loaded. Detailed split analysis is unavailable.",
     insightFaster: "You gradually accelerated — the second half of the workout was faster.",
@@ -477,30 +483,119 @@ function renderAiAnalysis(text) {
   return parts.join("");
 }
 
-function detectWorkoutType(summary) {
-  const distance = Number(summary.distance);
-  const paces = (summary.splits || [])
+function getWorkoutPattern(summary) {
+  const distance = Number(summary?.distance);
+  const splits = Array.isArray(summary?.splits) ? summary.splits : [];
+  const paces = splits
     .map(s => paceToSeconds(s.pace))
     .filter(Number.isFinite);
 
-  if (distance >= 15) return t("workoutLong");
+  const hasIntervals = Array.isArray(summary?.structure)
+    && summary.structure.some(block =>
+      block?.type === "intervals"
+      && Array.isArray(block.repetitions)
+      && block.repetitions.length > 0
+    );
 
-  if (paces.length >= 4) {
-    const average = paces.reduce((a, b) => a + b, 0) / paces.length;
-    let changes = 0;
-
-    for (let i = 1; i < paces.length; i++) {
-      if (Math.abs(paces[i] - paces[i - 1]) >= 20) changes++;
-    }
-
-    const variation =
-      paces.reduce((sum, p) => sum + Math.abs(p - average) / average, 0) /
-      paces.length;
-
-    if (changes >= 3 && variation >= 0.06) return t("workoutIntervals");
-    if (variation <= 0.035 && distance >= 5) return t("workoutTempo");
+  // Explicit Garmin interval structure always wins over inferred patterns.
+  if (hasIntervals) return { type: "intervals" };
+  if (paces.length < 4) {
+    return distance >= 15 ? { type: "long" } : { type: "run" };
   }
 
+  const sorted = [...paces].sort((a, b) => a - b);
+  const median = sorted.length % 2
+    ? sorted[Math.floor(sorted.length / 2)]
+    : (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2;
+
+  // Fartlek = repeated fast/slow alternation, without a Garmin-defined interval structure.
+  const contrastThreshold = Math.max(20, median * 0.055);
+  const states = paces.map(p => {
+    if (p <= median - contrastThreshold) return "fast";
+    if (p >= median + contrastThreshold) return "slow";
+    return "neutral";
+  });
+
+  let previous = null;
+  let transitions = 0;
+  let fastCount = 0;
+  let slowCount = 0;
+
+  for (const state of states) {
+    if (state === "neutral") continue;
+    if (state === "fast") fastCount++;
+    if (state === "slow") slowCount++;
+    if (previous && state !== previous) transitions++;
+    previous = state;
+  }
+
+  if (transitions >= 5 && fastCount >= 3 && slowCount >= 3) {
+    return { type: "fartlek", states };
+  }
+
+  // Tempo = a sustained faster block between a slower warm-up and cool-down.
+  // Use the outer splits as the baseline so a long tempo block does not distort the median.
+  const edgeCount = Math.max(1, Math.min(2, Math.floor(paces.length / 4)));
+  const edgePaces = [
+    ...paces.slice(0, edgeCount),
+    ...paces.slice(-edgeCount)
+  ];
+  const edgeBaseline = edgePaces.reduce((a, b) => a + b, 0) / edgePaces.length;
+  const fastThreshold = edgeBaseline * 0.94;
+  const fastFlags = paces.map(p => p <= fastThreshold);
+
+  let bestStart = -1;
+  let bestEnd = -1;
+  let i = 0;
+  while (i < fastFlags.length) {
+    if (!fastFlags[i]) { i++; continue; }
+    const startIndex = i;
+    while (i + 1 < fastFlags.length && fastFlags[i + 1]) i++;
+    const endIndex = i;
+    if (endIndex - startIndex + 1 > bestEnd - bestStart + 1) {
+      bestStart = startIndex;
+      bestEnd = endIndex;
+    }
+    i++;
+  }
+
+  if (bestStart >= 0) {
+    const blockLength = bestEnd - bestStart + 1;
+    const blockPaces = paces.slice(bestStart, bestEnd + 1);
+    const blockAverage = blockPaces.reduce((a, b) => a + b, 0) / blockPaces.length;
+    const blockVariation = blockPaces.reduce(
+      (sum, pace) => sum + Math.abs(pace - blockAverage) / blockAverage,
+      0
+    ) / blockPaces.length;
+    const share = blockLength / paces.length;
+    const hasWarmup = bestStart > 0;
+    const hasCooldown = bestEnd < paces.length - 1;
+
+    if (
+      blockLength >= 3
+      && share >= 0.30
+      && hasWarmup
+      && hasCooldown
+      && blockVariation <= 0.055
+    ) {
+      return {
+        type: "tempo",
+        tempoStart: bestStart,
+        tempoEnd: bestEnd
+      };
+    }
+  }
+
+  if (distance >= 15) return { type: "long" };
+  return { type: "run" };
+}
+
+function detectWorkoutType(summary) {
+  const pattern = getWorkoutPattern(summary);
+  if (pattern.type === "intervals") return t("workoutIntervals");
+  if (pattern.type === "fartlek") return t("workoutFartlek");
+  if (pattern.type === "tempo") return t("workoutTempo");
+  if (pattern.type === "long") return t("workoutLong");
   return t("workoutRun");
 }
 
@@ -595,11 +690,64 @@ function formatTerrain(value) {
   return n > 0 ? `${t("climb")} +${n} ${currentLanguage === "uk" ? "м" : "m"}` : `${t("descent")} −${Math.abs(n)} ${currentLanguage === "uk" ? "м" : "m"}`;
 }
 
-function renderStructure(structure = []) {
+function renderStructure(structure = [], summary = null) {
   if (!structureCard || !structureBody) return;
   structureBody.innerHTML = "";
 
-  if (!structure.length || (structure.length === 1 && structure[0].type === "easy")) {
+  let displayStructure = Array.isArray(structure) ? structure : [];
+  const explicitIntervals = displayStructure.some(block =>
+    block?.type === "intervals"
+    && Array.isArray(block.repetitions)
+    && block.repetitions.length > 0
+  );
+
+  // Garmin does not provide explicit blocks for tempo/fartlek in every FIT file,
+  // so build a visual structure from split dynamics when no explicit intervals exist.
+  if (!explicitIntervals && summary) {
+    const pattern = getWorkoutPattern(summary);
+    const splits = Array.isArray(summary.splits) ? summary.splits : [];
+
+    const splitStats = (split, index) => {
+      const pace = paceToSeconds(split?.pace);
+      const distance = 1000;
+      return {
+        distance,
+        duration: Number.isFinite(pace) ? pace : null,
+        pace: split?.pace || "—",
+        heartRate: split?.heartRate ?? null,
+        cadence: split?.cadence ?? null,
+        elevation: Number.isFinite(Number(split?.elevation))
+          ? Number(split.elevation)
+          : Number.isFinite(Number(split?.ascent))
+            ? Number(split.ascent)
+            : 0,
+        index
+      };
+    };
+
+    if (pattern.type === "tempo") {
+      const start = pattern.tempoStart;
+      const end = pattern.tempoEnd;
+      const warmup = splits.slice(0, start).map(splitStats);
+      const tempo = splits.slice(start, end + 1).map(splitStats);
+      const cooldown = splits.slice(end + 1).map(splitStats);
+      displayStructure = [];
+      if (warmup.length) displayStructure.push({ type: "warmup", label: t("warmup"), items: warmup });
+      if (tempo.length) displayStructure.push({ type: "tempo", label: t("workoutTempo"), items: tempo });
+      if (cooldown.length) displayStructure.push({ type: "cooldown", label: t("cooldown"), items: cooldown });
+    } else if (pattern.type === "fartlek") {
+      displayStructure = [{
+        type: "fartlek",
+        label: t("workoutFartlek"),
+        items: splits.map((split, index) => ({
+          ...splitStats(split, index),
+          state: pattern.states[index]
+        }))
+      }];
+    }
+  }
+
+  if (!displayStructure.length || (displayStructure.length === 1 && displayStructure[0].type === "easy")) {
     structureCard.hidden = true;
     return;
   }
@@ -692,7 +840,42 @@ function renderStructure(structure = []) {
     structureBody.appendChild(item);
   };
 
-  for (const block of structure) {
+  for (const block of displayStructure) {
+    if (block.type === "tempo") {
+      const items = block.items || [];
+      addTimelineItem(
+        "work",
+        t("workoutTempo"),
+        formatStats(averageStats(items))
+      );
+      continue;
+    }
+
+    if (block.type === "fartlek") {
+      const items = block.items || [];
+      addTimelineItem(
+        "work",
+        t("workoutFartlek"),
+        `${items.length} ${currentLanguage === "uk" ? "сплітів" : "splits"}`
+      );
+      items.forEach((item, index) => {
+        const isFast = item.state === "fast";
+        const isSlow = item.state === "slow";
+        const label = isFast
+          ? `${t("fastSegment")} ${index + 1}`
+          : isSlow
+            ? `${t("slowSegment")} ${index + 1}`
+            : `${t("workoutFartlek")} ${index + 1}`;
+        addTimelineItem(
+          isSlow ? "recovery" : "work",
+          label,
+          formatStats(item),
+          "timeline-detail"
+        );
+      });
+      continue;
+    }
+
     if (block.type === "intervals") {
       const reps = block.repetitions || [];
 
@@ -806,7 +989,7 @@ function renderSummary(summary) {
     generateWorkoutInsight(summary);
 
   renderSplits(summary.splits);
-  renderStructure(summary.structure);
+  renderStructure(summary.structure, summary);
 
   if (aiAnalysis) aiAnalysis.hidden = true;
   if (aiAnalysisText) aiAnalysisText.innerHTML = "";
