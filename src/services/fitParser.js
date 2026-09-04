@@ -268,7 +268,7 @@ function buildLapBasedSplitElevations(laps) {
   for (const [km, value] of splitElevations) {
     value.ascent = Math.round(value.ascent);
     value.descent = Math.round(value.descent);
-    value.elevation = value.ascent >= value.descent ? value.ascent : -value.descent;
+    value.elevation = value.ascent - value.descent;
     splitElevations.set(km, value);
   }
 
@@ -290,7 +290,7 @@ function analyzeWorkoutStructure({ laps = [], records = [] }) {
     duration: Math.round(lap.duration), distance: Math.round(lap.distance),
     pace: lap.distance > 1 ? secondsToPace(lap.duration / (lap.distance / 1000)) : '—',
     heartRate: lap.heartRate, cadence: lap.cadence, ascent: lap.ascent, descent: lap.descent,
-    elevation: lap.ascent >= lap.descent ? lap.ascent : -lap.descent
+    elevation: lap.ascent - lap.descent
   });
 
   if (validLaps.length >= 4) {
@@ -312,15 +312,10 @@ function analyzeWorkoutStructure({ laps = [], records = [] }) {
           const distance = items.reduce((s,l) => s+l.distance,0);
           const hr = items.map(l=>l.heartRate).filter(Number.isFinite);
           const cad = items.map(l=>l.cadence).filter(Number.isFinite);
-          const ascent = items.reduce((s,l)=>s+l.ascent,0); const descent = items.reduce((s,l)=>s+l.descent,0); const elevation = ascent >= descent ? ascent : -descent; return { duration:Math.round(duration), distance:Math.round(distance), pace:distance>1?secondsToPace(duration/(distance/1000)):'—', heartRate:hr.length?Math.round(hr.reduce((a,b)=>a+b,0)/hr.length):null, cadence:cad.length?Math.round(cad.reduce((a,b)=>a+b,0)/cad.length):null, ascent, descent, elevation };
+          const ascent = items.reduce((s,l)=>s+l.ascent,0); const descent = items.reduce((s,l)=>s+l.descent,0); const elevation = ascent - descent; return { duration:Math.round(duration), distance:Math.round(distance), pace:distance>1?secondsToPace(duration/(distance/1000)):'—', heartRate:hr.length?Math.round(hr.reduce((a,b)=>a+b,0)/hr.length):null, cadence:cad.length?Math.round(cad.reduce((a,b)=>a+b,0)/cad.length):null, ascent, descent, elevation };
         };
         const result=[];
-        const warmup = validLaps.slice(0, firstWork);
-         const finalRecovery = validLaps[lastWork + 1];
-         const cooldownStart = finalRecovery && finalRecovery.distance < 700
-           ? lastWork + 2
-           : lastWork + 1;
-         const cooldown = validLaps.slice(cooldownStart);
+        const warmup=validLaps.slice(0,firstWork), cooldown=validLaps.slice(lastWork+1);
         if(warmup.length) result.push({type:'warmup',label:'Разминка',...combine(warmup)});
         const repetitions=[];
         for(let i=firstWork;i<=lastWork;i++){
@@ -338,7 +333,7 @@ function analyzeWorkoutStructure({ laps = [], records = [] }) {
 
   if(validLaps.length){
     const total=validLaps.reduce((a,l)=>{a.duration+=l.duration;a.distance+=l.distance;a.ascent+=l.ascent;a.descent+=l.descent;if(Number.isFinite(l.heartRate))a.hr.push(l.heartRate);if(Number.isFinite(l.cadence))a.cad.push(l.cadence);return a},{duration:0,distance:0,ascent:0,descent:0,hr:[],cad:[]});
-    return [{type:'easy',label:'Непрерывный бег',duration:Math.round(total.duration),distance:Math.round(total.distance),pace:total.distance>1?secondsToPace(total.duration/(total.distance/1000)):'—',heartRate:total.hr.length?Math.round(total.hr.reduce((a,b)=>a+b,0)/total.hr.length):null,cadence:total.cad.length?Math.round(total.cad.reduce((a,b)=>a+b,0)/total.cad.length):null,ascent:total.ascent,descent:total.descent,elevation:total.ascent >= total.descent ? total.ascent : -total.descent,repetitions:1}];
+    return [{type:'easy',label:'Непрерывный бег',duration:Math.round(total.duration),distance:Math.round(total.distance),pace:total.distance>1?secondsToPace(total.duration/(total.distance/1000)):'—',heartRate:total.hr.length?Math.round(total.hr.reduce((a,b)=>a+b,0)/total.hr.length):null,cadence:total.cad.length?Math.round(total.cad.reduce((a,b)=>a+b,0)/total.cad.length):null,ascent:total.ascent,descent:total.descent,elevation:total.ascent - total.descent,repetitions:1}];
   }
   if(records.length<2) return [];
   return [{type:'easy',label:'Тренировка',duration:0,distance:0,pace:'—',heartRate:null,cadence:null,ascent:0,repetitions:1}];
