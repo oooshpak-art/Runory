@@ -459,3 +459,61 @@
     min-width: 560px;
   }
 }
+
+
+/* === Detailed interval structure === */
+.timeline-detail {
+  min-height: 0;
+  padding-bottom: 11px;
+}
+
+.timeline-detail .timeline-content {
+  padding: 8px 10px;
+  border: 1px solid #edf0ed;
+  border-radius: 8px;
+  background: #fbfcfa;
+}
+
+.timeline-detail .timeline-content strong {
+  font-size: 11px;
+  margin-bottom: 3px;
+}
+
+.timeline-detail .timeline-content span {
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.timeline-detail.timeline-work .timeline-content {
+  border-left: 2px solid #39a14a;
+}
+
+.timeline-detail.timeline-recovery .timeline-content {
+  border-left: 2px solid #aab3ad;
+  background: #f8faf8;
+}
+
+.timeline-summary {
+  margin-top: 2px;
+  padding-top: 7px;
+  border-top: 1px dashed #dfe5e0;
+}
+
+.timeline-summary .timeline-content strong {
+  color: #58655f;
+  font-weight: 700;
+}
+
+.timeline-summary .timeline-dot {
+  opacity: .65;
+}
+
+@media (max-width: 520px) {
+  .timeline-detail .timeline-content {
+    padding: 7px 8px;
+  }
+
+  .timeline-detail .timeline-content span {
+    font-size: 9.5px;
+  }
+}
