@@ -25,6 +25,244 @@ const aiAnalysisText = document.querySelector("#aiAnalysisText");
 
 let currentWorkout = null;
 
+const translations = {
+  uk: {
+    navAnalysis: "Аналіз тренування",
+    navCalculator: "Калькулятор бігу",
+    heroEyebrow: "РОЗУМНИЙ ПІДХІД ДО ТВОЇХ ТРЕНУВАНЬ",
+    heroTitle: "Кожен кілометр<br />має значення.",
+    heroCopy: "Runory — аналіз твоїх тренувань у цифрах.<br />Завантаж тренування з Garmin та дізнайся,<br />що насправді відбулося під час пробіжки.",
+    uploadEyebrow: "НОВЕ ТРЕНУВАННЯ",
+    uploadTitle: "Завантаж FIT-файл",
+    uploadHelp: "FIT-файл з Garmin Connect<br />Обробка лише на твоєму пристрої",
+    dropTitle: "Додай тренування з Garmin",
+    chooseFit: "Обрати FIT-файл",
+    dropSubtitle: "або перетягни файл у цю область",
+    fileReady: "Готово до аналізу",
+    removeFile: "Видалити файл",
+    summaryTitle: "ПІДСУМОК ТРЕНУВАННЯ",
+    distance: "Дистанція",
+    time: "Час",
+    pace: "Середній темп",
+    heartRate: "Середній пульс",
+    calories: "Калорії",
+    ascent: "Набір висоти",
+    structureTitle: "СТРУКТУРА ТРЕНУВАННЯ",
+    structureNote: "Аналіз інтервалів визначено автоматично на основі даних Garmin.",
+    resultsEyebrow: "ТРЕНУВАННЯ ГОТОВЕ",
+    resultsTitle: "Твій забіг у цифрах",
+    splitsEyebrow: "КІЛОМЕТРОВІ СПЛІТИ",
+    splitsTitle: "Як змінювався твій біг",
+    splitKm: "Км",
+    splitPace: "Темп",
+    splitHr: "Пульс",
+    splitCadence: "Каденс",
+    splitAscent: "Набір",
+    splitsEmpty: "Спліти з'являться після завантаження FIT-файлу.",
+    insightEyebrow: "ПЕРШИЙ ПОГЛЯД",
+    insightEmpty: "Завантаж тренування, щоб побачити реальні дані Garmin.",
+    aiButton: "Проаналізувати тренування",
+    aiLoading: "Аналізую тренування…",
+    aiEyebrow: "AI-АНАЛІЗ ТРЕНЕРА",
+    aiTitle: "Що говорить твоє тренування",
+    futureTitle: "Незабаром у Runory",
+    futureHistory: "Історія тренувань",
+    futureGarmin: "Garmin Connect",
+    futureAi: "AI-аналіз тренера",
+    aiScoreExcellent: "Відмінна робота",
+    aiScoreStrong: "Сильне тренування",
+    aiScoreImprove: "Є що покращити",
+    aiScoreCautious: "Потрібен обережніший підхід",
+    aiScoreEyebrow: "ОЦІНКА ТРЕНЕРА",
+    aiScoreDescription: "Оцінка сформована на основі темпу, пульсу, каденсу, обсягу та динаміки сплітів.",
+    aiFallbackTitle: "Аналіз",
+    workoutLong: "Довга пробіжка",
+    workoutIntervals: "Інтервальне тренування",
+    workoutTempo: "Темповий / рівномірний біг",
+    workoutRun: "Бігове тренування",
+    insightUnavailable: "Реальні дані з Garmin завантажено. Детальний аналіз сплітів недоступний.",
+    insightFaster: "Ти поступово прискорювався — друга половина тренування була швидшою.",
+    insightSlower: "На початку темп був швидшим, а в другій половині відбулося поступове зниження.",
+    insightEven: "Темп був відносно рівним протягом тренування — хороший контроль зусилля.",
+    avgHr: "Середній пульс",
+    cadence: "каденс",
+    ascentShort: "набір",
+    language: "Мова",
+    splitsNotFound: "Спліти не знайдені",
+    terrain: "Рельєф",
+    flat: "Рівно",
+    climb: "Набір",
+    descent: "Спуск",
+    work: "Робота",
+    interval: "Інтервал",
+    recovery: "Відновлення",
+    warmup: "Розминка",
+    cooldown: "Заминка",
+    uploadedWorkout: "Завантажене тренування",
+    today: "сьогодні",
+    errorAi: "Помилка AI-аналізу",
+    errorAiGeneric: "Не вдалося виконати AI-аналіз",
+    errorAiUnavailable: "Не вдалося отримати аналіз",
+    chooseFitError: "Обери файл із розширенням .fit",
+    preparing: "Готуємо тренування…",
+    readyToView: "Тренування готове до перегляду",
+    readFileError: "Не вдалося прочитати файл",
+    locale: "uk-UA",
+    ariaHome: "Runory — головна",
+    ariaNav: "Розділи Runory",
+    ariaSummary: "Підсумок тренування",
+    ariaFuture: "Майбутні можливості",
+    ariaScore: "Оцінка {score} з 10"
+  },
+  en: {
+    navAnalysis: "Workout analysis",
+    navCalculator: "Running calculator",
+    heroEyebrow: "A SMART APPROACH TO YOUR TRAINING",
+    heroTitle: "Every kilometer<br />matters.",
+    heroCopy: "Runory — your training analysis in numbers.<br />Upload a Garmin workout and find out<br />what really happened during your run.",
+    uploadEyebrow: "NEW WORKOUT",
+    uploadTitle: "Upload FIT file",
+    uploadHelp: "FIT file from Garmin Connect<br />Processed only on your device",
+    dropTitle: "Add a workout from Garmin",
+    chooseFit: "Choose FIT file",
+    dropSubtitle: "or drag the file into this area",
+    fileReady: "Ready for analysis",
+    removeFile: "Remove file",
+    summaryTitle: "WORKOUT SUMMARY",
+    distance: "Distance",
+    time: "Time",
+    pace: "Average pace",
+    heartRate: "Average heart rate",
+    calories: "Calories",
+    ascent: "Elevation gain",
+    structureTitle: "WORKOUT STRUCTURE",
+    structureNote: "Interval structure is detected automatically from Garmin data.",
+    resultsEyebrow: "WORKOUT READY",
+    resultsTitle: "Your run in numbers",
+    splitsEyebrow: "KILOMETER SPLITS",
+    splitsTitle: "How your run changed",
+    splitKm: "Km",
+    splitPace: "Pace",
+    splitHr: "Heart rate",
+    splitCadence: "Cadence",
+    splitAscent: "Elevation",
+    splitsEmpty: "Splits will appear after you upload a FIT file.",
+    insightEyebrow: "FIRST LOOK",
+    insightEmpty: "Upload a workout to see your real Garmin data.",
+    aiButton: "Analyze workout",
+    aiLoading: "Analyzing workout…",
+    aiEyebrow: "AI COACH ANALYSIS",
+    aiTitle: "What your workout says",
+    futureTitle: "Coming soon to Runory",
+    futureHistory: "Workout history",
+    futureGarmin: "Garmin Connect",
+    futureAi: "AI coach analysis",
+    aiScoreExcellent: "Excellent work",
+    aiScoreStrong: "Strong workout",
+    aiScoreImprove: "Room to improve",
+    aiScoreCautious: "A more cautious approach is needed",
+    aiScoreEyebrow: "COACH SCORE",
+    aiScoreDescription: "The score is based on pace, heart rate, cadence, volume, and split dynamics.",
+    aiFallbackTitle: "Analysis",
+    workoutLong: "Long run",
+    workoutIntervals: "Interval workout",
+    workoutTempo: "Tempo / steady run",
+    workoutRun: "Running workout",
+    insightUnavailable: "Real Garmin data was loaded. Detailed split analysis is unavailable.",
+    insightFaster: "You gradually accelerated — the second half of the workout was faster.",
+    insightSlower: "The pace started faster, then gradually slowed in the second half.",
+    insightEven: "The pace stayed relatively even throughout the workout — good effort control.",
+    avgHr: "Average heart rate",
+    cadence: "cadence",
+    ascentShort: "elevation gain",
+    language: "Language",
+    splitsNotFound: "No splits found",
+    terrain: "Terrain",
+    flat: "Flat",
+    climb: "Gain",
+    descent: "Descent",
+    work: "Work",
+    interval: "Interval",
+    recovery: "Recovery",
+    warmup: "Warm-up",
+    cooldown: "Cool-down",
+    uploadedWorkout: "Uploaded workout",
+    today: "today",
+    errorAi: "AI analysis error",
+    errorAiGeneric: "AI analysis could not be completed",
+    errorAiUnavailable: "Could not get an analysis",
+    chooseFitError: "Choose a file with the .fit extension",
+    preparing: "Preparing workout…",
+    readyToView: "Workout ready to view",
+    readFileError: "Could not read the file",
+    locale: "en-US",
+    ariaHome: "Runory — home",
+    ariaNav: "Runory sections",
+    ariaSummary: "Workout summary",
+    ariaFuture: "Future features",
+    ariaScore: "Score {score} out of 10"
+  }
+};
+
+let currentLanguage = localStorage.getItem("runory-language") || "uk";
+if (!translations[currentLanguage]) currentLanguage = "uk";
+
+function t(key, vars = {}) {
+  let value = translations[currentLanguage]?.[key] ?? translations.uk[key] ?? key;
+  Object.entries(vars).forEach(([name, replacement]) => {
+    value = value.replaceAll(`{${name}}`, String(replacement));
+  });
+  return value;
+}
+
+function applyLanguage() {
+  document.documentElement.lang = currentLanguage;
+
+  document.querySelectorAll("[data-i18n]").forEach(element => {
+    element.innerHTML = t(element.dataset.i18n);
+  });
+
+  document.querySelectorAll("[data-i18n-aria]").forEach(element => {
+    element.setAttribute("aria-label", t(element.dataset.i18nAria));
+  });
+
+  const title = currentLanguage === "uk"
+    ? "Runory — аналіз тренувань"
+    : "Runory — workout analysis";
+  document.title = title;
+
+  const home = document.querySelector(".brand");
+  const nav = document.querySelector(".app-nav");
+  const summary = document.querySelector(".results-sidebar");
+  const future = document.querySelector(".future-strip");
+  const languageSwitcher = document.querySelector(".language-switcher");
+  if (home) home.setAttribute("aria-label", t("ariaHome"));
+  if (nav) nav.setAttribute("aria-label", t("ariaNav"));
+  if (summary) summary.setAttribute("aria-label", t("ariaSummary"));
+  if (future) future.setAttribute("aria-label", t("ariaFuture"));
+  if (languageSwitcher) languageSwitcher.setAttribute("aria-label", t("language"));
+
+  document.querySelectorAll(".language-button").forEach(button => {
+    const active = button.dataset.lang === currentLanguage;
+    button.classList.toggle("is-active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
+
+  if (currentWorkout) renderSummary(currentWorkout);
+  else if (splitsBody) {
+    splitsBody.innerHTML = `<tr><td colspan="5" class="splits-empty">${escapeHtml(t("splitsEmpty"))}</td></tr>`;
+  }
+}
+
+function setLanguage(language) {
+  if (!translations[language] || language === currentLanguage) return;
+  currentLanguage = language;
+  localStorage.setItem("runory-language", currentLanguage);
+  applyLanguage();
+}
+
+
+
 function formatMetric(value) {
   const stringValue = String(value ?? "—");
   const index = stringValue.search(/[.:]/);
@@ -70,7 +308,7 @@ function splitAiSections(text) {
   const matches = [...normalized.matchAll(/(?:^|\n)\s*(?:#{1,6}\s*)?(\d+)\.\s+([^\n]+)\s*/g)];
 
   if (!matches.length) {
-    return [{ number: 0, title: "Аналіз", body: normalized }];
+    return [{ number: 0, title: t("aiFallbackTitle"), body: normalized }];
   }
 
   return matches.map((match, index) => {
@@ -86,7 +324,7 @@ function splitAiSections(text) {
 
 function extractScore(title, body) {
   const source = `${title} ${body}`;
-  const match = source.match(/(?:оцінка|оценка)\s*[—:-]?\s*(\d+(?:[.,]\d+)?)\s*\/\s*10/i)
+  const match = source.match(/(?:оцінка|оценка|score)\s*[—:-]?\s*(\d+(?:[.,]\d+)?)\s*\/\s*10/i)
     || source.match(/(\d+(?:[.,]\d+)?)\s*\/\s*10/);
   if (!match) return null;
   const score = Number(String(match[1]).replace(",", "."));
@@ -161,22 +399,22 @@ function renderAiAnalysis(text) {
 
   if (score != null) {
     const scoreLabel = score >= 8.5
-      ? "Відмінна робота"
+      ? t("aiScoreExcellent")
       : score >= 7
-        ? "Сильне тренування"
+        ? t("aiScoreStrong")
         : score >= 5
-          ? "Є що покращити"
-          : "Потрібен обережніший підхід";
+          ? t("aiScoreImprove")
+          : t("aiScoreCautious");
 
     parts.push(`
       <div class="ai-score-card">
-        <div class="ai-score-ring" style="--score:${score * 36}deg" aria-label="Оцінка ${score} з 10">
+        <div class="ai-score-ring" style="--score:${score * 36}deg" aria-label="${t("ariaScore", { score })}">
           <strong>${String(score).replace(".", ",")}</strong><span>/10</span>
         </div>
         <div class="ai-score-copy">
-          <p class="eyebrow">ОЦІНКА ТРЕНЕРА</p>
+          <p class="eyebrow">${t("aiScoreEyebrow")}</p>
           <h4>${escapeHtml(scoreLabel)}</h4>
-          <p>Оцінка сформована на основі темпу, пульсу, каденсу, обсягу та динаміки сплітів.</p>
+          <p>${t("aiScoreDescription")}</p>
         </div>
       </div>
     `);
@@ -240,7 +478,7 @@ function detectWorkoutType(summary) {
     .map(s => paceToSeconds(s.pace))
     .filter(Number.isFinite);
 
-  if (distance >= 15) return "Довга пробіжка";
+  if (distance >= 15) return t("workoutLong");
 
   if (paces.length >= 4) {
     const average = paces.reduce((a, b) => a + b, 0) / paces.length;
@@ -254,11 +492,11 @@ function detectWorkoutType(summary) {
       paces.reduce((sum, p) => sum + Math.abs(p - average) / average, 0) /
       paces.length;
 
-    if (changes >= 3 && variation >= 0.06) return "Інтервальне тренування";
-    if (variation <= 0.035 && distance >= 5) return "Темповий / рівномірний біг";
+    if (changes >= 3 && variation >= 0.06) return t("workoutIntervals");
+    if (variation <= 0.035 && distance >= 5) return t("workoutTempo");
   }
 
-  return "Бігове тренування";
+  return t("workoutRun");
 }
 
 function generateWorkoutInsight(summary) {
@@ -266,7 +504,7 @@ function generateWorkoutInsight(summary) {
   const paces = splits.map(s => paceToSeconds(s.pace)).filter(Number.isFinite);
 
   if (!paces.length) {
-    return "Реальні дані з Garmin завантажено. Детальний аналіз сплітів недоступний.";
+    return t("insightUnavailable");
   }
 
   const half = Math.ceil(paces.length / 2);
@@ -281,25 +519,25 @@ function generateWorkoutInsight(summary) {
   let text;
 
   if (firstAvg - secondAvg > 8) {
-    text = "Ти поступово прискорювався — друга половина тренування була швидшою.";
+    text = t("insightFaster");
   } else if (firstAvg - secondAvg < -8) {
-    text = "На початку темп був швидшим, а в другій половині відбулося поступове зниження.";
+    text = t("insightSlower");
   } else {
-    text = "Темп був відносно рівним протягом тренування — хороший контроль зусилля.";
+    text = t("insightEven");
   }
 
   const details = [];
 
   if (summary.heartRate != null) {
-    details.push(`Середній пульс ${summary.heartRate} уд/хв`);
+    details.push(`${t("avgHr")} ${summary.heartRate} ${currentLanguage === "uk" ? "уд/хв" : "bpm"}`);
   }
 
   if (summary.cadence != null) {
-    details.push(`каденс ${summary.cadence} кроків/хв`);
+    details.push(`${t("cadence")} ${summary.cadence} ${currentLanguage === "uk" ? "кроків/хв" : "steps/min"}`);
   }
 
   if (summary.ascent != null) {
-    details.push(`набір ${summary.ascent} м`);
+    details.push(`${t("ascentShort")} ${summary.ascent} m`);
   }
 
   return details.length
@@ -316,7 +554,7 @@ function renderSplits(splits = []) {
     splitsBody.innerHTML = `
       <tr>
         <td colspan="5" class="splits-empty">
-          Спліти не знайдені
+          ${escapeHtml(t("splitsNotFound"))}
         </td>
       </tr>
     `;
@@ -331,7 +569,7 @@ function renderSplits(splits = []) {
       <td class="split-pace">${split.pace ?? "—"}</td>
       <td>${split.heartRate ?? "—"}</td>
       <td>${split.cadence ?? "—"}</td>
-      <td class="split-elevation ${Number(split.ascent) < 0 ? "is-down" : ""}">${split.ascent != null ? `${split.ascent > 0 ? '+' : ''}${split.ascent} м` : "—"}</td>
+      <td class="split-elevation ${Number(split.ascent) < 0 ? "is-down" : ""}">${split.ascent != null ? `${split.ascent > 0 ? '+' : ''}${split.ascent} ${currentLanguage === "uk" ? "м" : "m"}` : "—"}</td>
     `;
 
     splitsBody.appendChild(row);
@@ -341,15 +579,15 @@ function renderSplits(splits = []) {
 function formatElevation(value) {
   if (!Number.isFinite(Number(value))) return "—";
   const n = Math.round(Number(value));
-  if (n === 0) return "0 м";
+  if (n === 0) return `0 ${currentLanguage === "uk" ? "м" : "m"}`;
   return `${n > 0 ? '+' : ''}${n} м`;
 }
 
 function formatTerrain(value) {
-  if (!Number.isFinite(Number(value))) return "Рельєф —";
+  if (!Number.isFinite(Number(value))) return `${t("terrain")} —`;
   const n = Math.round(Number(value));
-  if (n === 0) return "Рівно 0 м";
-  return n > 0 ? `Набір +${n} м` : `Спуск −${Math.abs(n)} м`;
+  if (n === 0) return `${t("flat")} 0 ${currentLanguage === "uk" ? "м" : "m"}`;
+  return n > 0 ? `${t("climb")} +${n} ${currentLanguage === "uk" ? "м" : "m"}` : `${t("descent")} −${Math.abs(n)} ${currentLanguage === "uk" ? "м" : "m"}`;
 }
 
 function renderStructure(structure = []) {
@@ -374,8 +612,8 @@ function renderStructure(structure = []) {
     const value = Number(meters);
     if (!Number.isFinite(value)) return "—";
     return value >= 1000
-      ? `${(value / 1000).toFixed(2).replace(".", ",")} км`
-      : `${Math.round(value)} м`;
+      ? `${(value / 1000).toFixed(2).replace(".", currentLanguage === "uk" ? "," : ".")} ${currentLanguage === "uk" ? "км" : "km"}`
+      : `${Math.round(value)} ${currentLanguage === "uk" ? "м" : "m"}`;
   };
 
   const formatStats = (stats) => {
@@ -392,15 +630,15 @@ function renderStructure(structure = []) {
     }
 
     if (stats.pace && stats.pace !== "—") {
-      parts.push(`${stats.pace} /км`);
+      parts.push(`${stats.pace} /${currentLanguage === "uk" ? "км" : "km"}`);
     }
 
     if (Number.isFinite(Number(stats.heartRate))) {
-      parts.push(`${Math.round(Number(stats.heartRate))} уд/хв`);
+      parts.push(`${Math.round(Number(stats.heartRate))} ${currentLanguage === "uk" ? "уд/хв" : "bpm"}`);
     }
 
     if (Number.isFinite(Number(stats.cadence))) {
-      parts.push(`${Math.round(Number(stats.cadence))} к/хв`);
+      parts.push(`${Math.round(Number(stats.cadence))} ${currentLanguage === "uk" ? "к/хв" : "spm"}`);
     }
 
     if (Number.isFinite(Number(stats.elevation))) {
@@ -465,8 +703,8 @@ function renderStructure(structure = []) {
       // Заголовок блока — сохраняем общую информацию о серии.
       addTimelineItem(
         "work",
-        `Робота · ${block.workCount || reps.length} × ${Math.round(workDistance)} м`,
-        `${formatDistance(work.distance)} · ${formatDuration(work.duration)} · ${work.pace} /км · ${formatTerrain(work.elevation)}`
+        `${t("work")} · ${block.workCount || reps.length} × ${Math.round(workDistance)} ${currentLanguage === "uk" ? "м" : "m"}`,
+        `${formatDistance(work.distance)} · ${formatDuration(work.duration)} · ${work.pace} /${currentLanguage === "uk" ? "км" : "km"} · ${formatTerrain(work.elevation)}`
       );
 
       // Главное: показываем КАЖДЫЙ интервал и КАЖДОЕ восстановление отдельно.
@@ -476,7 +714,7 @@ function renderStructure(structure = []) {
         if (rep.work) {
           addTimelineItem(
             "work",
-            `Інтервал ${number}`,
+            `${t("interval")} ${number}`,
             formatStats(rep.work),
             "timeline-detail"
           );
@@ -485,7 +723,7 @@ function renderStructure(structure = []) {
         if (rep.recovery) {
           addTimelineItem(
             "recovery",
-            `Відновлення ${number}`,
+            `${t("recovery")} ${number}`,
             formatStats(rep.recovery),
             "timeline-detail"
           );
@@ -496,8 +734,8 @@ function renderStructure(structure = []) {
       if (recoveryItems.length) {
         addTimelineItem(
           "recovery",
-          `Відновлення · ${recoveryItems.length} × ${Math.round(recoveryDistance)} м`,
-          `${formatDistance(recovery.distance)} · ${formatDuration(recovery.duration)} · ${recovery.pace} /км · ${formatTerrain(recovery.elevation)}`,
+          `${t("recovery")} · ${recoveryItems.length} × ${Math.round(recoveryDistance)} ${currentLanguage === "uk" ? "м" : "m"}`,
+          `${formatDistance(recovery.distance)} · ${formatDuration(recovery.duration)} · ${recovery.pace} /${currentLanguage === "uk" ? "км" : "km"} · ${formatTerrain(recovery.elevation)}`,
           "timeline-summary"
         );
       }
@@ -507,9 +745,9 @@ function renderStructure(structure = []) {
 
     const label =
       block.type === "warmup"
-        ? "Розминка"
+        ? t("warmup")
         : block.type === "cooldown"
-          ? "Заминка"
+          ? t("cooldown")
           : block.label;
 
     const type =
@@ -528,16 +766,16 @@ function renderStructure(structure = []) {
 }
 
 function renderSummary(summary) {
-  if (distanceValue) distanceValue.textContent = summary.distance != null ? `${String(summary.distance).replace(".", ",")} км` : "—";
+  if (distanceValue) distanceValue.textContent = summary.distance != null ? `${String(summary.distance).replace(".", currentLanguage === "uk" ? "," : ".")} ${currentLanguage === "uk" ? "км" : "km"}` : "—";
   if (durationValue) durationValue.textContent = summary.duration ?? "—";
-  if (paceValue) paceValue.textContent = summary.pace != null ? `${summary.pace} /км` : "—";
-  if (heartRateValue) heartRateValue.textContent = summary.heartRate != null ? `${summary.heartRate} уд/хв` : "—";
+  if (paceValue) paceValue.textContent = summary.pace != null ? `${summary.pace} /${currentLanguage === "uk" ? "км" : "km"}` : "—";
+  if (heartRateValue) heartRateValue.textContent = summary.heartRate != null ? `${summary.heartRate} ${currentLanguage === "uk" ? "уд/хв" : "bpm"}` : "—";
   if (caloriesValue) {
     const calories = summary.calories ?? summary.totalCalories ?? null;
     const caloriesMetric = caloriesValue.closest(".summary-metric");
 
     if (calories != null && Number.isFinite(Number(calories))) {
-      caloriesValue.textContent = `${Math.round(Number(calories)).toLocaleString("uk-UA")} ккал`;
+      caloriesValue.textContent = `${Math.round(Number(calories)).toLocaleString(translations[currentLanguage].locale)} ${currentLanguage === "uk" ? "ккал" : "kcal"}`;
       if (caloriesMetric) caloriesMetric.hidden = false;
     } else {
       // Якщо Garmin не передав калорії — не показуємо порожній показник.
@@ -545,16 +783,16 @@ function renderSummary(summary) {
     }
   }
   if (ascentValue) {
-    ascentValue.textContent = summary.ascent != null ? `${Math.round(summary.ascent)} м` : "—";
+    ascentValue.textContent = summary.ascent != null ? `${Math.round(summary.ascent)} ${currentLanguage === "uk" ? "м" : "m"}` : "—";
   }
 
   const date = summary.date instanceof Date && !Number.isNaN(summary.date.getTime())
-    ? summary.date.toLocaleDateString("uk-UA", {
+    ? summary.date.toLocaleDateString(translations[currentLanguage].locale, {
         day: "numeric",
         month: "long",
         year: "numeric"
       })
-    : "Завантажене тренування";
+    : t("uploadedWorkout");
 
   runLabel.textContent =
     `${detectWorkoutType(summary)} · ${date}`;
@@ -575,7 +813,7 @@ async function analyzeWithAI() {
   aiAnalyzeButton.disabled = true;
   aiAnalyzeButton.classList.add("is-loading");
   aiAnalyzeButton.innerHTML =
-    '<span class="ai-button-icon">✦</span><span>Аналізую тренування…</span>';
+    `<span class="ai-button-icon">✦</span><span>${escapeHtml(t("aiLoading"))}</span>`;
 
   if (aiAnalysis) {
     aiAnalysis.hidden = false;
@@ -593,18 +831,18 @@ async function analyzeWithAI() {
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify(currentWorkout)
+      body: JSON.stringify({ ...currentWorkout, language: currentLanguage })
     });
 
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.error || "Помилка AI-аналізу");
+      throw new Error(data.error || t("errorAi"));
     }
 
     if (aiAnalysisText) {
       aiAnalysisText.innerHTML =
-        renderAiAnalysis(data.analysis || "Не вдалося отримати аналіз.");
+        renderAiAnalysis(data.analysis || t("errorAiUnavailable"));
     }
 
     if (aiAnalysis) {
@@ -617,14 +855,14 @@ async function analyzeWithAI() {
   } catch (error) {
     if (aiAnalysisText) {
       aiAnalysisText.innerHTML =
-        `<p class="ai-error">${escapeHtml(error.message || "Не вдалося виконати AI-аналіз")}</p>`;
+        `<p class="ai-error">${escapeHtml(error.message || t("errorAiGeneric"))}</p>`;
     }
     if (aiAnalysis) aiAnalysis.classList.remove("is-loading");
   } finally {
     aiAnalyzeButton.disabled = false;
     aiAnalyzeButton.classList.remove("is-loading");
     aiAnalyzeButton.innerHTML =
-      '<span class="ai-button-icon">✦</span><span>Проаналізувати тренування</span>';
+      `<span class="ai-button-icon">✦</span><span>${escapeHtml(t("aiButton"))}</span>`;
   }
 }
 
@@ -636,7 +874,7 @@ async function selectFile(file) {
   if (!file.name.toLowerCase().endsWith(".fit")) {
     uploadState.hidden = false;
     uploadState.classList.add("has-error");
-    fileStatus.textContent = "Обери файл із розширенням .fit";
+    fileStatus.textContent = t("chooseFitError");
     return;
   }
 
@@ -645,7 +883,7 @@ async function selectFile(file) {
   results.hidden = true;
 
   fileName.textContent = file.name;
-  fileStatus.textContent = "Готуємо тренування…";
+  fileStatus.textContent = t("preparing");
   progressBar.style.width = "0%";
   progressValue.textContent = "0%";
 
@@ -668,7 +906,7 @@ async function selectFile(file) {
 
     progressBar.style.width = "100%";
     progressValue.textContent = "100%";
-    fileStatus.textContent = "Тренування готове до перегляду";
+    fileStatus.textContent = t("readyToView");
 
     window.setTimeout(() => {
       results.hidden = false;
@@ -684,7 +922,7 @@ async function selectFile(file) {
     progressBar.style.width = "0%";
     progressValue.textContent = "—";
     fileStatus.textContent =
-      error.message || "Не вдалося прочитати файл";
+      error.message || t("readFileError");
   }
 }
 
@@ -724,3 +962,10 @@ resetButton?.addEventListener("click", () => {
   if (structureBody) structureBody.innerHTML = "";
   if (structureCard) structureCard.hidden = true;
 });
+
+
+document.querySelectorAll(".language-button").forEach(button => {
+  button.addEventListener("click", () => setLanguage(button.dataset.lang));
+});
+
+applyLanguage();
