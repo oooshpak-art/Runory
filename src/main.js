@@ -365,25 +365,83 @@ function renderStructure(structure = []) {
 
   structureCard.hidden = false;
 
+  const formatDuration = (seconds) => {
+    const total = Math.max(0, Math.round(Number(seconds) || 0));
+    const minutes = Math.floor(total / 60);
+    const secs = String(total % 60).padStart(2, "0");
+    return `${minutes}:${secs}`;
+  };
+
+  const formatDistance = (meters) => {
+    const value = Number(meters);
+    if (!Number.isFinite(value)) return "—";
+    return value >= 1000
+      ? `${(value / 1000).toFixed(2).replace(".", ",")} км`
+      : `${Math.round(value)} м`;
+  };
+
+  const formatStats = (stats) => {
+    if (!stats) return "—";
+
+    const parts = [];
+
+    if (Number.isFinite(Number(stats.distance))) {
+      parts.push(formatDistance(stats.distance));
+    }
+
+    if (stats.duration != null && Number.isFinite(Number(stats.duration))) {
+      parts.push(formatDuration(stats.duration));
+    }
+
+    if (stats.pace && stats.pace !== "—") {
+      parts.push(`${stats.pace} /км`);
+    }
+
+    if (Number.isFinite(Number(stats.heartRate))) {
+      parts.push(`${Math.round(Number(stats.heartRate))} уд/хв`);
+    }
+
+    if (Number.isFinite(Number(stats.cadence))) {
+      parts.push(`${Math.round(Number(stats.cadence))} к/хв`);
+    }
+
+    if (Number.isFinite(Number(stats.elevation))) {
+      parts.push(formatTerrain(stats.elevation));
+    }
+
+    return parts.join(" · ") || "—";
+  };
+
   const averageStats = (items = []) => {
     const valid = items.filter(Boolean);
     const distance = valid.reduce((sum, item) => sum + Number(item.distance || 0), 0);
-    const duration = valid.reduce((sum, item) => {
-      const pace = paceToSeconds(item.pace);
-      return sum + (Number.isFinite(pace) ? pace * (Number(item.distance || 0) / 1000) : 0);
-    }, 0);
+    const duration = valid.reduce((sum, item) => sum + Number(item.duration || 0), 0);
+    const hrValues = valid.map(item => Number(item.heartRate)).filter(Number.isFinite);
+    const cadValues = valid.map(item => Number(item.cadence)).filter(Number.isFinite);
+    const ascent = valid.reduce((sum, item) => sum + Number(item.ascent || 0), 0);
+    const descent = valid.reduce((sum, item) => sum + Number(item.descent || 0), 0);
+
     return {
       distance,
-      pace: distance > 0 ? `${Math.floor(duration / (distance / 1000) / 60)}:${String(Math.round(duration / (distance / 1000)) % 60).padStart(2, "0")}` : "—",
-      heartRate: valid.length ? Math.round(valid.reduce((sum, item) => sum + Number(item.heartRate || 0), 0) / valid.filter(item => Number.isFinite(Number(item.heartRate))).length || 0) : null,
-      cadence: valid.length ? Math.round(valid.reduce((sum, item) => sum + Number(item.cadence || 0), 0) / valid.filter(item => Number.isFinite(Number(item.cadence))).length || 0) : null,
-      ascent: valid.reduce((sum, item) => sum + Number(item.ascent || 0), 0)
+      duration,
+      pace: distance > 0
+        ? `${Math.floor(duration / (distance / 1000) / 60)}:${String(Math.round(duration / (distance / 1000)) % 60).padStart(2, "0")}`
+        : "—",
+      heartRate: hrValues.length
+        ? Math.round(hrValues.reduce((a, b) => a + b, 0) / hrValues.length)
+        : null,
+      cadence: cadValues.length
+        ? Math.round(cadValues.reduce((a, b) => a + b, 0) / cadValues.length)
+        : null,
+      ascent,
+      descent,
+      elevation: ascent >= descent ? ascent : -descent
     };
   };
 
-  const addTimelineItem = (type, title, meta) => {
+  const addTimelineItem = (type, title, meta, extraClass = "") => {
     const item = document.createElement("div");
-    item.className = `timeline-item timeline-${type}`;
+    item.className = `timeline-item timeline-${type} ${extraClass}`.trim();
     item.innerHTML = `
       <span class="timeline-dot" aria-hidden="true"></span>
       <div class="timeline-content">
@@ -396,32 +454,78 @@ function renderStructure(structure = []) {
   for (const block of structure) {
     if (block.type === "intervals") {
       const reps = block.repetitions || [];
-      const work = averageStats(reps.map(rep => rep.work));
-      const recoveries = reps.map(rep => rep.recovery).filter(Boolean);
-      const recovery = averageStats(recoveries);
-      const workDistance = reps[0]?.work?.distance || 1000;
-      const recoveryDistance = recoveries[0]?.distance || 400;
 
+      if (!reps.length) continue;
+
+      const workItems = reps.map(rep => rep.work).filter(Boolean);
+      const recoveryItems = reps.map(rep => rep.recovery).filter(Boolean);
+      const work = averageStats(workItems);
+      const recovery = averageStats(recoveryItems);
+      const workDistance = reps[0]?.work?.distance || 1000;
+      const recoveryDistance = reps.find(rep => rep.recovery)?.recovery?.distance || 400;
+
+      // Заголовок блока — сохраняем общую информацию о серии.
       addTimelineItem(
         "work",
-        `Робота (${block.workCount || reps.length} × ${Math.round(workDistance)} м)`,
-        `${(work.distance / 1000).toFixed(2)} км · ${work.pace} /км · Набір +${Math.round(work.ascent)} м`
+        `Робота · ${block.workCount || reps.length} × ${Math.round(workDistance)} м`,
+        `${formatDistance(work.distance)} · ${formatDuration(work.duration)} · ${work.pace} /км · ${formatTerrain(work.elevation)}`
       );
 
-      if (recoveries.length) {
+      // Главное: показываем КАЖДЫЙ интервал и КАЖДОЕ восстановление отдельно.
+      reps.forEach((rep, index) => {
+        const number = rep.number || index + 1;
+
+        if (rep.work) {
+          addTimelineItem(
+            "work",
+            `Інтервал ${number}`,
+            formatStats(rep.work),
+            "timeline-detail"
+          );
+        }
+
+        if (rep.recovery) {
+          addTimelineItem(
+            "recovery",
+            `Відновлення ${number}`,
+            formatStats(rep.recovery),
+            "timeline-detail"
+          );
+        }
+      });
+
+      // Невеликий підсумок відновлень — тільки якщо вони реально є.
+      if (recoveryItems.length) {
         addTimelineItem(
           "recovery",
-          `Відпочинок (${recoveries.length} × ${Math.round(recoveryDistance)} м)`,
-          `${(recovery.distance / 1000).toFixed(2)} км · ${recovery.pace} /км · Набір +${Math.round(recovery.ascent)} м`
+          `Відновлення · ${recoveryItems.length} × ${Math.round(recoveryDistance)} м`,
+          `${formatDistance(recovery.distance)} · ${formatDuration(recovery.duration)} · ${recovery.pace} /км · ${formatTerrain(recovery.elevation)}`,
+          "timeline-summary"
         );
       }
+
       continue;
     }
 
-    const label = block.type === "warmup" ? "Розминка" : block.type === "cooldown" ? "Заминка" : block.label;
-    const type = block.type === "warmup" ? "warmup" : block.type === "cooldown" ? "cooldown" : "work";
-    const meta = `${(block.distance / 1000).toFixed(2)} км · ${block.pace} /км · ${formatTerrain(block.elevation ?? block.ascent)}`;
-    addTimelineItem(type, label, meta);
+    const label =
+      block.type === "warmup"
+        ? "Розминка"
+        : block.type === "cooldown"
+          ? "Заминка"
+          : block.label;
+
+    const type =
+      block.type === "warmup"
+        ? "warmup"
+        : block.type === "cooldown"
+          ? "cooldown"
+          : "work";
+
+    addTimelineItem(
+      type,
+      label,
+      formatStats(block)
+    );
   }
 }
 
