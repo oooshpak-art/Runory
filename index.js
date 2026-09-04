@@ -5,11 +5,13 @@ export default {
     // API для ИИ-анализа тренировки
     if (url.pathname === '/api/analyze' && request.method === 'POST') {
       try {
-        const workout = await request.json();
+        const payload = await request.json();
+        const language = payload.language === 'en' ? 'en' : 'uk';
+        const { language: _language, ...workout } = payload;
 
         if (!env.OPENAI_API_KEY) {
           return new Response(
-            JSON.stringify({ error: 'OPENAI_API_KEY не настроен' }),
+            JSON.stringify({ error: language === 'en' ? 'OPENAI_API_KEY is not configured' : 'OPENAI_API_KEY не настроен' }),
             {
               status: 500,
               headers: { 'Content-Type': 'application/json' }
@@ -31,11 +33,66 @@ export default {
                 {
                   role: 'system',
                   content:
-                    'Ты профессиональный тренер по бегу. Анализируй тренировку бегуна на основе предоставленных данных. Давай практичный, понятный и честный анализ без медицинских диагнозов. Отвечай на украинском языке.'
+                    language === 'en'
+                      ? 'You are a professional running coach. Analyze the runner\'s workout using the provided data. Give practical, clear, and honest feedback without medical diagnoses. Respond in English.'
+                      : 'Ти професійний тренер з бігу. Аналізуй тренування бігуна на основі наданих даних. Давай практичний, зрозумілий і чесний аналіз без медичних діагнозів. Відповідай українською мовою.'
                 },
                 {
                   role: 'user',
-                  content: `Проаналізуй це бігове тренування як професійний тренер.
+                  content: language === 'en'
+                    ? `Analyze this running workout as a professional coach.
+
+WORKOUT DATA:
+${JSON.stringify(workout, null, 2)}
+
+WHAT MATTERS MOST:
+The workout contains a "splits" array with kilometer splits.
+
+You must analyze their dynamics:
+- how pace changed from kilometer to kilometer;
+- whether the pace was even;
+- where there were accelerations or slowdowns;
+- how heart rate changed with pace;
+- whether heart rate increased at the same or slower pace;
+- whether there are signs of a positive or negative split;
+- how cadence changed;
+- whether climbs could have affected pace;
+- which kilometer was the fastest;
+- which was the slowest;
+- how consistently the workout was executed.
+
+Do not invent data that is not present.
+
+Answer in English using exactly this structure:
+
+1. SCORE — X/10
+
+2. WHAT HAPPENED
+Briefly describe the workout based on the numbers.
+
+3. SPLIT ANALYSIS
+Analyze the dynamics of each important segment and the overall pace consistency.
+
+4. PACE + HEART RATE
+Explain how pace and heart rate related to each other.
+
+5. WHAT WAS DONE WELL
+Specific strengths of the workout.
+
+6. WHAT COULD BE IMPROVED
+Specific things the runner can change.
+
+7. LOAD
+Assess the overall training load considering distance, duration, pace, heart rate, and split characteristics.
+
+8. RECOVERY
+What you recommend doing after this workout.
+
+9. COACH'S CONCLUSION
+2–4 sentences with the main takeaway.
+
+Do not make medical diagnoses.`
+                    : `Проаналізуй це бігове тренування як професійний тренер.
 
 ДАНІ ТРЕНУВАННЯ:
 ${JSON.stringify(workout, null, 2)}
@@ -98,7 +155,7 @@ ${JSON.stringify(workout, null, 2)}
         if (!response.ok) {
           return new Response(
             JSON.stringify({
-              error: data.error?.message || 'Помилка OpenAI API'
+              error: data.error?.message || (language === 'en' ? 'OpenAI API error' : 'Помилка OpenAI API')
             }),
             {
               status: response.status,
@@ -113,7 +170,7 @@ ${JSON.stringify(workout, null, 2)}
   data.output
     ?.flatMap(item => item.content || [])
     ?.find(item => item.type === 'output_text')
-    ?.text || 'Не вдалося отримати аналіз'
+    ?.text || (language === 'en' ? 'Could not get an analysis' : 'Не вдалося отримати аналіз')
           }),
           {
             headers: { 'Content-Type': 'application/json' }
@@ -123,7 +180,7 @@ ${JSON.stringify(workout, null, 2)}
       } catch (error) {
         return new Response(
           JSON.stringify({
-            error: error.message || 'Помилка сервера'
+            error: error.message || (language === 'en' ? 'Server error' : 'Помилка сервера')
           }),
           {
             status: 500,
