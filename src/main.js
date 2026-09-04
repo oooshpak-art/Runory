@@ -49,8 +49,14 @@ function escapeHtml(value) {
     .replace(/'/g, "&#039;");
 }
 
+function capitalizeSentences(text) {
+  return String(text ?? "").replace(/([.!?…])([\s]+)([a-zа-яіїєґ])/g, (match, punctuation, space, letter) =>
+    `${punctuation}${space}${letter.toUpperCase()}`
+  );
+}
+
 function formatInlineMarkdown(text) {
-  return escapeHtml(text)
+  return escapeHtml(capitalizeSentences(text))
     .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
     .replace(/`([^`]+)`/g, '<span class="ai-code">$1</span>');
 }
@@ -186,7 +192,7 @@ function renderAiAnalysis(text) {
       parts.push(`
         <details class="ai-accordion">
           <summary>
-            <span><b>03</b><strong>${escapeHtml(title)}</strong></span>
+            <span><strong>${escapeHtml(title)}</strong></span>
             <span class="ai-accordion-toggle" aria-hidden="true">+</span>
           </summary>
           <div class="ai-accordion-body">${renderAiBlocks(body)}</div>
@@ -217,9 +223,7 @@ function renderAiAnalysis(text) {
     parts.push(`
       <article class="ai-section${variant}">
         <div class="ai-section-heading">
-          <span class="ai-section-number">${String(section.number).padStart(2, "0")}</span>
-          <div>
-            <p class="eyebrow">РОЗДІЛ ${String(section.number).padStart(2, "0")}</p>
+          <div class="ai-section-title-wrap">
             <h4>${escapeHtml(title)}</h4>
           </div>
           ${icon ? `<span class="ai-section-icon" aria-hidden="true">${icon}</span>` : ""}
