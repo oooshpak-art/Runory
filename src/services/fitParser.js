@@ -315,7 +315,12 @@ function analyzeWorkoutStructure({ laps = [], records = [] }) {
           const ascent = items.reduce((s,l)=>s+l.ascent,0); const descent = items.reduce((s,l)=>s+l.descent,0); const elevation = ascent >= descent ? ascent : -descent; return { duration:Math.round(duration), distance:Math.round(distance), pace:distance>1?secondsToPace(duration/(distance/1000)):'—', heartRate:hr.length?Math.round(hr.reduce((a,b)=>a+b,0)/hr.length):null, cadence:cad.length?Math.round(cad.reduce((a,b)=>a+b,0)/cad.length):null, ascent, descent, elevation };
         };
         const result=[];
-        const warmup=validLaps.slice(0,firstWork), cooldown=validLaps.slice(lastWork+1);
+        const warmup = validLaps.slice(0, firstWork);
+         const finalRecovery = validLaps[lastWork + 1];
+         const cooldownStart = finalRecovery && finalRecovery.distance < 700
+           ? lastWork + 2
+           : lastWork + 1;
+         const cooldown = validLaps.slice(cooldownStart);
         if(warmup.length) result.push({type:'warmup',label:'Разминка',...combine(warmup)});
         const repetitions=[];
         for(let i=firstWork;i<=lastWork;i++){
