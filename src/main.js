@@ -1588,12 +1588,19 @@ profileBirthDatePicker?.addEventListener("change", () => {
 });
 
 profileBirthDate?.addEventListener("input", () => {
-  const digits = profileBirthDate.value.replace(/\D/g, "").slice(0, 8);
-  const parts = [];
-  if (digits.length >= 2) parts.push(digits.slice(0, 2));
-  if (digits.length >= 4) parts.push(digits.slice(2, 4));
-  if (digits.length > 4) parts.push(digits.slice(4));
-  profileBirthDate.value = parts.join(".");
+  // Keep the field freely editable on desktop and mobile. We only limit
+  // the input length here; formatting happens when the user leaves the field.
+  profileBirthDate.value = profileBirthDate.value.slice(0, 10);
+});
+
+profileBirthDate?.addEventListener("blur", () => {
+  const raw = profileBirthDate.value.trim();
+  if (!raw) return;
+
+  const digits = raw.replace(/\D/g, "").slice(0, 8);
+  if (digits.length === 8) {
+    profileBirthDate.value = `${digits.slice(0, 2)}.${digits.slice(2, 4)}.${digits.slice(4)}`;
+  }
 });
 
 profileForm?.addEventListener("submit", saveUserProfile);
