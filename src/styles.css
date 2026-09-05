@@ -670,6 +670,99 @@
 
 
 
+
+
+/* === Runory account sidebar === */
+.app-layout {
+  display: grid;
+  grid-template-columns: 205px minmax(0, 1fr);
+  gap: 42px;
+  align-items: start;
+}
+.account-sidebar {
+  position: sticky;
+  top: 22px;
+  padding: 34px 0 0;
+}
+.account-sidebar-label {
+  margin: 0 0 14px;
+  color: #7a857e;
+  font: 700 9px 'DM Mono', monospace;
+  letter-spacing: 1.15px;
+}
+.account-sidebar-nav {
+  display: grid;
+  gap: 5px;
+}
+.account-sidebar-link {
+  width: 100%;
+  min-height: 43px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: #68736d;
+  text-align: left;
+  font: 700 12px Manrope, sans-serif;
+  cursor: pointer;
+  transition: .18s ease;
+}
+.account-sidebar-link:hover {
+  background: #eef2ed;
+  color: var(--ink);
+}
+.account-sidebar-link.is-active {
+  background: var(--ink);
+  color: #fff;
+}
+.account-sidebar-icon {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  background: #edf1ec;
+  color: #526058;
+  font-size: 16px;
+  line-height: 1;
+}
+.account-sidebar-link.is-active .account-sidebar-icon {
+  background: rgba(255,255,255,.12);
+  color: var(--lime);
+}
+.app-content { min-width: 0; }
+.auth-button.is-signed-in { display: none; }
+
+@media (max-width: 680px) {
+  .app-layout {
+    display: block;
+  }
+  .account-sidebar {
+    position: static;
+    padding: 16px 0 0;
+  }
+  .account-sidebar-label { margin-bottom: 8px; }
+  .account-sidebar-nav {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .account-sidebar-link {
+    min-height: 40px;
+    padding: 0 10px;
+    font-size: 11px;
+  }
+  .account-sidebar-icon {
+    width: 22px;
+    height: 22px;
+    flex-basis: 22px;
+  }
+}
+
 /* === Runory Auth === */
 .auth-button {
   display:inline-flex;
