@@ -1441,16 +1441,17 @@ async function ensureUserProfile(user) {
   setProfileMessage("");
 
   try {
-    // Keep one profile row per auth user. Upsert avoids the race where two
-    // auth events both try to create the profile at the same time.
+    // Do not upsert a partial row while opening the profile. Some profile
+    // columns may be required, so a read-only lookup must happen first.
     const { data: profile, error } = await supabaseClient
       .from("profiles")
-      .upsert({ id: user.id }, { onConflict: "id" })
       .select("id, birth_date, gender, height_cm, weight_kg")
-      .single();
+      .eq("id", user.id)
+      .maybeSingle();
 
     if (error) throw error;
-    fillProfileForm(profile);
+
+    fillProfileForm(profile || null);
   } catch (error) {
     console.warn("Runory: could not load profile.", error);
     setProfileMessage(error?.message || t("profileLoadError"), "error");
@@ -1463,11 +1464,21 @@ async function saveUserProfile(event) {
   if (!supabaseClient || !currentSession?.user) return;
 
   const userId = currentSession.user.id;
+  const birthDate = profileBirthDate?.value || "";
+  const gender = profileGender?.value || "";
+  const height = profileHeight?.value ? Number(profileHeight.value) : null;
+  const weight = profileWeight?.value ? Number(profileWeight.value) : null;
+
+  if (!birthDate || !gender || !Number.isFinite(height) || !Number.isFinite(weight)) {
+    setProfileMessage("Заповни всі поля профілю.", "error");
+    return;
+  }
+
   const payload = {
-    birth_date: profileBirthDate?.value || null,
-    gender: profileGender?.value || null,
-    height_cm: profileHeight?.value ? Number(profileHeight.value) : null,
-    weight_kg: profileWeight?.value ? Number(profileWeight.value) : null
+    birth_date: birthDate,
+    gender,
+    height_cm: height,
+    weight_kg: weight
   };
 
   profileSaveButton?.setAttribute("disabled", "disabled");
