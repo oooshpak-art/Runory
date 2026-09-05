@@ -260,7 +260,7 @@ const translations = {
      authHaveAccount: "Already have an account?",
      authCreateAccount: "Create account",
      authSwitchToSignIn: "Sign in",
-     authAccountEyebrow: "YOUR RUNORY",
+     authAccountEyebrow: "ATHLETE PROFILE",
      authAccountTitle: "My profile",
      authLogout: "Sign out",
      authSignedUp: "Account created. Check your email and confirm your address before signing in.",
@@ -1271,6 +1271,8 @@ const authSwitchButton = document.querySelector("#authSwitchButton");
 const authLogoutButton = document.querySelector("#authLogoutButton");
 const profileForm = document.querySelector("#profileForm");
 const profileBirthDate = document.querySelector("#profileBirthDate");
+const profileBirthDatePicker = document.querySelector("#profileBirthDatePicker");
+const profileBirthDatePickerButton = document.querySelector("#profileBirthDatePickerButton");
 const profileGender = document.querySelector("#profileGender");
 const profileHeight = document.querySelector("#profileHeight");
 const profileWeight = document.querySelector("#profileWeight");
@@ -1420,8 +1422,27 @@ function setProfileMessage(message = "", type = "") {
   profileMessage.className = `auth-message${type ? ` is-${type}` : ""}`;
 }
 
+function formatBirthDate(isoDate) {
+  if (!isoDate || !/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) return "";
+  const [year, month, day] = isoDate.split("-");
+  return `${day}.${month}.${year}`;
+}
+
+function parseBirthDate(value) {
+  const normalized = String(value || "").trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(normalized)) return normalized;
+  const match = normalized.match(/^(\d{2})[.\/](\d{2})[.\/](\d{4})$/);
+  if (!match) return "";
+  const [, day, month, year] = match;
+  const candidate = `${year}-${month}-${day}`;
+  const date = new Date(`${candidate}T00:00:00`);
+  if (Number.isNaN(date.getTime()) || date.getFullYear() !== Number(year) || date.getMonth() + 1 !== Number(month) || date.getDate() !== Number(day)) return "";
+  return candidate;
+}
+
 function clearProfileForm() {
   if (profileBirthDate) profileBirthDate.value = "";
+  if (profileBirthDatePicker) profileBirthDatePicker.value = "";
   if (profileGender) profileGender.value = "";
   if (profileHeight) profileHeight.value = "";
   if (profileWeight) profileWeight.value = "";
@@ -1429,7 +1450,9 @@ function clearProfileForm() {
 }
 
 function fillProfileForm(profile) {
-  if (profileBirthDate) profileBirthDate.value = profile?.birth_date || "";
+  const isoDate = profile?.birth_date || "";
+  if (profileBirthDate) profileBirthDate.value = formatBirthDate(isoDate);
+  if (profileBirthDatePicker) profileBirthDatePicker.value = isoDate;
   if (profileGender) profileGender.value = profile?.gender || "";
   if (profileHeight) profileHeight.value = profile?.height_cm ?? "";
   if (profileWeight) profileWeight.value = profile?.weight_kg ?? "";
@@ -1464,13 +1487,13 @@ async function saveUserProfile(event) {
   if (!supabaseClient || !currentSession?.user) return;
 
   const userId = currentSession.user.id;
-  const birthDate = profileBirthDate?.value || "";
+  const birthDate = parseBirthDate(profileBirthDate?.value || "");
   const gender = profileGender?.value || "";
   const height = profileHeight?.value ? Number(profileHeight.value) : null;
   const weight = profileWeight?.value ? Number(profileWeight.value) : null;
 
   if (!birthDate || !gender || !Number.isFinite(height) || !Number.isFinite(weight)) {
-    setProfileMessage("Заповни всі поля профілю.", "error");
+    setProfileMessage(!birthDate ? "Введи дату у форматі ДД.ММ.РРРР." : "Заповни всі поля профілю.", "error");
     return;
   }
 
@@ -1545,6 +1568,27 @@ googleSignInButton?.addEventListener("click", signInWithGoogle);
 emailAuthForm?.addEventListener("submit", submitEmailAuth);
 authSwitchButton?.addEventListener("click", () => setAuthMode(authMode === "signin" ? "signup" : "signin"));
 authLogoutButton?.addEventListener("click", signOut);
+profileBirthDatePickerButton?.addEventListener("click", () => {
+  if (typeof profileBirthDatePicker?.showPicker === "function") {
+    profileBirthDatePicker.showPicker();
+  } else {
+    profileBirthDatePicker?.click();
+  }
+});
+
+profileBirthDatePicker?.addEventListener("change", () => {
+  if (profileBirthDate) profileBirthDate.value = formatBirthDate(profileBirthDatePicker.value);
+});
+
+profileBirthDate?.addEventListener("input", () => {
+  const digits = profileBirthDate.value.replace(/\D/g, "").slice(0, 8);
+  const parts = [];
+  if (digits.length >= 2) parts.push(digits.slice(0, 2));
+  if (digits.length >= 4) parts.push(digits.slice(2, 4));
+  if (digits.length > 4) parts.push(digits.slice(4));
+  profileBirthDate.value = parts.join(".");
+});
+
 profileForm?.addEventListener("submit", saveUserProfile);
 
 document.querySelectorAll(".language-button").forEach(button => {
