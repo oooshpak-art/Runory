@@ -552,6 +552,11 @@
         </a>
         </nav>
 
+        <button class="auth-button" id="authButton" type="button">
+          <span class="auth-button-dot" aria-hidden="true"></span>
+          <span id="authButtonText">Увійти</span>
+        </button>
+
         <div class="language-switcher" role="group" aria-label="Мова" data-i18n-aria="language">
           <button type="button" class="language-button is-active" data-lang="uk" aria-pressed="true">UA</button>
           <button type="button" class="language-button" data-lang="en" aria-pressed="false">EN</button>
@@ -785,8 +790,56 @@
       </section>
 
     </div>
+
+    <div class="auth-modal" id="authModal" hidden>
+      <button class="auth-modal-backdrop" id="authModalBackdrop" type="button" aria-label="Закрити"></button>
+      <section class="auth-dialog" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+        <button class="auth-close" id="authClose" type="button" aria-label="Закрити">×</button>
+
+        <div id="authFormView">
+          <p class="eyebrow" data-i18n="authEyebrow">ТВОЄМУ RUNORY ПОТРІБЕН АККАУНТ</p>
+          <h2 id="authTitle" data-i18n="authTitle">Увійти в Runory</h2>
+          <p class="auth-copy" data-i18n="authCopy">Збережемо твою історію тренувань і зможемо бачити прогрес з часом.</p>
+
+          <button class="auth-google" id="googleSignInButton" type="button">
+            <span class="google-mark" aria-hidden="true">G</span>
+            <span data-i18n="authGoogle">Продовжити з Google</span>
+          </button>
+
+          <div class="auth-divider"><span data-i18n="authOr">або</span></div>
+
+          <form id="emailAuthForm" class="auth-form">
+            <label>
+              <span data-i18n="authEmail">Email</span>
+              <input id="authEmail" type="email" autocomplete="email" required placeholder="you@example.com" />
+            </label>
+            <label>
+              <span data-i18n="authPassword">Пароль</span>
+              <input id="authPassword" type="password" autocomplete="current-password" minlength="6" required placeholder="••••••••" />
+            </label>
+            <button class="auth-submit" id="emailAuthSubmit" type="submit">
+              <span id="emailAuthSubmitText">Увійти</span>
+            </button>
+          </form>
+
+          <p class="auth-switch">
+            <span id="authSwitchQuestion">Ще немає акаунта?</span>
+            <button id="authSwitchButton" type="button">Створити акаунт</button>
+          </p>
+          <p class="auth-message" id="authMessage" aria-live="polite"></p>
+        </div>
+
+        <div id="authAccountView" hidden>
+          <p class="eyebrow" data-i18n="authAccountEyebrow">ТВОЄМУ RUNORY</p>
+          <h2 data-i18n="authAccountTitle">Твій акаунт</h2>
+          <p class="auth-copy" id="authAccountEmail"></p>
+          <button class="auth-submit auth-logout" id="authLogoutButton" type="button" data-i18n="authLogout">Вийти</button>
+        </div>
+      </section>
+    </div>
   </main>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="src/services/fitParser.js"></script>
   <script src="src/main.js"></script>
 </body>
