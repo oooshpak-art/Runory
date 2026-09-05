@@ -24,6 +24,8 @@ const aiAnalysis = document.querySelector("#aiAnalysis");
 const aiAnalysisText = document.querySelector("#aiAnalysisText");
 
 let currentWorkout = null;
+let currentHistoryId = null;
+let historyLoaded = false;
 
 const translations = {
   uk: {
@@ -336,6 +338,10 @@ function applyLanguage() {
   });
 
   if (currentWorkout) renderSummary(currentWorkout);
+  if (document.querySelector("#history")?.classList.contains("is-active")) {
+    historyLoaded = false;
+    loadWorkoutHistory(true);
+  }
   else if (splitsBody) {
     splitsBody.innerHTML = `<tr><td colspan="5" class="splits-empty">${escapeHtml(t("splitsEmpty"))}</td></tr>`;
   }
@@ -347,6 +353,27 @@ function setLanguage(language) {
   localStorage.setItem("runory-language", currentLanguage);
   applyLanguage();
 }
+
+
+function setActiveView(viewName) {
+  document.querySelectorAll("[data-view-panel]").forEach(panel => {
+    panel.classList.toggle("is-active", panel.id === viewName);
+  });
+
+  document.querySelectorAll("[data-view-target]").forEach(button => {
+    const active = button.dataset.viewTarget === viewName;
+    button.classList.toggle("is-active", active);
+    button.setAttribute("aria-current", active ? "page" : "false");
+  });
+
+  if (viewName === "history") {
+    loadWorkoutHistory();
+  }
+}
+
+document.querySelectorAll("[data-view-target]").forEach(button => {
+  button.addEventListener("click", () => setActiveView(button.dataset.viewTarget));
+});
 
 
 
@@ -1078,6 +1105,250 @@ function renderSummary(summary) {
   if (aiAnalysisText) aiAnalysisText.innerHTML = "";
 }
 
+function workoutDateIso(summary) {
+  if (!(summary?.date instanceof Date) || Number.isNaN(summary.date.getTime())) return null;
+  return summary.date.toISOString();
+}
+
+function workoutDurationSeconds(value) {
+  const parts = String(value || "").split(":").map(Number);
+  if (parts.length === 2 && parts.every(Number.isFinite)) return parts[0] * 60 + parts[1];
+  if (parts.length === 3 && parts.every(Number.isFinite)) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  return null;
+}
+
+function workoutFingerprint(summary) {
+  const date = workoutDateIso(summary) || "no-date";
+  const distance = Number(summary?.distance || 0).toFixed(2);
+  const duration = workoutDurationSeconds(summary?.duration) ?? 0;
+  return `${date}|${distance}|${duration}`;
+}
+
+function getWorkoutTypeKey(summary) {
+  const pattern = getWorkoutPattern(summary);
+  if (pattern?.type === "intervals") return "intervals";
+  if (pattern?.type === "tempo") return "tempo";
+  if (pattern?.type === "fartlek") return "fartlek";
+  if (Number(summary?.distance) >= 15) return "long";
+  return "run";
+}
+
+function workoutTypeLabel(value) {
+  const map = {
+    intervals: "workoutIntervals",
+    tempo: "workoutTempo",
+    fartlek: "workoutFartlek",
+    long: "workoutLong",
+    run: "workoutRun"
+  };
+  return t(map[value] || "workoutRun");
+}
+
+function historyPayload(summary, aiAnalysis = null) {
+  return {
+    workout_date: workoutDateIso(summary),
+    distance_km: Number(summary?.distance) || 0,
+    duration_sec: workoutDurationSeconds(summary?.duration),
+    pace: summary?.pace || null,
+    heart_rate: Number.isFinite(Number(summary?.heartRate)) ? Math.round(Number(summary.heartRate)) : null,
+    cadence: Number.isFinite(Number(summary?.cadence)) ? Math.round(Number(summary.cadence)) : null,
+    calories: summary?.calories != null && Number.isFinite(Number(summary.calories)) ? Math.round(Number(summary.calories)) : null,
+    ascent_m: Number.isFinite(Number(summary?.ascent)) ? Math.round(Number(summary.ascent)) : null,
+    workout_type: getWorkoutTypeKey(summary),
+    splits: Array.isArray(summary?.splits) ? summary.splits : [],
+    structure: Array.isArray(summary?.structure) ? summary.structure : [],
+    ai_analysis: aiAnalysis || summary?._aiAnalysis || null,
+    workout_key: workoutFingerprint(summary)
+  };
+}
+
+async function saveWorkoutToHistory(summary, aiAnalysis = null) {
+  if (!supabaseClient || !currentSession?.user || !summary) return null;
+
+  const payload = historyPayload(summary, aiAnalysis);
+  const { data, error } = await supabaseClient
+    .from("workouts")
+    .upsert({ user_id: currentSession.user.id, ...payload }, { onConflict: "user_id,workout_key" })
+    .select("id, workout_date, distance_km, duration_sec, pace, heart_rate, cadence, calories, ascent_m, workout_type, splits, structure, ai_analysis, workout_key, created_at")
+    .single();
+
+  if (error) {
+    console.warn("Runory: could not save workout history.", error);
+    setAuthMessage(error.message || t("historySaveError"), "error");
+    return null;
+  }
+
+  currentHistoryId = data.id;
+  currentWorkout._historyId = data.id;
+  currentWorkout._aiAnalysis = data.ai_analysis || null;
+  historyLoaded = false;
+  return data;
+}
+
+function formatHistoryDate(value) {
+  const date = value ? new Date(value) : null;
+  if (!date || Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleDateString(translations[currentLanguage].locale, {
+    day: "2-digit", month: "2-digit", year: "numeric"
+  });
+}
+
+function formatHistoryDuration(seconds) {
+  if (!Number.isFinite(Number(seconds))) return "—";
+  const total = Math.max(0, Math.round(Number(seconds)));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const sec = String(total % 60).padStart(2, "0");
+  return h ? `${h}:${String(m).padStart(2, "0")}:${sec}` : `${m}:${sec}`;
+}
+
+function formatHistoryDistance(value) {
+  return Number.isFinite(Number(value)) ? `${Number(value).toFixed(2).replace(".", currentLanguage === "uk" ? "," : ".")} ${currentLanguage === "uk" ? "км" : "km"}` : "—";
+}
+
+function renderHistoryList(workouts = []) {
+  const container = document.querySelector("#historyList");
+  const status = document.querySelector("#historyStatus");
+  if (!container) return;
+
+  if (!workouts.length) {
+    container.innerHTML = `<div class="history-empty"><strong>${escapeHtml(t("historyEmpty"))}</strong></div>`;
+    if (status) status.textContent = "";
+    return;
+  }
+
+  container.innerHTML = workouts.map(workout => `
+    <article class="history-item" data-history-id="${escapeHtml(workout.id)}">
+      <div class="history-item-main">
+        <div class="history-item-heading">
+          <div>
+            <p class="eyebrow">${escapeHtml(formatHistoryDate(workout.workout_date))}</p>
+            <h3>${escapeHtml(workoutTypeLabel(workout.workout_type))}</h3>
+          </div>
+          <strong class="history-distance">${escapeHtml(formatHistoryDistance(workout.distance_km))}</strong>
+        </div>
+        <div class="history-metrics">
+          <span>${escapeHtml(workout.pace || "—")} /${currentLanguage === "uk" ? "км" : "km"}</span>
+          <span>${escapeHtml(formatHistoryDuration(workout.duration_sec))}</span>
+          <span>${workout.heart_rate != null ? `${Math.round(workout.heart_rate)} ${currentLanguage === "uk" ? "уд/хв" : "bpm"}` : "—"}</span>
+          <span>${workout.ascent_m != null ? `+${Math.round(workout.ascent_m)} ${currentLanguage === "uk" ? "м" : "m"}` : "—"}</span>
+        </div>
+      </div>
+      <div class="history-item-actions">
+        <button type="button" class="history-view-button" data-history-view="${escapeHtml(workout.id)}">${escapeHtml(t("historyView"))}</button>
+        <button type="button" class="history-delete-button" data-history-delete="${escapeHtml(workout.id)}" aria-label="${escapeHtml(t("historyDelete"))}">×</button>
+      </div>
+    </article>
+  `).join("");
+
+  if (status) status.textContent = `${workouts.length} ${currentLanguage === "uk" ? "тренувань" : "workouts"}`;
+}
+
+async function loadWorkoutHistory(force = false) {
+  const container = document.querySelector("#historyList");
+  const status = document.querySelector("#historyStatus");
+  if (!container) return;
+  if (!currentSession?.user) {
+    container.innerHTML = `<div class="history-empty"><strong>${escapeHtml(t("historyLoginHint"))}</strong></div>`;
+    if (status) status.textContent = "";
+    historyLoaded = false;
+    return;
+  }
+  if (historyLoaded && !force) return;
+
+  container.innerHTML = `<div class="history-empty">${escapeHtml(t("historyLoading"))}</div>`;
+
+  const { data, error } = await supabaseClient
+    .from("workouts")
+    .select("id, workout_date, distance_km, duration_sec, pace, heart_rate, cadence, calories, ascent_m, workout_type, splits, structure, ai_analysis, workout_key, created_at")
+    .eq("user_id", currentSession.user.id)
+    .order("workout_date", { ascending: false })
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.warn("Runory: could not load workout history.", error);
+    container.innerHTML = `<div class="history-empty"><strong>${escapeHtml(t("historyError"))}</strong><p>${escapeHtml(error.message || "")}</p></div>`;
+    historyLoaded = false;
+    return;
+  }
+
+  renderHistoryList(data || []);
+  historyLoaded = true;
+}
+
+function historyRecordToWorkout(record) {
+  return {
+    distance: Number(record.distance_km).toFixed(2),
+    duration: formatHistoryDuration(record.duration_sec),
+    pace: record.pace || "—",
+    heartRate: record.heart_rate,
+    cadence: record.cadence,
+    calories: record.calories,
+    ascent: record.ascent_m,
+    splits: Array.isArray(record.splits) ? record.splits : [],
+    structure: Array.isArray(record.structure) ? record.structure : [],
+    date: record.workout_date ? new Date(record.workout_date) : null,
+    _historyId: record.id,
+    _aiAnalysis: record.ai_analysis || null
+  };
+}
+
+function openWorkoutFromHistory(record) {
+  currentHistoryId = record.id;
+  currentWorkout = historyRecordToWorkout(record);
+  renderSummary(currentWorkout);
+  if (record.ai_analysis) {
+    if (aiAnalysis) aiAnalysis.hidden = false;
+    if (aiAnalysisText) {
+      aiAnalysisText.innerHTML = renderAiAnalysis(record.ai_analysis);
+      aiAnalysis?.classList.remove("is-loading");
+    }
+  }
+  setActiveView("analysis");
+  if (results) results.hidden = false;
+  window.setTimeout(() => results?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
+}
+
+async function deleteWorkoutFromHistory(id) {
+  if (!supabaseClient || !currentSession?.user || !id) return;
+  const { error } = await supabaseClient
+    .from("workouts")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", currentSession.user.id);
+  if (error) {
+    setAuthMessage(error.message || t("historyDeleteError"), "error");
+    return;
+  }
+  if (currentHistoryId === id) {
+    currentHistoryId = null;
+    currentWorkout = null;
+    if (results) results.hidden = true;
+  }
+  setAuthMessage(t("historyDeleted"), "success");
+  await loadWorkoutHistory(true);
+}
+
+document.addEventListener("click", async event => {
+  const viewButton = event.target.closest("[data-history-view]");
+  if (viewButton) {
+    const id = viewButton.dataset.historyView;
+    const { data, error } = await supabaseClient
+      .from("workouts")
+      .select("id, workout_date, distance_km, duration_sec, pace, heart_rate, cadence, calories, ascent_m, workout_type, splits, structure, ai_analysis, workout_key, created_at")
+      .eq("id", id)
+      .eq("user_id", currentSession?.user?.id || "")
+      .single();
+    if (!error && data) openWorkoutFromHistory(data);
+    return;
+  }
+
+  const deleteButton = event.target.closest("[data-history-delete]");
+  if (deleteButton) {
+    await deleteWorkoutFromHistory(deleteButton.dataset.historyDelete);
+  }
+});
+
 async function analyzeWithAI() {
   if (!currentWorkout || !aiAnalyzeButton) return;
 
@@ -1111,9 +1382,16 @@ async function analyzeWithAI() {
       throw new Error(data.error || t("errorAi"));
     }
 
+    const analysisText = data.analysis || t("errorAiUnavailable");
+    currentWorkout._aiAnalysis = analysisText;
+
     if (aiAnalysisText) {
       aiAnalysisText.innerHTML =
-        renderAiAnalysis(data.analysis || t("errorAiUnavailable"));
+        renderAiAnalysis(analysisText);
+    }
+
+    if (currentSession?.user) {
+      await saveWorkoutToHistory(currentWorkout, analysisText);
     }
 
     if (aiAnalysis) {
@@ -1172,8 +1450,13 @@ async function selectFile(file) {
 
     window.clearInterval(timer);
     currentWorkout = summary;
+    currentHistoryId = null;
 
     renderSummary(summary);
+
+    if (currentSession?.user) {
+      await saveWorkoutToHistory(summary);
+    }
 
     progressBar.style.width = "100%";
     progressValue.textContent = "100%";
@@ -1549,6 +1832,7 @@ async function initAuth() {
     console.warn("Runory: could not restore auth session.", error);
   }
   updateAuthUI(data?.session || null);
+  historyLoaded = false;
   if (data?.session?.user) {
     await ensureUserProfile(data.session.user);
   }
@@ -1556,7 +1840,9 @@ async function initAuth() {
   supabaseClient.auth.onAuthStateChange((event, session) => {
     window.setTimeout(async () => {
       updateAuthUI(session);
+      historyLoaded = false;
       if (session?.user) await ensureUserProfile(session.user);
+      if (document.querySelector("#history")?.classList.contains("is-active")) loadWorkoutHistory(true);
     }, 0);
   });
 }
