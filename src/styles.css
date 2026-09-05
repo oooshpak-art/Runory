@@ -736,10 +736,32 @@
 .auth-modal-open { overflow:hidden; }
 
 @media (max-width:680px) {
-  .auth-button { grid-area:auth; min-width:0; max-width:145px; height:34px; padding:0 10px; font-size:10px; }
+  .topbar {
+    grid-template-columns:minmax(0,1fr) auto auto;
+    grid-template-areas:"brand auth lang" "nav nav nav";
+    column-gap:8px;
+  }
+  .auth-button {
+    grid-area:auth;
+    width:96px;
+    min-width:96px;
+    max-width:96px;
+    height:34px;
+    padding:0 8px;
+    font-size:10px;
+  }
+  .auth-button-dot { width:6px; height:6px; flex-basis:6px; }
   .language-switcher { grid-area:lang; }
-  .topbar { grid-template-columns:minmax(0,1fr) auto auto; grid-template-areas:"brand auth lang" "nav nav nav"; }
-  .auth-dialog { padding:30px 20px 22px; border-radius:16px; }
+  .language-button { min-width:32px; width:32px; padding:0; }
+  .brand-logo { max-width:min(165px, 43vw); }
+  .auth-dialog { width:min(100%, 430px); max-height:calc(100vh - 24px); overflow:auto; padding:28px 18px 20px; border-radius:16px; }
   .profile-form-grid { grid-template-columns:1fr 1fr; gap:9px; }
   .auth-dialog h2 { font-size:26px; }
+}
+
+@media (max-width:390px) {
+  .topbar { column-gap:6px; }
+  .auth-button { width:88px; min-width:88px; max-width:88px; }
+  .brand-logo { max-width:150px; }
+  .language-button { min-width:30px; width:30px; }
 }
