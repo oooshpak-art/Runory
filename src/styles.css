@@ -719,6 +719,20 @@
 .auth-message.is-success { color:#32703c; }
 .auth-message.is-error { color:#a23d3d; }
 .auth-logout { margin-top:18px; }
+
+.profile-section { margin-top:24px; padding-top:22px; border-top:1px solid #e5eae5; }
+.profile-section-heading { margin-bottom:14px; }
+.profile-section-heading .eyebrow { margin-bottom:6px; }
+.profile-copy { margin:0; color:var(--muted); font-size:11px; line-height:1.55; }
+.profile-form { display:grid; gap:12px; }
+.profile-form label { display:grid; gap:7px; color:#4d5a52; font-size:11px; font-weight:800; }
+.profile-form input,
+.profile-form select { width:100%; min-height:46px; padding:0 12px; border:1px solid #cdd5cf; border-radius:10px; outline:0; color:var(--ink); font:600 13px Manrope,sans-serif; background:#fff; }
+.profile-form input:focus,
+.profile-form select:focus { border-color:#7a9d32; box-shadow:0 0 0 3px #e2f5bb; }
+.profile-form-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.profile-form .auth-message { margin:0; }
+
 .auth-modal-open { overflow:hidden; }
 
 @media (max-width:680px) {
@@ -726,5 +740,6 @@
   .language-switcher { grid-area:lang; }
   .topbar { grid-template-columns:minmax(0,1fr) auto auto; grid-template-areas:"brand auth lang" "nav nav nav"; }
   .auth-dialog { padding:30px 20px 22px; border-radius:16px; }
+  .profile-form-grid { grid-template-columns:1fr 1fr; gap:9px; }
   .auth-dialog h2 { font-size:26px; }
 }
