@@ -1215,7 +1215,14 @@ applyLanguage();
 // === Runory authentication (Supabase) ===
 const SUPABASE_URL = "https://vabzqqptpzcoguvuujaz.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_Jm_w-bNZJ8bnrGIbkzc5yw_IGZjneHN";
-const supabaseClient = window.supabase?.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+const supabaseClient = window.supabase?.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    flowType: "implicit"
+  }
+});
 
 const authButton = document.querySelector("#authButton");
 const authButtonText = document.querySelector("#authButtonText");
@@ -1307,7 +1314,7 @@ async function signInWithGoogle() {
   const { error } = await supabaseClient.auth.signInWithOAuth({
     provider: "google",
     options: {
-      redirectTo: window.location.origin
+      redirectTo: `${window.location.origin}/auth/callback.html`
     }
   });
 
@@ -1380,10 +1387,13 @@ async function initAuth() {
     return;
   }
 
-  const { data } = await supabaseClient.auth.getSession();
-  updateAuthUI(data.session);
+  const { data, error } = await supabaseClient.auth.getSession();
+  if (error) {
+    console.warn("Runory: could not restore auth session.", error);
+  }
+  updateAuthUI(data?.session || null);
 
-  supabaseClient.auth.onAuthStateChange((_event, session) => {
+  supabaseClient.auth.onAuthStateChange((event, session) => {
     window.setTimeout(() => updateAuthUI(session), 0);
   });
 }
