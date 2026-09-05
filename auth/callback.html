@@ -3,28 +3,71 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Runory — Вхід</title>
+  <title>Runory — Діагностика входу</title>
   <style>
-    body{margin:0;min-height:100vh;display:grid;place-items:center;background:#f6f7f5;color:#18201b;font-family:Arial,sans-serif}
-    main{text-align:center;padding:32px}
-    p{color:#68746d}
+    body{margin:0;min-height:100vh;background:#f6f7f5;color:#18201b;font-family:Arial,sans-serif}
+    main{max-width:760px;margin:0 auto;padding:48px 22px}
+    h2{margin:0 0 18px}
+    .box{background:#fff;border:1px solid #dfe5e1;border-radius:16px;padding:18px;margin-top:16px;box-shadow:0 8px 30px rgba(0,0,0,.05)}
+    .ok{color:#18794e}.bad{color:#b42318}.muted{color:#68746d}
+    pre{white-space:pre-wrap;word-break:break-word;font-size:14px;line-height:1.5;margin:0}
+    button{margin-top:18px;border:0;border-radius:10px;padding:12px 16px;background:#18201b;color:#fff;font-size:15px}
   </style>
 </head>
 <body>
-  <main>
-    <strong>Runory</strong>
-    <p id="status">Завершуємо вхід…</p>
-  </main>
+<main>
+  <h2>Runory</h2>
+  <div class="box"><pre id="status">Перевіряємо вхід…</pre></div>
+  <div class="box"><pre id="details">Збираємо діагностику…</pre></div>
+  <button onclick="location.href='/'">Повернутися до Runory</button>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+const SUPABASE_URL = "https://vabzqqptpzcoguvuujaz.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_Jm_w-bNZJ8bnrGIbkzc5yw_IGZjneHN";
+const statusEl = document.getElementById('status');
+const detailsEl = document.getElementById('details');
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script>
-    const SUPABASE_URL = "https://vabzqqptpzcoguvuujaz.supabase.co";
-    const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_Jm_w-bNZJ8bnrGIbkzc5yw_IGZjneHN";
-    const status = document.querySelector('#status');
+function safeKeys(storage) {
+  try {
+    return Object.keys(storage).filter(k => /supabase|sb-|verifier|pkce|code/i.test(k));
+  } catch (_) { return ['<недоступно>']; }
+}
+function setStatus(text, cls='') {
+  statusEl.className = cls;
+  statusEl.textContent = text;
+}
+function setDetails(lines) { detailsEl.textContent = lines.join('\n'); }
 
-    // IMPORTANT: this callback performs the PKCE code exchange itself.
-    // Therefore detectSessionInUrl must be false here, otherwise Supabase can
-    // automatically consume the one-time code before exchangeCodeForSession().
+(async () => {
+  const url = new URL(location.href);
+  const code = url.searchParams.get('code');
+  const flowId = url.searchParams.get('sb_flow_id');
+  const oauthError = url.searchParams.get('error');
+  const oauthErrorDescription = url.searchParams.get('error_description');
+
+  const localKeys = safeKeys(localStorage);
+  const sessionKeys = safeKeys(sessionStorage);
+
+  setDetails([
+    `origin: ${location.origin}`,
+    `path: ${location.pathname}`,
+    `code у URL: ${code ? 'ТАК' : 'НІ'}`,
+    `sb_flow_id: ${flowId ? 'ТАК' : 'НІ'}`,
+    `localStorage auth/PKCE ключі: ${localKeys.length ? localKeys.join(', ') : 'НЕ ЗНАЙДЕНО'}`,
+    `sessionStorage auth/PKCE ключі: ${sessionKeys.length ? sessionKeys.join(', ') : 'НЕ ЗНАЙДЕНО'}`,
+    `OAuth error: ${oauthError || 'немає'}`,
+    `OAuth error_description: ${oauthErrorDescription || 'немає'}`
+  ]);
+
+  if (!code) {
+    setStatus('❌ У callback немає code. Запусти вхід ще раз.', 'bad');
+    return;
+  }
+
+  setStatus('Код отримано. Виконуємо обмін PKCE…');
+
+  try {
     const supabase = window.supabase.createClient(
       SUPABASE_URL,
       SUPABASE_PUBLISHABLE_KEY,
@@ -33,54 +76,68 @@
           persistSession: true,
           autoRefreshToken: true,
           detectSessionInUrl: false,
-          flowType: "pkce"
+          flowType: 'pkce'
         }
       }
     );
 
-    function showError(message) {
-      status.textContent = message || 'Не вдалося завершити вхід. Спробуй ще раз.';
+    const exchange = flowId
+      ? await supabase.auth.exchangeCodeForSession(code, { flowId })
+      : await supabase.auth.exchangeCodeForSession(code);
+
+    if (exchange.error) {
+      setStatus('❌ Supabase відхилив обмін коду', 'bad');
+      setDetails([
+        `origin: ${location.origin}`,
+        `path: ${location.pathname}`,
+        `code у URL: ТАК`,
+        `sb_flow_id: ${flowId ? 'ТАК' : 'НІ'}`,
+        `localStorage auth/PKCE ключі: ${localKeys.length ? localKeys.join(', ') : 'НЕ ЗНАЙДЕНО'}`,
+        `sessionStorage auth/PKCE ключі: ${sessionKeys.length ? sessionKeys.join(', ') : 'НЕ ЗНАЙДЕНО'}`,
+        '',
+        `error.name: ${exchange.error.name || '—'}`,
+        `error.message: ${exchange.error.message || '—'}`,
+        `error.code: ${exchange.error.code || '—'}`,
+        `error.status: ${exchange.error.status || '—'}`
+      ]);
+      return;
     }
 
-    (async () => {
-      try {
-        const url = new URL(window.location.href);
-        const errorDescription = url.searchParams.get('error_description');
-        const error = url.searchParams.get('error');
+    if (!exchange.data?.session) {
+      setStatus('❌ Обмін пройшов, але session не отримана', 'bad');
+      return;
+    }
 
-        if (errorDescription || error) {
-          showError(decodeURIComponent((errorDescription || error).replace(/\+/g, ' ')));
-          return;
-        }
+    setStatus('✅ Вхід успішний. Переходимо в Runory…', 'ok');
+    setDetails([
+      `origin: ${location.origin}`,
+      `path: ${location.pathname}`,
+      `code у URL: ТАК`,
+      `sb_flow_id: ${flowId ? 'ТАК' : 'НІ'}`,
+      '',
+      'Supabase session: ОТРИМАНА',
+      `user id: ${exchange.data.session.user?.id ? 'отриманий' : 'відсутній'}`
+    ]);
 
-        const code = url.searchParams.get('code');
-        if (!code) {
-          showError('Не вдалося отримати код входу від Google. Спробуй ще раз.');
-          return;
-        }
-
-        const flowId = url.searchParams.get('sb_flow_id');
-        const exchange = flowId
-          ? await supabase.auth.exchangeCodeForSession(code, { flowId })
-          : await supabase.auth.exchangeCodeForSession(code);
-
-        if (exchange.error) {
-          showError(exchange.error.message);
-          return;
-        }
-
-        if (!exchange.data?.session) {
-          showError('Сесію не вдалося створити. Спробуй ще раз.');
-          return;
-        }
-
-        // The authorization code is single-use, so remove it from history.
-        window.history.replaceState({}, document.title, '/auth/callback.html');
-        window.location.replace('/');
-      } catch (err) {
-        showError(err?.message || 'Не вдалося завершити вхід. Спробуй ще раз.');
-      }
-    })();
-  </script>
+    history.replaceState({}, document.title, '/auth/callback.html');
+    setTimeout(() => location.replace('/'), 700);
+  } catch (err) {
+    setStatus('❌ JavaScript помилка під час обміну', 'bad');
+    setDetails([
+      `origin: ${location.origin}`,
+      `path: ${location.pathname}`,
+      `code у URL: ${code ? 'ТАК' : 'НІ'}`,
+      `sb_flow_id: ${flowId ? 'ТАК' : 'НІ'}`,
+      `localStorage auth/PKCE ключі: ${localKeys.length ? localKeys.join(', ') : 'НЕ ЗНАЙДЕНО'}`,
+      `sessionStorage auth/PKCE ключі: ${sessionKeys.length ? sessionKeys.join(', ') : 'НЕ ЗНАЙДЕНО'}`,
+      '',
+      `error.name: ${err?.name || '—'}`,
+      `error.message: ${err?.message || '—'}`,
+      `error.code: ${err?.code || '—'}`,
+      `error.status: ${err?.status || '—'}`
+    ]);
+  }
+})();
+</script>
 </body>
 </html>
