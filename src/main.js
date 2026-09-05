@@ -1569,11 +1569,18 @@ emailAuthForm?.addEventListener("submit", submitEmailAuth);
 authSwitchButton?.addEventListener("click", () => setAuthMode(authMode === "signin" ? "signup" : "signin"));
 authLogoutButton?.addEventListener("click", signOut);
 profileBirthDatePickerButton?.addEventListener("click", () => {
-  if (typeof profileBirthDatePicker?.showPicker === "function") {
-    profileBirthDatePicker.showPicker();
-  } else {
-    profileBirthDatePicker?.click();
+  // iOS Safari may not support showPicker() and may ignore click() on a
+  // fully hidden date input. Keep the native input as a transparent overlay
+  // on the calendar button instead, while this handler remains a desktop fallback.
+  try {
+    if (typeof profileBirthDatePicker?.showPicker === "function") {
+      profileBirthDatePicker.showPicker();
+      return;
+    }
+  } catch (error) {
+    console.debug("Runory: native date picker fallback", error);
   }
+  profileBirthDatePicker?.focus();
 });
 
 profileBirthDatePicker?.addEventListener("change", () => {
