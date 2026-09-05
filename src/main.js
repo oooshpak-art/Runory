@@ -1588,19 +1588,23 @@ profileBirthDatePicker?.addEventListener("change", () => {
 });
 
 profileBirthDate?.addEventListener("input", () => {
-  // Keep the field freely editable on desktop and mobile. We only limit
-  // the input length here; formatting happens when the user leaves the field.
-  profileBirthDate.value = profileBirthDate.value.slice(0, 10);
+  // Format the date immediately while typing: 07051993 -> 07.05.1993.
+  // Keep the field fully editable on desktop and mobile.
+  const digits = profileBirthDate.value.replace(/\D/g, "").slice(0, 8);
+  let formatted = digits;
+  if (digits.length > 2) formatted = `${digits.slice(0, 2)}.${digits.slice(2)}`;
+  if (digits.length > 4) formatted = `${digits.slice(0, 2)}.${digits.slice(2, 4)}.${digits.slice(4)}`;
+  profileBirthDate.value = formatted;
+  profileBirthDate.setSelectionRange(formatted.length, formatted.length);
 });
 
 profileBirthDate?.addEventListener("blur", () => {
-  const raw = profileBirthDate.value.trim();
-  if (!raw) return;
-
-  const digits = raw.replace(/\D/g, "").slice(0, 8);
-  if (digits.length === 8) {
-    profileBirthDate.value = `${digits.slice(0, 2)}.${digits.slice(2, 4)}.${digits.slice(4)}`;
-  }
+  const digits = profileBirthDate.value.replace(/\D/g, "").slice(0, 8);
+  if (!digits) return;
+  let formatted = digits;
+  if (digits.length > 2) formatted = `${digits.slice(0, 2)}.${digits.slice(2)}`;
+  if (digits.length > 4) formatted = `${digits.slice(0, 2)}.${digits.slice(2, 4)}.${digits.slice(4)}`;
+  profileBirthDate.value = formatted;
 });
 
 profileForm?.addEventListener("submit", saveUserProfile);
