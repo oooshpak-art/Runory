@@ -830,7 +830,7 @@
         </div>
 
         <div id="authAccountView" hidden>
-          <p class="eyebrow" data-i18n="authAccountEyebrow">ТВОЄМУ RUNORY</p>
+          <p class="eyebrow" data-i18n="authAccountEyebrow">ПРОФІЛЬ СПОРТСМЕНА</p>
           <h2 data-i18n="authAccountTitle">Твій акаунт</h2>
           <p class="auth-copy" id="authAccountEmail"></p>
 
@@ -843,7 +843,13 @@
             <form id="profileForm" class="profile-form">
               <label>
                 <span data-i18n="profileBirthDate">Дата народження</span>
-                <input id="profileBirthDate" type="date" max="2099-12-31" required />
+                <div class="profile-date-control">
+                  <input id="profileBirthDate" type="text" inputmode="numeric" autocomplete="bday" placeholder="ДД.ММ.РРРР" maxlength="10" required />
+                  <button id="profileBirthDatePickerButton" class="profile-date-picker-button" type="button" aria-label="Обрати дату">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M8 3v4M16 3v4M3 10h18"></path></svg>
+                  </button>
+                  <input id="profileBirthDatePicker" class="profile-date-picker-native" type="date" max="2099-12-31" tabindex="-1" aria-hidden="true" />
+                </div>
               </label>
 
               <label>
