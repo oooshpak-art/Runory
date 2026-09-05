@@ -20,9 +20,11 @@
   <script>
     const SUPABASE_URL = "https://vabzqqptpzcoguvuujaz.supabase.co";
     const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_Jm_w-bNZJ8bnrGIbkzc5yw_IGZjneHN";
+    const status = document.querySelector('#status');
 
-    // PKCE is used for the Google sign-in flow. The callback only exchanges
-    // the short-lived authorization code for a Supabase session.
+    // IMPORTANT: this callback performs the PKCE code exchange itself.
+    // Therefore detectSessionInUrl must be false here, otherwise Supabase can
+    // automatically consume the one-time code before exchangeCodeForSession().
     const supabase = window.supabase.createClient(
       SUPABASE_URL,
       SUPABASE_PUBLISHABLE_KEY,
@@ -30,13 +32,11 @@
         auth: {
           persistSession: true,
           autoRefreshToken: true,
-          detectSessionInUrl: true,
+          detectSessionInUrl: false,
           flowType: "pkce"
         }
       }
     );
-
-    const status = document.querySelector('#status');
 
     function showError(message) {
       status.textContent = message || 'Не вдалося завершити вхід. Спробуй ще раз.';
@@ -45,12 +45,11 @@
     (async () => {
       try {
         const url = new URL(window.location.href);
-        const errorDescription =
-          url.searchParams.get('error_description') ||
-          url.searchParams.get('error');
+        const errorDescription = url.searchParams.get('error_description');
+        const error = url.searchParams.get('error');
 
-        if (errorDescription) {
-          showError(decodeURIComponent(errorDescription.replace(/\+/g, ' ')));
+        if (errorDescription || error) {
+          showError(decodeURIComponent((errorDescription || error).replace(/\+/g, ' ')));
           return;
         }
 
@@ -60,21 +59,26 @@
           return;
         }
 
-        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-        if (error) {
-          showError(error.message);
+        const flowId = url.searchParams.get('sb_flow_id');
+        const exchange = flowId
+          ? await supabase.auth.exchangeCodeForSession(code, { flowId })
+          : await supabase.auth.exchangeCodeForSession(code);
+
+        if (exchange.error) {
+          showError(exchange.error.message);
           return;
         }
 
-        if (!data?.session) {
+        if (!exchange.data?.session) {
           showError('Сесію не вдалося створити. Спробуй ще раз.');
           return;
         }
 
-        // Remove the OAuth code from the address bar before returning home.
+        // The authorization code is single-use, so remove it from history.
+        window.history.replaceState({}, document.title, '/auth/callback.html');
         window.location.replace('/');
-      } catch (error) {
-        showError(error?.message || 'Не вдалося завершити вхід. Спробуй ще раз.');
+      } catch (err) {
+        showError(err?.message || 'Не вдалося завершити вхід. Спробуй ще раз.');
       }
     })();
   </script>
