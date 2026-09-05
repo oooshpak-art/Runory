@@ -117,7 +117,6 @@ const translations = {
     ariaFuture: "Майбутні можливості",
     ariaScore: "Оцінка {score} з 10",
      authSignIn: "Увійти",
-     authProfile: "Мій профіль",
      authEyebrow: "ТВОЄМУ RUNORY ПОТРІБЕН АККАУНТ",
      authTitle: "Увійти в Runory",
      authCopy: "Збережемо твою історію тренувань і зможемо бачити прогрес з часом.",
@@ -132,28 +131,14 @@ const translations = {
      authCreateAccount: "Створити акаунт",
      authSwitchToSignIn: "Увійти",
      authAccountEyebrow: "ТВОЄМУ RUNORY",
-     authAccountTitle: "Мій профіль",
+     authAccountTitle: "Твій акаунт",
      authLogout: "Вийти",
      authSignedUp: "Акаунт створено. Перевір email і підтвердь адресу, щоб увійти.",
      authSignedIn: "Ти успішно увійшов у Runory.",
      authSignedOut: "Ти вийшов з акаунта.",
      authError: "Не вдалося виконати вхід. Перевір дані та спробуй ще раз.",
      authGoogleError: "Не вдалося увійти через Google. Спробуй ще раз.",
-     authLoggedInAs: "Увійшов як",
-     profileEyebrow: "ДАНІ СПОРТСМЕНА",
-     profileCopy: "Ці дані допоможуть Runory точніше аналізувати твій прогрес.",
-     profileBirthDate: "Дата народження",
-     profileGender: "Стать",
-     profileGenderChoose: "Обрати",
-     profileGenderMale: "Чоловік",
-     profileGenderFemale: "Жінка",
-     profileHeight: "Зріст, см",
-     profileWeight: "Вага, кг",
-     profileSave: "Зберегти дані",
-     profileSaving: "Зберігаємо…",
-     profileSaved: "Дані спортсмена збережено.",
-     profileLoadError: "Не вдалося завантажити дані профілю.",
-     profileSaveError: "Не вдалося зберегти дані профілю."
+     authLoggedInAs: "Увійшов як"
   },
   en: {
     navAnalysis: "Workout analysis",
@@ -246,7 +231,6 @@ const translations = {
     ariaFuture: "Future features",
     ariaScore: "Score {score} out of 10",
      authSignIn: "Sign in",
-     authProfile: "My profile",
      authEyebrow: "YOUR RUNORY ACCOUNT",
      authTitle: "Sign in to Runory",
      authCopy: "We’ll save your workout history and track your progress over time.",
@@ -260,29 +244,15 @@ const translations = {
      authHaveAccount: "Already have an account?",
      authCreateAccount: "Create account",
      authSwitchToSignIn: "Sign in",
-     authAccountEyebrow: "ATHLETE PROFILE",
-     authAccountTitle: "My profile",
+     authAccountEyebrow: "YOUR RUNORY",
+     authAccountTitle: "Your account",
      authLogout: "Sign out",
      authSignedUp: "Account created. Check your email and confirm your address before signing in.",
      authSignedIn: "You’re now signed in to Runory.",
      authSignedOut: "You’re signed out.",
      authError: "Sign-in failed. Check your details and try again.",
      authGoogleError: "Google sign-in failed. Please try again.",
-     authLoggedInAs: "Signed in as",
-     profileEyebrow: "ATHLETE DATA",
-     profileCopy: "These details help Runory analyze your progress more accurately.",
-     profileBirthDate: "Date of birth",
-     profileGender: "Gender",
-     profileGenderChoose: "Choose",
-     profileGenderMale: "Male",
-     profileGenderFemale: "Female",
-     profileHeight: "Height, cm",
-     profileWeight: "Weight, kg",
-     profileSave: "Save athlete data",
-     profileSaving: "Saving…",
-     profileSaved: "Athlete data saved.",
-     profileLoadError: "Could not load profile data.",
-     profileSaveError: "Could not save profile data."
+     authLoggedInAs: "Signed in as"
   }
 };
 
@@ -1250,7 +1220,7 @@ const supabaseClient = window.supabase?.createClient(SUPABASE_URL, SUPABASE_PUBL
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
-    flowType: "implicit"
+    flowType: "pkce"
   }
 });
 
@@ -1269,15 +1239,6 @@ const emailAuthSubmitText = document.querySelector("#emailAuthSubmitText");
 const authSwitchQuestion = document.querySelector("#authSwitchQuestion");
 const authSwitchButton = document.querySelector("#authSwitchButton");
 const authLogoutButton = document.querySelector("#authLogoutButton");
-const profileForm = document.querySelector("#profileForm");
-const profileBirthDate = document.querySelector("#profileBirthDate");
-const profileBirthDatePicker = document.querySelector("#profileBirthDatePicker");
-const profileBirthDatePickerButton = document.querySelector("#profileBirthDatePickerButton");
-const profileGender = document.querySelector("#profileGender");
-const profileHeight = document.querySelector("#profileHeight");
-const profileWeight = document.querySelector("#profileWeight");
-const profileSaveButton = document.querySelector("#profileSaveButton");
-const profileMessage = document.querySelector("#profileMessage");
 
 let authMode = "signin";
 let currentSession = null;
@@ -1308,7 +1269,7 @@ function updateAuthUI(session) {
   if (authButton) authButton.classList.toggle("is-signed-in", signedIn);
   if (authButtonText) {
     authButtonText.textContent = signedIn
-      ? t("authProfile")
+      ? (user.email || user.phone || t("authSignIn"))
       : t("authSignIn");
   }
 
@@ -1320,10 +1281,6 @@ function updateAuthUI(session) {
 
   if (authFormView) authFormView.hidden = signedIn;
   if (authAccountView) authAccountView.hidden = !signedIn;
-
-  if (!signedIn) {
-    clearProfileForm();
-  }
 }
 
 function openAuthModal() {
@@ -1332,9 +1289,6 @@ function openAuthModal() {
   document.body.classList.add("auth-modal-open");
   setAuthMode("signin");
   updateAuthUI(currentSession);
-  if (currentSession?.user) {
-    ensureUserProfile(currentSession.user);
-  }
   window.setTimeout(() => {
     const target = currentSession ? authLogoutButton : document.querySelector("#authEmail");
     target?.focus();
@@ -1415,117 +1369,6 @@ async function submitEmailAuth(event) {
   }
 }
 
-
-function setProfileMessage(message = "", type = "") {
-  if (!profileMessage) return;
-  profileMessage.textContent = message;
-  profileMessage.className = `auth-message${type ? ` is-${type}` : ""}`;
-}
-
-function formatBirthDate(isoDate) {
-  if (!isoDate || !/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) return "";
-  const [year, month, day] = isoDate.split("-");
-  return `${day}.${month}.${year}`;
-}
-
-function parseBirthDate(value) {
-  const normalized = String(value || "").trim();
-  if (/^\d{4}-\d{2}-\d{2}$/.test(normalized)) return normalized;
-  const match = normalized.match(/^(\d{2})[.\/](\d{2})[.\/](\d{4})$/);
-  if (!match) return "";
-  const [, day, month, year] = match;
-  const candidate = `${year}-${month}-${day}`;
-  const date = new Date(`${candidate}T00:00:00`);
-  if (Number.isNaN(date.getTime()) || date.getFullYear() !== Number(year) || date.getMonth() + 1 !== Number(month) || date.getDate() !== Number(day)) return "";
-  return candidate;
-}
-
-function clearProfileForm() {
-  if (profileBirthDate) profileBirthDate.value = "";
-  if (profileBirthDatePicker) profileBirthDatePicker.value = "";
-  if (profileGender) profileGender.value = "";
-  if (profileHeight) profileHeight.value = "";
-  if (profileWeight) profileWeight.value = "";
-  setProfileMessage("");
-}
-
-function fillProfileForm(profile) {
-  const isoDate = profile?.birth_date || "";
-  if (profileBirthDate) profileBirthDate.value = formatBirthDate(isoDate);
-  if (profileBirthDatePicker) profileBirthDatePicker.value = isoDate;
-  if (profileGender) profileGender.value = profile?.gender || "";
-  if (profileHeight) profileHeight.value = profile?.height_cm ?? "";
-  if (profileWeight) profileWeight.value = profile?.weight_kg ?? "";
-}
-
-async function ensureUserProfile(user) {
-  if (!supabaseClient || !user) return;
-
-  setProfileMessage("");
-
-  try {
-    // Do not upsert a partial row while opening the profile. Some profile
-    // columns may be required, so a read-only lookup must happen first.
-    const { data: profile, error } = await supabaseClient
-      .from("profiles")
-      .select("id, birth_date, gender, height_cm, weight_kg")
-      .eq("id", user.id)
-      .maybeSingle();
-
-    if (error) throw error;
-
-    fillProfileForm(profile || null);
-  } catch (error) {
-    console.warn("Runory: could not load profile.", error);
-    setProfileMessage(error?.message || t("profileLoadError"), "error");
-  }
-}
-
-async function saveUserProfile(event) {
-  event.preventDefault();
-
-  if (!supabaseClient || !currentSession?.user) return;
-
-  const userId = currentSession.user.id;
-  const birthDate = parseBirthDate(profileBirthDate?.value || "");
-  const gender = profileGender?.value || "";
-  const height = profileHeight?.value ? Number(profileHeight.value) : null;
-  const weight = profileWeight?.value ? Number(profileWeight.value) : null;
-
-  if (!birthDate || !gender || !Number.isFinite(height) || !Number.isFinite(weight)) {
-    setProfileMessage(!birthDate ? "Введи дату у форматі ДД.ММ.РРРР." : "Заповни всі поля профілю.", "error");
-    return;
-  }
-
-  const payload = {
-    birth_date: birthDate,
-    gender,
-    height_cm: height,
-    weight_kg: weight
-  };
-
-  profileSaveButton?.setAttribute("disabled", "disabled");
-  setProfileMessage("");
-
-  try {
-    const { data, error } = await supabaseClient
-      .from("profiles")
-      .upsert({ id: userId, ...payload }, { onConflict: "id" })
-      .select("id, birth_date, gender, height_cm, weight_kg")
-      .single();
-
-    if (error) throw error;
-
-    fillProfileForm(data);
-    setProfileMessage(t("profileSaved"), "success");
-  } catch (error) {
-    console.warn("Runory: could not save profile.", error);
-    setProfileMessage(error?.message || t("profileSaveError"), "error");
-  } finally {
-    profileSaveButton?.removeAttribute("disabled");
-  }
-}
-
 async function signOut() {
   if (!supabaseClient) return;
   const { error } = await supabaseClient.auth.signOut();
@@ -1549,15 +1392,9 @@ async function initAuth() {
     console.warn("Runory: could not restore auth session.", error);
   }
   updateAuthUI(data?.session || null);
-  if (data?.session?.user) {
-    await ensureUserProfile(data.session.user);
-  }
 
   supabaseClient.auth.onAuthStateChange((event, session) => {
-    window.setTimeout(async () => {
-      updateAuthUI(session);
-      if (session?.user) await ensureUserProfile(session.user);
-    }, 0);
+    window.setTimeout(() => updateAuthUI(session), 0);
   });
 }
 
@@ -1568,46 +1405,6 @@ googleSignInButton?.addEventListener("click", signInWithGoogle);
 emailAuthForm?.addEventListener("submit", submitEmailAuth);
 authSwitchButton?.addEventListener("click", () => setAuthMode(authMode === "signin" ? "signup" : "signin"));
 authLogoutButton?.addEventListener("click", signOut);
-profileBirthDatePickerButton?.addEventListener("click", () => {
-  // iOS Safari may not support showPicker() and may ignore click() on a
-  // fully hidden date input. Keep the native input as a transparent overlay
-  // on the calendar button instead, while this handler remains a desktop fallback.
-  try {
-    if (typeof profileBirthDatePicker?.showPicker === "function") {
-      profileBirthDatePicker.showPicker();
-      return;
-    }
-  } catch (error) {
-    console.debug("Runory: native date picker fallback", error);
-  }
-  profileBirthDatePicker?.focus();
-});
-
-profileBirthDatePicker?.addEventListener("change", () => {
-  if (profileBirthDate) profileBirthDate.value = formatBirthDate(profileBirthDatePicker.value);
-});
-
-profileBirthDate?.addEventListener("input", () => {
-  // Format the date immediately while typing: 07051993 -> 07.05.1993.
-  // Keep the field fully editable on desktop and mobile.
-  const digits = profileBirthDate.value.replace(/\D/g, "").slice(0, 8);
-  let formatted = digits;
-  if (digits.length > 2) formatted = `${digits.slice(0, 2)}.${digits.slice(2)}`;
-  if (digits.length > 4) formatted = `${digits.slice(0, 2)}.${digits.slice(2, 4)}.${digits.slice(4)}`;
-  profileBirthDate.value = formatted;
-  profileBirthDate.setSelectionRange(formatted.length, formatted.length);
-});
-
-profileBirthDate?.addEventListener("blur", () => {
-  const digits = profileBirthDate.value.replace(/\D/g, "").slice(0, 8);
-  if (!digits) return;
-  let formatted = digits;
-  if (digits.length > 2) formatted = `${digits.slice(0, 2)}.${digits.slice(2)}`;
-  if (digits.length > 4) formatted = `${digits.slice(0, 2)}.${digits.slice(2, 4)}.${digits.slice(4)}`;
-  profileBirthDate.value = formatted;
-});
-
-profileForm?.addEventListener("submit", saveUserProfile);
 
 document.querySelectorAll(".language-button").forEach(button => {
   button.addEventListener("click", () => {
