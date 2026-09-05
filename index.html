@@ -833,6 +833,47 @@
           <p class="eyebrow" data-i18n="authAccountEyebrow">ТВОЄМУ RUNORY</p>
           <h2 data-i18n="authAccountTitle">Твій акаунт</h2>
           <p class="auth-copy" id="authAccountEmail"></p>
+
+          <div class="profile-section">
+            <div class="profile-section-heading">
+              <p class="eyebrow" data-i18n="profileEyebrow">ДАНІ СПОРТСМЕНА</p>
+              <p class="profile-copy" data-i18n="profileCopy">Ці дані допоможуть Runory точніше аналізувати твій прогрес.</p>
+            </div>
+
+            <form id="profileForm" class="profile-form">
+              <label>
+                <span data-i18n="profileBirthDate">Дата народження</span>
+                <input id="profileBirthDate" type="date" />
+              </label>
+
+              <label>
+                <span data-i18n="profileGender">Стать</span>
+                <select id="profileGender">
+                  <option value="" data-i18n="profileGenderChoose">Обрати</option>
+                  <option value="male" data-i18n="profileGenderMale">Чоловік</option>
+                  <option value="female" data-i18n="profileGenderFemale">Жінка</option>
+                </select>
+              </label>
+
+              <div class="profile-form-grid">
+                <label>
+                  <span data-i18n="profileHeight">Зріст, см</span>
+                  <input id="profileHeight" type="number" min="100" max="250" step="0.1" inputmode="decimal" placeholder="180" />
+                </label>
+
+                <label>
+                  <span data-i18n="profileWeight">Вага, кг</span>
+                  <input id="profileWeight" type="number" min="30" max="300" step="0.1" inputmode="decimal" placeholder="77" />
+                </label>
+              </div>
+
+              <button class="auth-submit" id="profileSaveButton" type="submit">
+                <span data-i18n="profileSave">Зберегти дані</span>
+              </button>
+              <p class="auth-message" id="profileMessage" aria-live="polite"></p>
+            </form>
+          </div>
+
           <button class="auth-submit auth-logout" id="authLogoutButton" type="button" data-i18n="authLogout">Вийти</button>
         </div>
       </section>
