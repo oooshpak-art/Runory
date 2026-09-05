@@ -68,18 +68,6 @@ const translations = {
     aiEyebrow: "AI-АНАЛІЗ ТРЕНЕРА",
     aiTitle: "Що говорить твоє тренування",
     futureTitle: "Незабаром у Runory",
-    historyNav: "Мої тренування",
-    historyTitle: "Мої тренування",
-    historyCopy: "Усі тренування, які ти зберіг у Runory.",
-    historyEmpty: "Тут поки немає збережених тренувань.",
-    historyLoading: "Завантажуємо тренування…",
-    historyView: "Відкрити",
-    historyDelete: "Видалити",
-    historyLoginHint: "Увійди в Runory, щоб бачити свої тренування.",
-    historyError: "Не вдалося завантажити тренування.",
-    historySaveError: "Не вдалося зберегти тренування.",
-    historyDeleteError: "Не вдалося видалити тренування.",
-    historyDeleted: "Тренування видалено." ,
     futureHistory: "Історія тренувань",
     futureGarmin: "Garmin Connect",
     futureAi: "AI-аналіз тренера",
@@ -209,18 +197,6 @@ const translations = {
     aiEyebrow: "AI COACH ANALYSIS",
     aiTitle: "What your workout tells us",
     futureTitle: "Coming soon to Runory",
-    historyNav: "Workout history",
-    historyTitle: "My workouts",
-    historyCopy: "All workouts you have saved in Runory.",
-    historyEmpty: "There are no saved workouts yet.",
-    historyLoading: "Loading workouts…",
-    historyView: "Open",
-    historyDelete: "Delete",
-    historyLoginHint: "Sign in to Runory to see your workouts.",
-    historyError: "Could not load workouts.",
-    historySaveError: "Could not save workout.",
-    historyDeleteError: "Could not delete workout.",
-    historyDeleted: "Workout deleted.",
     futureHistory: "Workout history",
     futureGarmin: "Garmin Connect",
     futureAi: "AI coach analysis",
@@ -1563,6 +1539,7 @@ const supabaseClient = window.supabase?.createClient(SUPABASE_URL, SUPABASE_PUBL
 
 const authButton = document.querySelector("#authButton");
 const authButtonText = document.querySelector("#authButtonText");
+const sidebarProfileButton = document.querySelector("#sidebarProfileButton");
 const authModal = document.querySelector("#authModal");
 const authModalBackdrop = document.querySelector("#authModalBackdrop");
 const authClose = document.querySelector("#authClose");
@@ -1872,6 +1849,7 @@ async function initAuth() {
 }
 
 authButton?.addEventListener("click", openAuthModal);
+sidebarProfileButton?.addEventListener("click", openAuthModal);
 authClose?.addEventListener("click", closeAuthModal);
 authModalBackdrop?.addEventListener("click", closeAuthModal);
 googleSignInButton?.addEventListener("click", signInWithGoogle);
