@@ -21,6 +21,8 @@
     const SUPABASE_URL = "https://vabzqqptpzcoguvuujaz.supabase.co";
     const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_Jm_w-bNZJ8bnrGIbkzc5yw_IGZjneHN";
 
+    // PKCE is used for the Google sign-in flow. The callback only exchanges
+    // the short-lived authorization code for a Supabase session.
     const supabase = window.supabase.createClient(
       SUPABASE_URL,
       SUPABASE_PUBLISHABLE_KEY,
@@ -28,8 +30,8 @@
         auth: {
           persistSession: true,
           autoRefreshToken: true,
-          detectSessionInUrl: false,
-          flowType: "implicit"
+          detectSessionInUrl: true,
+          flowType: "pkce"
         }
       }
     );
@@ -42,34 +44,23 @@
 
     (async () => {
       try {
-        const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
-        const query = new URLSearchParams(window.location.search);
-
+        const url = new URL(window.location.href);
         const errorDescription =
-          hash.get('error_description') ||
-          query.get('error_description');
+          url.searchParams.get('error_description') ||
+          url.searchParams.get('error');
 
         if (errorDescription) {
           showError(decodeURIComponent(errorDescription.replace(/\+/g, ' ')));
           return;
         }
 
-        const accessToken = hash.get('access_token');
-        const refreshToken = hash.get('refresh_token');
-
-        if (!accessToken || !refreshToken) {
-          showError('Не вдалося отримати дані входу від Google. Спробуй ще раз.');
+        const code = url.searchParams.get('code');
+        if (!code) {
+          showError('Не вдалося отримати код входу від Google. Спробуй ще раз.');
           return;
         }
 
-        // Google/Supabase implicit flow returns the tokens in the URL hash.
-        // Set the session explicitly instead of waiting for automatic URL
-        // detection. This avoids timing differences between desktop and mobile browsers.
-        const { data, error } = await supabase.auth.setSession({
-          access_token: accessToken,
-          refresh_token: refreshToken
-        });
-
+        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
         if (error) {
           showError(error.message);
           return;
@@ -80,7 +71,7 @@
           return;
         }
 
-        // Do not keep OAuth tokens in the address bar after the session is saved.
+        // Remove the OAuth code from the address bar before returning home.
         window.location.replace('/');
       } catch (error) {
         showError(error?.message || 'Не вдалося завершити вхід. Спробуй ще раз.');
