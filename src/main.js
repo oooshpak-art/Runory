@@ -117,6 +117,7 @@ const translations = {
     ariaFuture: "Майбутні можливості",
     ariaScore: "Оцінка {score} з 10",
      authSignIn: "Увійти",
+     authProfile: "Мій профіль",
      authEyebrow: "ТВОЄМУ RUNORY ПОТРІБЕН АККАУНТ",
      authTitle: "Увійти в Runory",
      authCopy: "Збережемо твою історію тренувань і зможемо бачити прогрес з часом.",
@@ -131,7 +132,7 @@ const translations = {
      authCreateAccount: "Створити акаунт",
      authSwitchToSignIn: "Увійти",
      authAccountEyebrow: "ТВОЄМУ RUNORY",
-     authAccountTitle: "Твій акаунт",
+     authAccountTitle: "Мій профіль",
      authLogout: "Вийти",
      authSignedUp: "Акаунт створено. Перевір email і підтвердь адресу, щоб увійти.",
      authSignedIn: "Ти успішно увійшов у Runory.",
@@ -245,6 +246,7 @@ const translations = {
     ariaFuture: "Future features",
     ariaScore: "Score {score} out of 10",
      authSignIn: "Sign in",
+     authProfile: "My profile",
      authEyebrow: "YOUR RUNORY ACCOUNT",
      authTitle: "Sign in to Runory",
      authCopy: "We’ll save your workout history and track your progress over time.",
@@ -259,7 +261,7 @@ const translations = {
      authCreateAccount: "Create account",
      authSwitchToSignIn: "Sign in",
      authAccountEyebrow: "YOUR RUNORY",
-     authAccountTitle: "Your account",
+     authAccountTitle: "My profile",
      authLogout: "Sign out",
      authSignedUp: "Account created. Check your email and confirm your address before signing in.",
      authSignedIn: "You’re now signed in to Runory.",
@@ -1304,7 +1306,7 @@ function updateAuthUI(session) {
   if (authButton) authButton.classList.toggle("is-signed-in", signedIn);
   if (authButtonText) {
     authButtonText.textContent = signedIn
-      ? (user.email || user.phone || t("authSignIn"))
+      ? t("authProfile")
       : t("authSignIn");
   }
 
@@ -1438,36 +1440,21 @@ async function ensureUserProfile(user) {
 
   setProfileMessage("");
 
-  const { data: profile, error: readError } = await supabaseClient
-    .from("profiles")
-    .select("id, birth_date, gender, height_cm, weight_kg")
-    .eq("id", user.id)
-    .maybeSingle();
+  try {
+    // Keep one profile row per auth user. Upsert avoids the race where two
+    // auth events both try to create the profile at the same time.
+    const { data: profile, error } = await supabaseClient
+      .from("profiles")
+      .upsert({ id: user.id }, { onConflict: "id" })
+      .select("id, birth_date, gender, height_cm, weight_kg")
+      .single();
 
-  if (readError) {
-    console.warn("Runory: could not load profile.", readError);
-    setProfileMessage(t("profileLoadError"), "error");
-    return;
-  }
-
-  if (profile) {
+    if (error) throw error;
     fillProfileForm(profile);
-    return;
+  } catch (error) {
+    console.warn("Runory: could not load profile.", error);
+    setProfileMessage(error?.message || t("profileLoadError"), "error");
   }
-
-  const { data: createdProfile, error: insertError } = await supabaseClient
-    .from("profiles")
-    .insert({ id: user.id })
-    .select("id, birth_date, gender, height_cm, weight_kg")
-    .single();
-
-  if (insertError) {
-    console.warn("Runory: could not create profile.", insertError);
-    setProfileMessage(t("profileLoadError"), "error");
-    return;
-  }
-
-  fillProfileForm(createdProfile);
 }
 
 async function saveUserProfile(event) {
@@ -1487,13 +1474,15 @@ async function saveUserProfile(event) {
   setProfileMessage("");
 
   try {
-    const { error } = await supabaseClient
+    const { data, error } = await supabaseClient
       .from("profiles")
-      .update(payload)
-      .eq("id", userId);
+      .upsert({ id: userId, ...payload }, { onConflict: "id" })
+      .select("id, birth_date, gender, height_cm, weight_kg")
+      .single();
 
     if (error) throw error;
 
+    fillProfileForm(data);
     setProfileMessage(t("profileSaved"), "success");
   } catch (error) {
     console.warn("Runory: could not save profile.", error);
