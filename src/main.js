@@ -132,7 +132,7 @@ const translations = {
     ariaScore: "Оцінка {score} з 10",
      authSignIn: "Увійти",
      authProfile: "Мій профіль",
-    authAccount: "Акаунт",
+     authAccountButton: "Акаунт",
      authEyebrow: "ТВОЄМУ RUNORY ПОТРІБЕН АККАУНТ",
      authTitle: "Увійти в Runory",
      authCopy: "Збережемо твою історію тренувань і зможемо бачити прогрес з часом.",
@@ -147,8 +147,9 @@ const translations = {
      authCreateAccount: "Створити акаунт",
      authSwitchToSignIn: "Увійти",
      authAccountEyebrow: "ТВОЄМУ RUNORY",
-     authAccountTitle: "Мій акаунт",
-     authAccountCopy: "Тут керування входом в акаунт. Профіль спортсмена відкривається окремо в меню зліва.",
+     authAccountTitle: "Акаунт",
+     authAccountNote: "Налаштування спортсмена знаходяться в розділі «Мій профіль».",
+     profileTitle: "Мій профіль",
      authLogout: "Вийти",
      authSignedUp: "Акаунт створено. Перевір email і підтвердь адресу, щоб увійти.",
      authSignedIn: "Ти успішно увійшов у Runory.",
@@ -156,10 +157,7 @@ const translations = {
      authError: "Не вдалося виконати вхід. Перевір дані та спробуй ще раз.",
      authGoogleError: "Не вдалося увійти через Google. Спробуй ще раз.",
      authLoggedInAs: "Увійшов як",
-     profilePageEyebrow: "ПРОФІЛЬ СПОРТСМЕНА",
-    profilePageTitle: "Мій профіль",
-    profilePageCopy: "Дані, які допомагають Runory точніше аналізувати твої тренування та прогрес.",
-    profileEyebrow: "ДАНІ СПОРТСМЕНА",
+     profileEyebrow: "ДАНІ СПОРТСМЕНА",
      profileCopy: "Ці дані допоможуть Runory точніше аналізувати твій прогрес.",
      profileBirthDate: "Дата народження",
      profileGender: "Стать",
@@ -278,7 +276,7 @@ const translations = {
     ariaScore: "Score {score} out of 10",
      authSignIn: "Sign in",
      authProfile: "My profile",
-    authAccount: "Account",
+     authAccountButton: "Account",
      authEyebrow: "YOUR RUNORY ACCOUNT",
      authTitle: "Sign in to Runory",
      authCopy: "We’ll save your workout history and track your progress over time.",
@@ -293,8 +291,9 @@ const translations = {
      authCreateAccount: "Create account",
      authSwitchToSignIn: "Sign in",
      authAccountEyebrow: "ATHLETE PROFILE",
-     authAccountTitle: "My account",
-     authAccountCopy: "Account access is managed here. Your athlete profile is available separately in the left menu.",
+     authAccountTitle: "Account",
+     authAccountNote: "Athlete settings are available in My profile.",
+     profileTitle: "My profile",
      authLogout: "Sign out",
      authSignedUp: "Account created. Check your email and confirm your address before signing in.",
      authSignedIn: "You’re now signed in to Runory.",
@@ -302,10 +301,7 @@ const translations = {
      authError: "Sign-in failed. Check your details and try again.",
      authGoogleError: "Google sign-in failed. Please try again.",
      authLoggedInAs: "Signed in as",
-     profilePageEyebrow: "ATHLETE PROFILE",
-    profilePageTitle: "My profile",
-    profilePageCopy: "Details that help Runory analyze your training and progress more accurately.",
-    profileEyebrow: "ATHLETE DATA",
+     profileEyebrow: "ATHLETE DATA",
      profileCopy: "These details help Runory analyze your progress more accurately.",
      profileBirthDate: "Date of birth",
      profileGender: "Gender",
@@ -404,14 +400,11 @@ function setActiveView(viewName) {
     loadWorkoutHistory();
   }
 
-  if (viewName === "profile") {
-    if (currentSession?.user) {
-      ensureUserProfile(currentSession.user);
-    } else {
-      openAuthModal();
-      return;
-    }
+  if (viewName === "profile" && currentSession?.user) {
+    ensureUserProfile(currentSession.user);
   }
+
+  closeMobileSidebar();
 }
 
 document.querySelectorAll("[data-view-target]").forEach(button => {
@@ -419,54 +412,41 @@ document.querySelectorAll("[data-view-target]").forEach(button => {
 });
 
 const sidebarProfileButton = document.querySelector("#sidebarProfileButton");
-const accountSidebar = document.querySelector("#accountSidebar");
-const accountSidebarToggle = document.querySelector("#accountSidebarToggle");
-const sidebarMobileToggle = document.querySelector("#sidebarMobileToggle");
-const sidebarMobileBackdrop = document.querySelector("#sidebarMobileBackdrop");
-
-function openProfileView() {
+sidebarProfileButton?.addEventListener("click", () => {
   if (!currentSession?.user) {
     openAuthModal();
     return;
   }
   setActiveView("profile");
-}
-
-sidebarProfileButton?.addEventListener("click", openProfileView);
-
-const savedSidebarState = localStorage.getItem("runory-sidebar-collapsed") === "1";
-if (savedSidebarState) accountSidebar?.classList.add("is-collapsed");
-
-function updateSidebarToggle() {
-  const collapsed = accountSidebar?.classList.contains("is-collapsed");
-  if (accountSidebarToggle) {
-    accountSidebarToggle.setAttribute("aria-expanded", String(!collapsed));
-    accountSidebarToggle.setAttribute("aria-label", collapsed ? "Розгорнути меню" : "Згорнути меню");
-    accountSidebarToggle.innerHTML = `<span aria-hidden="true">${collapsed ? "›" : "‹"}</span>`;
-  }
-}
-
-accountSidebarToggle?.addEventListener("click", () => {
-  accountSidebar?.classList.toggle("is-collapsed");
-  localStorage.setItem("runory-sidebar-collapsed", accountSidebar?.classList.contains("is-collapsed") ? "1" : "0");
-  updateSidebarToggle();
 });
-updateSidebarToggle();
 
-function setMobileSidebar(open) {
-  accountSidebar?.classList.toggle("is-open", open);
-  sidebarMobileBackdrop?.classList.toggle("is-visible", open);
-  sidebarMobileToggle?.setAttribute("aria-expanded", String(open));
-  sidebarMobileToggle?.setAttribute("aria-label", open ? "Закрити меню" : "Відкрити меню");
+const sidebar = document.querySelector(".account-sidebar");
+const sidebarMobileToggle = document.querySelector("#sidebarMobileToggle");
+const sidebarMobileBackdrop = document.querySelector("#sidebarMobileBackdrop");
+const accountSidebarToggle = document.querySelector("#accountSidebarToggle");
+
+function closeMobileSidebar() {
+  sidebar?.classList.remove("is-open");
+  sidebarMobileBackdrop?.classList.remove("is-visible");
+  sidebarMobileToggle?.setAttribute("aria-expanded", "false");
 }
 
 sidebarMobileToggle?.addEventListener("click", () => {
-  setMobileSidebar(!accountSidebar?.classList.contains("is-open"));
+  const open = !sidebar?.classList.contains("is-open");
+  sidebar?.classList.toggle("is-open", open);
+  sidebarMobileBackdrop?.classList.toggle("is-visible", open);
+  sidebarMobileToggle.setAttribute("aria-expanded", String(open));
 });
-sidebarMobileBackdrop?.addEventListener("click", () => setMobileSidebar(false));
-document.querySelectorAll(".account-sidebar-link").forEach(link => {
-  link.addEventListener("click", () => setMobileSidebar(false));
+sidebarMobileBackdrop?.addEventListener("click", closeMobileSidebar);
+accountSidebarToggle?.addEventListener("click", () => {
+  if (window.matchMedia("(max-width: 680px)").matches) {
+    closeMobileSidebar();
+    return;
+  }
+  sidebar?.classList.toggle("is-collapsed");
 });
+
+
 
 
 function formatMetric(value) {
@@ -1683,7 +1663,7 @@ function updateAuthUI(session) {
   if (authButton) authButton.classList.toggle("is-signed-in", signedIn);
   if (authButtonText) {
     authButtonText.textContent = signedIn
-      ? t("authAccount")
+      ? t("authAccountButton")
       : t("authSignIn");
   }
 
