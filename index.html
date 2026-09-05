@@ -525,8 +525,6 @@
   <main class="page-shell">
 
     <header class="topbar">
-      <button class="sidebar-mobile-toggle" id="sidebarMobileToggle" type="button" aria-label="Відкрити меню" aria-expanded="false">☰</button>
-
       <a class="brand" href="#top" aria-label="Runory — головна">
         <img
           class="brand-logo"
@@ -555,9 +553,9 @@
         </a>
         </nav>
 
-        <button class="auth-button" id="authButton" type="button" aria-label="Акаунт">
+        <button class="auth-button" id="authButton" type="button" aria-label="Мій профіль">
           <span class="auth-button-dot" aria-hidden="true"></span>
-          <span id="authButtonText" data-i18n="authSignIn">Увійти</span>
+          <span id="authButtonText">Увійти</span>
         </button>
 
         <div class="language-switcher" role="group" aria-label="Мова" data-i18n-aria="language">
@@ -567,16 +565,17 @@
       </div>
     </header>
 
+    <button class="sidebar-mobile-toggle" id="sidebarMobileToggle" type="button" aria-label="Відкрити меню" aria-expanded="false">☰</button>
+    <button class="sidebar-mobile-backdrop" id="sidebarMobileBackdrop" type="button" aria-label="Закрити меню"></button>
+
     <div class="app-layout">
-      <aside class="account-sidebar" id="accountSidebar" aria-label="Особистий кабінет">
+      <aside class="account-sidebar" aria-label="Особистий кабінет">
         <div class="account-sidebar-top">
           <p class="account-sidebar-label">МІЙ RUNORY</p>
-          <button class="account-sidebar-toggle" id="accountSidebarToggle" type="button" aria-label="Згорнути меню" aria-expanded="true">
-            <span aria-hidden="true">‹</span>
-          </button>
+          <button class="account-sidebar-toggle" id="accountSidebarToggle" type="button" aria-label="Згорнути меню">‹</button>
         </div>
         <nav class="account-sidebar-nav" aria-label="Особистий кабінет">
-          <button class="account-sidebar-link" id="sidebarProfileButton" type="button" data-view-target="profile">
+          <button class="account-sidebar-link" id="sidebarProfileButton" type="button">
             <span class="account-sidebar-icon" aria-hidden="true">○</span>
             <span data-i18n="authProfile">Мій профіль</span>
           </button>
@@ -586,7 +585,6 @@
           </button>
         </nav>
       </aside>
-      <button class="sidebar-mobile-backdrop" id="sidebarMobileBackdrop" type="button" aria-label="Закрити меню"></button>
 
       <div class="app-content">
 
@@ -820,17 +818,12 @@
     <div class="view" id="profile" data-view-panel>
       <section class="profile-page">
         <div class="profile-page-heading">
-          <p class="eyebrow" data-i18n="profilePageEyebrow">ПРОФІЛЬ СПОРТСМЕНА</p>
-          <h1 data-i18n="profilePageTitle">Мій профіль</h1>
-          <p data-i18n="profilePageCopy">Дані, які допомагають Runory точніше аналізувати твої тренування та прогрес.</p>
+          <p class="eyebrow" data-i18n="profileEyebrow">ДАНІ СПОРТСМЕНА</p>
+          <h1 data-i18n="profileTitle">Мій профіль</h1>
+          <p data-i18n="profileCopy">Ці дані допоможуть Runory точніше аналізувати твій прогрес.</p>
         </div>
 
         <div class="profile-card">
-          <div class="profile-section-heading">
-            <p class="eyebrow" data-i18n="profileEyebrow">ДАНІ СПОРТСМЕНА</p>
-            <p class="profile-copy" data-i18n="profileCopy">Ці дані допоможуть Runory точніше аналізувати твій прогрес.</p>
-          </div>
-
           <form id="profileForm" class="profile-form">
             <label>
               <span data-i18n="profileBirthDate">Дата народження</span>
@@ -927,10 +920,13 @@
         </div>
 
         <div id="authAccountView" hidden>
-          <p class="eyebrow" data-i18n="authAccountEyebrow">ТВОЄМУ RUNORY</p>
-          <h2 data-i18n="authAccountTitle">Мій акаунт</h2>
+          <h2 data-i18n="authAccountTitle">Акаунт</h2>
           <p class="auth-copy" id="authAccountEmail"></p>
-          <div class="account-modal-note" data-i18n="authAccountCopy">Тут керування входом в акаунт. Профіль спортсмена відкривається окремо в меню зліва.</div>
+
+          <div class="account-modal-note">
+            <span data-i18n="authAccountNote">Налаштування спортсмена знаходяться в розділі «Мій профіль».</span>
+          </div>
+
           <button class="auth-submit auth-logout" id="authLogoutButton" type="button" data-i18n="authLogout">Вийти</button>
         </div>
       </section>
