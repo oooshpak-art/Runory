@@ -115,7 +115,30 @@ const translations = {
     ariaNav: "Розділи Runory",
     ariaSummary: "Підсумок тренування",
     ariaFuture: "Майбутні можливості",
-    ariaScore: "Оцінка {score} з 10"
+    ariaScore: "Оцінка {score} з 10",
+     authSignIn: "Увійти",
+     authEyebrow: "ТВОЄМУ RUNORY ПОТРІБЕН АККАУНТ",
+     authTitle: "Увійти в Runory",
+     authCopy: "Збережемо твою історію тренувань і зможемо бачити прогрес з часом.",
+     authGoogle: "Продовжити з Google",
+     authOr: "або",
+     authEmail: "Email",
+     authPassword: "Пароль",
+     authSubmitSignIn: "Увійти",
+     authSubmitSignUp: "Створити акаунт",
+     authNoAccount: "Ще немає акаунта?",
+     authHaveAccount: "Вже маєш акаунт?",
+     authCreateAccount: "Створити акаунт",
+     authSwitchToSignIn: "Увійти",
+     authAccountEyebrow: "ТВОЄМУ RUNORY",
+     authAccountTitle: "Твій акаунт",
+     authLogout: "Вийти",
+     authSignedUp: "Акаунт створено. Перевір email і підтвердь адресу, щоб увійти.",
+     authSignedIn: "Ти успішно увійшов у Runory.",
+     authSignedOut: "Ти вийшов з акаунта.",
+     authError: "Не вдалося виконати вхід. Перевір дані та спробуй ще раз.",
+     authGoogleError: "Не вдалося увійти через Google. Спробуй ще раз.",
+     authLoggedInAs: "Увійшов як"
   },
   en: {
     navAnalysis: "Workout analysis",
@@ -206,7 +229,30 @@ const translations = {
     ariaNav: "Runory sections",
     ariaSummary: "Workout summary",
     ariaFuture: "Future features",
-    ariaScore: "Score {score} out of 10"
+    ariaScore: "Score {score} out of 10",
+     authSignIn: "Sign in",
+     authEyebrow: "YOUR RUNORY ACCOUNT",
+     authTitle: "Sign in to Runory",
+     authCopy: "We’ll save your workout history and track your progress over time.",
+     authGoogle: "Continue with Google",
+     authOr: "or",
+     authEmail: "Email",
+     authPassword: "Password",
+     authSubmitSignIn: "Sign in",
+     authSubmitSignUp: "Create account",
+     authNoAccount: "Don’t have an account yet?",
+     authHaveAccount: "Already have an account?",
+     authCreateAccount: "Create account",
+     authSwitchToSignIn: "Sign in",
+     authAccountEyebrow: "YOUR RUNORY",
+     authAccountTitle: "Your account",
+     authLogout: "Sign out",
+     authSignedUp: "Account created. Check your email and confirm your address before signing in.",
+     authSignedIn: "You’re now signed in to Runory.",
+     authSignedOut: "You’re signed out.",
+     authError: "Sign-in failed. Check your details and try again.",
+     authGoogleError: "Google sign-in failed. Please try again.",
+     authLoggedInAs: "Signed in as"
   }
 };
 
@@ -1164,3 +1210,203 @@ document.querySelectorAll(".language-button").forEach(button => {
 });
 
 applyLanguage();
+
+
+// === Runory authentication (Supabase) ===
+const SUPABASE_URL = "https://vabzqqptpzcoguvuujaz.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_Jm_w-bNZJ8bnrGIbkzc5yw_IGZjneHN";
+const supabaseClient = window.supabase?.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+const authButton = document.querySelector("#authButton");
+const authButtonText = document.querySelector("#authButtonText");
+const authModal = document.querySelector("#authModal");
+const authModalBackdrop = document.querySelector("#authModalBackdrop");
+const authClose = document.querySelector("#authClose");
+const authFormView = document.querySelector("#authFormView");
+const authAccountView = document.querySelector("#authAccountView");
+const authAccountEmail = document.querySelector("#authAccountEmail");
+const authMessage = document.querySelector("#authMessage");
+const googleSignInButton = document.querySelector("#googleSignInButton");
+const emailAuthForm = document.querySelector("#emailAuthForm");
+const emailAuthSubmitText = document.querySelector("#emailAuthSubmitText");
+const authSwitchQuestion = document.querySelector("#authSwitchQuestion");
+const authSwitchButton = document.querySelector("#authSwitchButton");
+const authLogoutButton = document.querySelector("#authLogoutButton");
+
+let authMode = "signin";
+let currentSession = null;
+
+function setAuthMessage(message = "", type = "") {
+  if (!authMessage) return;
+  authMessage.textContent = message;
+  authMessage.className = `auth-message${type ? ` is-${type}` : ""}`;
+}
+
+function setAuthMode(mode) {
+  authMode = mode === "signup" ? "signup" : "signin";
+  if (emailAuthSubmitText) emailAuthSubmitText.textContent = t(authMode === "signup" ? "authSubmitSignUp" : "authSubmitSignIn");
+  if (authSwitchQuestion) authSwitchQuestion.textContent = t(authMode === "signup" ? "authHaveAccount" : "authNoAccount");
+  if (authSwitchButton) authSwitchButton.textContent = t(authMode === "signup" ? "authSwitchToSignIn" : "authCreateAccount");
+  if (emailAuthForm) {
+    const password = document.querySelector("#authPassword");
+    if (password) password.autocomplete = authMode === "signup" ? "new-password" : "current-password";
+  }
+  setAuthMessage("");
+}
+
+function updateAuthUI(session) {
+  currentSession = session || null;
+  const user = currentSession?.user;
+  const signedIn = Boolean(user);
+
+  if (authButton) authButton.classList.toggle("is-signed-in", signedIn);
+  if (authButtonText) {
+    authButtonText.textContent = signedIn
+      ? (user.email || user.phone || t("authSignIn"))
+      : t("authSignIn");
+  }
+
+  if (authAccountEmail) {
+    authAccountEmail.textContent = signedIn
+      ? `${t("authLoggedInAs")}: ${user.email || user.phone || "—"}`
+      : "";
+  }
+
+  if (authFormView) authFormView.hidden = signedIn;
+  if (authAccountView) authAccountView.hidden = !signedIn;
+}
+
+function openAuthModal() {
+  if (!authModal) return;
+  authModal.hidden = false;
+  document.body.classList.add("auth-modal-open");
+  setAuthMode("signin");
+  updateAuthUI(currentSession);
+  window.setTimeout(() => {
+    const target = currentSession ? authLogoutButton : document.querySelector("#authEmail");
+    target?.focus();
+  }, 0);
+}
+
+function closeAuthModal() {
+  if (!authModal) return;
+  authModal.hidden = true;
+  document.body.classList.remove("auth-modal-open");
+  setAuthMessage("");
+}
+
+async function signInWithGoogle() {
+  if (!supabaseClient) {
+    setAuthMessage(t("authGoogleError"), "error");
+    return;
+  }
+
+  googleSignInButton?.setAttribute("disabled", "disabled");
+  setAuthMessage("");
+
+  const { error } = await supabaseClient.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: window.location.origin
+    }
+  });
+
+  if (error) {
+    setAuthMessage(error.message || t("authGoogleError"), "error");
+    googleSignInButton?.removeAttribute("disabled");
+  }
+}
+
+async function submitEmailAuth(event) {
+  event.preventDefault();
+  if (!supabaseClient) {
+    setAuthMessage(t("authError"), "error");
+    return;
+  }
+
+  const email = document.querySelector("#authEmail")?.value.trim();
+  const password = document.querySelector("#authPassword")?.value || "";
+  const submit = document.querySelector("#emailAuthSubmit");
+
+  if (!email || !password) return;
+
+  submit?.setAttribute("disabled", "disabled");
+  setAuthMessage("");
+
+  try {
+    if (authMode === "signup") {
+      const { data, error } = await supabaseClient.auth.signUp({
+        email,
+        password,
+        options: { emailRedirectTo: window.location.origin }
+      });
+      if (error) throw error;
+
+      if (data.session) {
+        updateAuthUI(data.session);
+        setAuthMessage(t("authSignedIn"), "success");
+      } else {
+        setAuthMessage(t("authSignedUp"), "success");
+      }
+    } else {
+      const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      updateAuthUI(data.session);
+      setAuthMessage(t("authSignedIn"), "success");
+      window.setTimeout(closeAuthModal, 500);
+    }
+  } catch (error) {
+    setAuthMessage(error.message || t("authError"), "error");
+  } finally {
+    submit?.removeAttribute("disabled");
+  }
+}
+
+async function signOut() {
+  if (!supabaseClient) return;
+  const { error } = await supabaseClient.auth.signOut();
+  if (error) {
+    setAuthMessage(error.message || t("authError"), "error");
+    return;
+  }
+  updateAuthUI(null);
+  setAuthMessage(t("authSignedOut"), "success");
+  window.setTimeout(closeAuthModal, 350);
+}
+
+async function initAuth() {
+  if (!supabaseClient) {
+    console.warn("Runory: Supabase client could not be initialized.");
+    return;
+  }
+
+  const { data } = await supabaseClient.auth.getSession();
+  updateAuthUI(data.session);
+
+  supabaseClient.auth.onAuthStateChange((_event, session) => {
+    window.setTimeout(() => updateAuthUI(session), 0);
+  });
+}
+
+authButton?.addEventListener("click", openAuthModal);
+authClose?.addEventListener("click", closeAuthModal);
+authModalBackdrop?.addEventListener("click", closeAuthModal);
+googleSignInButton?.addEventListener("click", signInWithGoogle);
+emailAuthForm?.addEventListener("submit", submitEmailAuth);
+authSwitchButton?.addEventListener("click", () => setAuthMode(authMode === "signin" ? "signup" : "signin"));
+authLogoutButton?.addEventListener("click", signOut);
+
+document.querySelectorAll(".language-button").forEach(button => {
+  button.addEventListener("click", () => {
+    window.setTimeout(() => {
+      setAuthMode(authMode);
+      updateAuthUI(currentSession);
+    }, 0);
+  });
+});
+
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape" && authModal && !authModal.hidden) closeAuthModal();
+});
+
+initAuth();
