@@ -138,7 +138,21 @@ const translations = {
      authSignedOut: "Ти вийшов з акаунта.",
      authError: "Не вдалося виконати вхід. Перевір дані та спробуй ще раз.",
      authGoogleError: "Не вдалося увійти через Google. Спробуй ще раз.",
-     authLoggedInAs: "Увійшов як"
+     authLoggedInAs: "Увійшов як",
+     profileEyebrow: "ДАНІ СПОРТСМЕНА",
+     profileCopy: "Ці дані допоможуть Runory точніше аналізувати твій прогрес.",
+     profileBirthDate: "Дата народження",
+     profileGender: "Стать",
+     profileGenderChoose: "Обрати",
+     profileGenderMale: "Чоловік",
+     profileGenderFemale: "Жінка",
+     profileHeight: "Зріст, см",
+     profileWeight: "Вага, кг",
+     profileSave: "Зберегти дані",
+     profileSaving: "Зберігаємо…",
+     profileSaved: "Дані спортсмена збережено.",
+     profileLoadError: "Не вдалося завантажити дані профілю.",
+     profileSaveError: "Не вдалося зберегти дані профілю."
   },
   en: {
     navAnalysis: "Workout analysis",
@@ -252,7 +266,21 @@ const translations = {
      authSignedOut: "You’re signed out.",
      authError: "Sign-in failed. Check your details and try again.",
      authGoogleError: "Google sign-in failed. Please try again.",
-     authLoggedInAs: "Signed in as"
+     authLoggedInAs: "Signed in as",
+     profileEyebrow: "ATHLETE DATA",
+     profileCopy: "These details help Runory analyze your progress more accurately.",
+     profileBirthDate: "Date of birth",
+     profileGender: "Gender",
+     profileGenderChoose: "Choose",
+     profileGenderMale: "Male",
+     profileGenderFemale: "Female",
+     profileHeight: "Height, cm",
+     profileWeight: "Weight, kg",
+     profileSave: "Save athlete data",
+     profileSaving: "Saving…",
+     profileSaved: "Athlete data saved.",
+     profileLoadError: "Could not load profile data.",
+     profileSaveError: "Could not save profile data."
   }
 };
 
@@ -1239,6 +1267,13 @@ const emailAuthSubmitText = document.querySelector("#emailAuthSubmitText");
 const authSwitchQuestion = document.querySelector("#authSwitchQuestion");
 const authSwitchButton = document.querySelector("#authSwitchButton");
 const authLogoutButton = document.querySelector("#authLogoutButton");
+const profileForm = document.querySelector("#profileForm");
+const profileBirthDate = document.querySelector("#profileBirthDate");
+const profileGender = document.querySelector("#profileGender");
+const profileHeight = document.querySelector("#profileHeight");
+const profileWeight = document.querySelector("#profileWeight");
+const profileSaveButton = document.querySelector("#profileSaveButton");
+const profileMessage = document.querySelector("#profileMessage");
 
 let authMode = "signin";
 let currentSession = null;
@@ -1281,6 +1316,10 @@ function updateAuthUI(session) {
 
   if (authFormView) authFormView.hidden = signedIn;
   if (authAccountView) authAccountView.hidden = !signedIn;
+
+  if (!signedIn) {
+    clearProfileForm();
+  }
 }
 
 function openAuthModal() {
@@ -1289,6 +1328,9 @@ function openAuthModal() {
   document.body.classList.add("auth-modal-open");
   setAuthMode("signin");
   updateAuthUI(currentSession);
+  if (currentSession?.user) {
+    ensureUserProfile(currentSession.user);
+  }
   window.setTimeout(() => {
     const target = currentSession ? authLogoutButton : document.querySelector("#authEmail");
     target?.focus();
@@ -1369,6 +1411,98 @@ async function submitEmailAuth(event) {
   }
 }
 
+
+function setProfileMessage(message = "", type = "") {
+  if (!profileMessage) return;
+  profileMessage.textContent = message;
+  profileMessage.className = `auth-message${type ? ` is-${type}` : ""}`;
+}
+
+function clearProfileForm() {
+  if (profileBirthDate) profileBirthDate.value = "";
+  if (profileGender) profileGender.value = "";
+  if (profileHeight) profileHeight.value = "";
+  if (profileWeight) profileWeight.value = "";
+  setProfileMessage("");
+}
+
+function fillProfileForm(profile) {
+  if (profileBirthDate) profileBirthDate.value = profile?.birth_date || "";
+  if (profileGender) profileGender.value = profile?.gender || "";
+  if (profileHeight) profileHeight.value = profile?.height_cm ?? "";
+  if (profileWeight) profileWeight.value = profile?.weight_kg ?? "";
+}
+
+async function ensureUserProfile(user) {
+  if (!supabaseClient || !user) return;
+
+  setProfileMessage("");
+
+  const { data: profile, error: readError } = await supabaseClient
+    .from("profiles")
+    .select("id, birth_date, gender, height_cm, weight_kg")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (readError) {
+    console.warn("Runory: could not load profile.", readError);
+    setProfileMessage(t("profileLoadError"), "error");
+    return;
+  }
+
+  if (profile) {
+    fillProfileForm(profile);
+    return;
+  }
+
+  const { data: createdProfile, error: insertError } = await supabaseClient
+    .from("profiles")
+    .insert({ id: user.id })
+    .select("id, birth_date, gender, height_cm, weight_kg")
+    .single();
+
+  if (insertError) {
+    console.warn("Runory: could not create profile.", insertError);
+    setProfileMessage(t("profileLoadError"), "error");
+    return;
+  }
+
+  fillProfileForm(createdProfile);
+}
+
+async function saveUserProfile(event) {
+  event.preventDefault();
+
+  if (!supabaseClient || !currentSession?.user) return;
+
+  const userId = currentSession.user.id;
+  const payload = {
+    birth_date: profileBirthDate?.value || null,
+    gender: profileGender?.value || null,
+    height_cm: profileHeight?.value ? Number(profileHeight.value) : null,
+    weight_kg: profileWeight?.value ? Number(profileWeight.value) : null
+  };
+
+  profileSaveButton?.setAttribute("disabled", "disabled");
+  setProfileMessage("");
+
+  try {
+    const { error } = await supabaseClient
+      .from("profiles")
+      .update(payload)
+      .eq("id", userId);
+
+    if (error) throw error;
+
+    setProfileMessage(t("profileSaved"), "success");
+  } catch (error) {
+    console.warn("Runory: could not save profile.", error);
+    setProfileMessage(error?.message || t("profileSaveError"), "error");
+  } finally {
+    profileSaveButton?.removeAttribute("disabled");
+  }
+}
+
 async function signOut() {
   if (!supabaseClient) return;
   const { error } = await supabaseClient.auth.signOut();
@@ -1392,9 +1526,15 @@ async function initAuth() {
     console.warn("Runory: could not restore auth session.", error);
   }
   updateAuthUI(data?.session || null);
+  if (data?.session?.user) {
+    await ensureUserProfile(data.session.user);
+  }
 
   supabaseClient.auth.onAuthStateChange((event, session) => {
-    window.setTimeout(() => updateAuthUI(session), 0);
+    window.setTimeout(async () => {
+      updateAuthUI(session);
+      if (session?.user) await ensureUserProfile(session.user);
+    }, 0);
   });
 }
 
@@ -1405,6 +1545,7 @@ googleSignInButton?.addEventListener("click", signInWithGoogle);
 emailAuthForm?.addEventListener("submit", submitEmailAuth);
 authSwitchButton?.addEventListener("click", () => setAuthMode(authMode === "signin" ? "signup" : "signin"));
 authLogoutButton?.addEventListener("click", signOut);
+profileForm?.addEventListener("submit", saveUserProfile);
 
 document.querySelectorAll(".language-button").forEach(button => {
   button.addEventListener("click", () => {
