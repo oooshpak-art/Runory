@@ -399,6 +399,9 @@ document.querySelectorAll("[data-view-target]").forEach(button => {
   button.addEventListener("click", () => setActiveView(button.dataset.viewTarget));
 });
 
+const sidebarProfileButton = document.querySelector("#sidebarProfileButton");
+sidebarProfileButton?.addEventListener("click", openAuthModal);
+
 
 
 function formatMetric(value) {
