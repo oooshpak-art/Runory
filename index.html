@@ -843,12 +843,12 @@
             <form id="profileForm" class="profile-form">
               <label>
                 <span data-i18n="profileBirthDate">Дата народження</span>
-                <input id="profileBirthDate" type="date" />
+                <input id="profileBirthDate" type="date" max="2099-12-31" required />
               </label>
 
               <label>
                 <span data-i18n="profileGender">Стать</span>
-                <select id="profileGender">
+                <select id="profileGender" required>
                   <option value="" data-i18n="profileGenderChoose">Обрати</option>
                   <option value="male" data-i18n="profileGenderMale">Чоловік</option>
                   <option value="female" data-i18n="profileGenderFemale">Жінка</option>
