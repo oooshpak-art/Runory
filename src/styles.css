@@ -732,8 +732,8 @@
 .profile-form select:focus { border-color:#7a9d32; box-shadow:0 0 0 3px #e2f5bb; }
 .profile-form-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
 .profile-date-control { position:relative; display:flex; align-items:center; min-width:0; }
-.profile-date-control > #profileBirthDate { padding-right:48px; }
-.profile-date-picker-button { position:absolute; right:8px; top:50%; transform:translateY(-50%); width:34px; height:34px; display:grid; place-items:center; border:0; border-radius:8px; background:#f1f4f0; color:#58645d; cursor:pointer; }
+.profile-date-control > #profileBirthDate { padding-right:48px; position:relative; z-index:4; }
+.profile-date-picker-button { position:absolute; z-index:5; right:8px; top:50%; transform:translateY(-50%); width:34px; height:34px; display:grid; place-items:center; border:0; border-radius:8px; background:#f1f4f0; color:#58645d; cursor:pointer; }
 .profile-date-picker-button:hover { background:#e7ece7; }
 .profile-date-picker-button svg { width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
 .profile-date-picker-native {
@@ -746,7 +746,7 @@
   padding:0 !important;
   margin:0 !important;
   opacity:0 !important;
-  z-index:3 !important;
+  z-index:6 !important;
   cursor:pointer !important;
   border:0 !important;
 }
