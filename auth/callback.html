@@ -28,79 +28,62 @@
         auth: {
           persistSession: true,
           autoRefreshToken: true,
-          detectSessionInUrl: true,
+          detectSessionInUrl: false,
           flowType: "implicit"
         }
       }
     );
 
     const status = document.querySelector('#status');
-    let redirected = false;
-
-    function redirectHome() {
-      if (redirected) return;
-      redirected = true;
-      window.location.replace('/');
-    }
 
     function showError(message) {
-      if (!redirected) {
-        status.textContent = message || 'Не вдалося завершити вхід. Спробуй ще раз.';
-      }
+      status.textContent = message || 'Не вдалося завершити вхід. Спробуй ще раз.';
     }
-
-    // Google returns the session in the URL hash in implicit-flow mode.
-    // Register the listener before initialization so we don't miss the
-    // INITIAL_SESSION event while Supabase is restoring the session.
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
-        redirectHome();
-      }
-    });
 
     (async () => {
       try {
-        const url = new URL(window.location.href);
-        const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+        const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+        const query = new URLSearchParams(window.location.search);
+
         const errorDescription =
-          url.searchParams.get('error_description') ||
-          hashParams.get('error_description');
+          hash.get('error_description') ||
+          query.get('error_description');
 
         if (errorDescription) {
           showError(decodeURIComponent(errorDescription.replace(/\+/g, ' ')));
-          authListener.subscription.unsubscribe();
           return;
         }
 
-        // Explicitly initialize URL/session handling. This prevents the
-        // callback page from racing getSession() while Supabase is still
-        // processing #access_token from Google.
-        if (typeof supabase.auth.initialize === 'function') {
-          const { error: initError } = await supabase.auth.initialize();
-          if (initError) {
-            showError(initError.message);
-            authListener.subscription.unsubscribe();
-            return;
-          }
+        const accessToken = hash.get('access_token');
+        const refreshToken = hash.get('refresh_token');
+
+        if (!accessToken || !refreshToken) {
+          showError('Не вдалося отримати дані входу від Google. Спробуй ще раз.');
+          return;
         }
 
-        const { data, error } = await supabase.auth.getSession();
+        // Google/Supabase implicit flow returns the tokens in the URL hash.
+        // Set the session explicitly instead of waiting for automatic URL
+        // detection. This avoids timing differences between desktop and mobile browsers.
+        const { data, error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken
+        });
+
         if (error) {
           showError(error.message);
-          authListener.subscription.unsubscribe();
           return;
         }
 
-        if (data.session) {
-          redirectHome();
+        if (!data?.session) {
+          showError('Сесію не вдалося створити. Спробуй ще раз.');
           return;
         }
 
-        showError('Не вдалося завершити вхід. Спробуй ще раз.');
-        authListener.subscription.unsubscribe();
+        // Do not keep OAuth tokens in the address bar after the session is saved.
+        window.location.replace('/');
       } catch (error) {
         showError(error?.message || 'Не вдалося завершити вхід. Спробуй ще раз.');
-        authListener.subscription.unsubscribe();
       }
     })();
   </script>
