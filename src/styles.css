@@ -909,94 +909,55 @@
 }
 
 
-/* === Runory mobile shell v2 === */
-.sidebar-mobile-toggle {
-  position: fixed;
-  z-index: 950;
-  left: 16px;
-  top: 84px;
-  width: 42px;
-  height: 42px;
-  display: none;
-  place-items: center;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: #fff;
-  color: var(--ink);
-  box-shadow: 0 8px 24px rgba(16,24,18,.08);
-  font: 800 20px/1 Manrope,sans-serif;
-  cursor: pointer;
+/* === Sidebar icon + mobile menu polish === */
+.account-sidebar-icon {
+  width: 28px;
+  height: 28px;
+  flex-basis: 28px;
+  border-radius: 8px;
 }
-.sidebar-mobile-backdrop { display:none; }
-
-/* Account modal is intentionally account-only. */
-.account-modal-note {
-  margin-top: 22px;
-  padding: 15px 16px;
-  border-radius: 11px;
-  background: #f1f8e6;
-  color: #53634c;
-  font-size: 12px;
-  line-height: 1.65;
+.account-sidebar-icon svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
-
-@media (max-width:680px) {
-  .page-shell { padding: 0 18px 28px; }
-  .topbar {
-    min-height: 0;
-    height: auto;
-    display: grid;
-    grid-template-columns: minmax(0,1fr) auto auto;
-    grid-template-areas:
-      "brand account lang"
-      "nav nav nav";
-    align-items: center;
+.account-sidebar-link.is-active .account-sidebar-icon svg {
+  stroke: var(--lime);
+}
+.sidebar-mobile-toggle svg {
+  width: 21px;
+  height: 21px;
+  display: block;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.1;
+  stroke-linecap: round;
+}
+@media (max-width: 680px) {
+  .sidebar-mobile-toggle {
+    width: 42px;
+    height: 42px;
+    left: 16px;
+    top: 86px;
+    padding: 0;
+    place-items: center;
+  }
+  .sidebar-mobile-toggle svg {
+    width: 20px;
+    height: 20px;
+  }
+  .account-sidebar-link {
+    min-height: 48px;
     gap: 12px;
-    padding: 16px 0 14px 52px;
+    font-size: 13px;
   }
-  .brand { grid-area: brand; min-width:0; }
-  .brand-logo { width: min(145px, 48vw); max-width:100%; }
-  .topbar-right { display: contents; }
-  .app-nav { grid-area: nav; width:100%; margin:0; gap:6px; overflow:hidden; }
-  .nav-tab { flex:1 1 0; min-width:0; padding:10px 7px; font-size:11px; white-space:nowrap; }
-  .auth-button { grid-area:account; width:auto; min-width:92px; max-width:112px; height:40px; padding:0 11px; font-size:11px; }
-  .language-switcher { grid-area:lang; position:static; transform:none; }
-  .language-button { min-width:30px; width:30px; height:30px; }
-  .sidebar-mobile-toggle { display:grid; top:18px; left:18px; position:absolute; }
-  .sidebar-mobile-backdrop { position:fixed; z-index:899; inset:0; display:block; border:0; background:rgba(18,24,20,.28); opacity:0; pointer-events:none; transition:opacity .22s ease; }
-  .sidebar-mobile-backdrop.is-visible { opacity:1; pointer-events:auto; }
-  .account-sidebar {
-    position:fixed;
-    z-index:900;
-    left:0;
-    top:0;
-    width:min(82vw,300px);
-    height:100vh;
-    min-height:0;
-    padding:76px 18px 24px;
-    border-right:1px solid var(--line);
-    background:rgba(248,250,247,.98);
-    box-shadow:20px 0 50px rgba(16,24,18,.12);
-    transform:translateX(-105%);
-    transition:transform .22s ease;
+  .account-sidebar-icon {
+    width: 30px;
+    height: 30px;
+    flex-basis: 30px;
   }
-  .account-sidebar.is-open { transform:translateX(0); }
-  .account-sidebar-top { position:absolute; top:20px; left:18px; right:18px; }
-  .account-sidebar-toggle { display:grid; }
-  .app-layout { display:block; }
-  .app-content { width:100%; }
-  .hero { padding:52px 0 54px; max-width:none; }
-  .hero h1 { font-size:clamp(40px,11vw,58px); letter-spacing:-2.5px; }
-  .hero-copy { font-size:16px; line-height:1.7; }
-  .upload-section,.results { width:100%; padding:22px 18px; border-radius:16px; }
-  .profile-page { padding:48px 0 28px; }
-  .profile-page-heading { margin-bottom:26px; }
-  .profile-page-heading h1 { font-size:clamp(40px,11vw,58px); letter-spacing:-2.5px; }
-  .profile-card { max-width:none; padding:22px 18px; }
-  .history-page { padding:48px 0 28px; }
-}
-
-@media (min-width:681px) {
-  .account-sidebar-top { display:flex; }
-  .account-sidebar-toggle { display:grid; }
 }
