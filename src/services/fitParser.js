@@ -530,7 +530,7 @@ function statsForTimeRange(records, startTime, endTime) {
 // step. field 27 is workout_step_index. Using it is much more reliable than
 // trying to reconstruct step boundaries from GPS distance/time.
 function lapWorkoutStepIndex(lap) {
-  return Number.isFinite(lap?.[27]) ? Number(lap[27]) : null;
+  return Number.isFinite(lap?.[71]) ? Number(lap[71]) : null;
 }
 
 function statsFromLap(lap) {
@@ -550,7 +550,7 @@ function statsFromLap(lap) {
   const descent = Number.isFinite(lap[22]) ? Math.round(lap[22]) : 0;
 
   return {
-    duration: Math.round(duration),
+    duration,
     distance,
     pace: secondsToPace(duration / (distance / 1000)),
     heartRate,
@@ -607,12 +607,65 @@ function explicitWorkoutStructure(workoutSteps = [], records = [], laps = []) {
     lapQueues.get(index).push(stats);
   }
 
+  const mergeLapStats = statsList => {
+    if (!statsList?.length) return null;
+    const duration = statsList.reduce((sum, s) => sum + (Number(s.duration) || 0), 0);
+    const distance = statsList.reduce((sum, s) => sum + (Number(s.distance) || 0), 0);
+    if (!(duration > 0) || !(distance > 0)) return null;
+
+    const weighted = (key) => {
+      const values = statsList.filter(s => Number.isFinite(s?.[key]));
+      if (!values.length) return null;
+      const totalWeight = values.reduce((sum, s) => sum + (Number(s.distance) || 0), 0);
+      if (!(totalWeight > 0)) return null;
+      return Math.round(values.reduce((sum, s) => sum + s[key] * (s.distance || 0), 0) / totalWeight);
+    };
+
+    return {
+      duration,
+      distance,
+      pace: secondsToPace(duration / (distance / 1000)),
+      heartRate: weighted('heartRate'),
+      cadence: weighted('cadence'),
+      ascent: Math.round(statsList.reduce((sum, s) => sum + (Number(s.ascent) || 0), 0)),
+      descent: Math.round(statsList.reduce((sum, s) => sum + (Number(s.descent) || 0), 0)),
+      elevation: Math.round(statsList.reduce((sum, s) => sum + (Number(s.elevation) || 0), 0))
+    };
+  };
+
   const takeLapStats = step => {
     const sourceIndex = Number(step?.__sourceIndex);
     const queue = lapQueues.get(sourceIndex);
     if (!queue?.length) return null;
-    return queue.shift();
+
+    // A single workout step can be split into several automatic 1 km laps.
+    // Consume enough Garmin laps to cover the step's prescribed distance/time.
+    // This is essential for steps such as 2 km work blocks.
+    if (!step.__repeated) {
+      const all = queue.splice(0, queue.length);
+      return mergeLapStats(all);
+    }
+
+    const expectedDistance = isDistanceStep(step) ? stepDistance(step) : null;
+    const expectedTime = isTimeStep(step) ? stepTime(step) : null;
+    const picked = [];
+    let distance = 0;
+    let duration = 0;
+
+    while (queue.length) {
+      const candidate = queue[0];
+      picked.push(queue.shift());
+      distance += Number(candidate.distance) || 0;
+      duration += Number(candidate.duration) || 0;
+
+      if (expectedDistance != null && distance >= expectedDistance - 1) break;
+      if (expectedTime != null && duration >= expectedTime - 1) break;
+      if (expectedDistance == null && expectedTime == null) break;
+    }
+
+    return mergeLapStats(picked);
   };
+
 
   /*
    * Fallback only when Garmin did not give us a workout-step lap.
@@ -698,9 +751,6 @@ function explicitWorkoutStructure(workoutSteps = [], records = [], laps = []) {
     .filter(item => isRepeatedWork(item.step))
     .map(item => item.index);
 
-  const firstRepeatedWorkIndex =
-    repeatedWorkIndices.length ? repeatedWorkIndices[0] : -1;
-
   /*
    * Consecutive active steps that are NOT part of a repeat block are kept as
    * separate running segments. They are never converted into cooldown.
@@ -718,7 +768,9 @@ function explicitWorkoutStructure(workoutSteps = [], records = [], laps = []) {
 
       // Open cooldown is only cooldown when Garmin explicitly says so.
       if (isCooldown(level)) {
-        addStandalone('cooldown', 'Заминка', stats);
+        // Garmin may leave a tiny post-workout tail (a few meters / ~1–2 s)
+        // after the last structured step. It is not a meaningful cooldown.
+        if (stats && stats.distance >= 100) addStandalone('cooldown', 'Заминка', stats);
       } else if (stats) {
         addStandalone('easy', 'Біг', stats);
       }
@@ -767,12 +819,8 @@ function explicitWorkoutStructure(workoutSteps = [], records = [], laps = []) {
       continue;
     }
 
-    // Active/progression/easy step. Do not infer cooldown from position.
-    if (firstRepeatedWorkIndex >= 0 && i < firstRepeatedWorkIndex) {
-      addStandalone('warmup', 'Розминка', stats);
-    } else {
-      addStandalone('easy', 'Біг', stats);
-    }
+    // Active/progression/easy step. Do not infer warmup or cooldown from position.
+    addStandalone('easy', 'Біг', stats);
   }
 
   flushBlock();
