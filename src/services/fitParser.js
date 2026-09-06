@@ -32,6 +32,8 @@ function decodeFit(buffer) {
   const sessions = [];
   const laps = [];
   const records = [];
+  const workouts = [];
+  const workoutSteps = [];
 
   while (offset < dataEnd) {
     const header = view.getUint8(offset++);
@@ -64,8 +66,10 @@ function decodeFit(buffer) {
     if (definition.globalMessage === 18) sessions.push(message);
     if (definition.globalMessage === 19) laps.push(message);
     if (definition.globalMessage === 20) records.push(message);
+    if (definition.globalMessage === 26) workouts.push(message);
+    if (definition.globalMessage === 27) workoutSteps.push(message);
   }
-  return { sessions, laps, records };
+  return { sessions, laps, records, workouts, workoutSteps };
 }
 
 function secondsToTime(seconds) {
@@ -275,7 +279,289 @@ function buildLapBasedSplitElevations(laps) {
   return splitElevations;
 }
 
-function analyzeWorkoutStructure({ laps = [], records = [] }) {
+function workoutStepDistanceMeters(step) {
+  if (!step) return null;
+  const durationType = Number(step[1]);
+  if (durationType === 1 && Number.isFinite(step[2])) return step[2] / 100;
+  return null;
+}
+
+function expandWorkoutSteps(workoutSteps = []) {
+  const ordered = [...workoutSteps]
+    .filter(step => Number.isFinite(step?.[254]))
+    .sort((a, b) => Number(a[254]) - Number(b[254]));
+
+  if (!ordered.length) return [];
+
+  const byIndex = new Map(ordered.map(step => [Number(step[254]), step]));
+  const maxIndex = Math.max(...ordered.map(step => Number(step[254])));
+
+  const expandRange = (fromIndex, toIndex, stack = []) => {
+    const result = [];
+    for (let index = fromIndex; index < toIndex; index += 1) {
+      const step = byIndex.get(index);
+      if (!step) continue;
+
+      const durationType = Number(step[1]);
+      if (durationType === 6) {
+        const repeatFrom = Number(step[2]);
+        const repetitions = Number(step[4]);
+        if (
+          Number.isInteger(repeatFrom) &&
+          Number.isInteger(repetitions) &&
+          repetitions > 0 &&
+          repeatFrom >= 0 &&
+          repeatFrom < index &&
+          !stack.includes(index)
+        ) {
+          const repeatedBlock = expandRange(repeatFrom, index, [...stack, index]);
+          // The original block has already been emitted by the outer loop.
+          // target_value is the total number of repetitions, so add only
+          // the remaining repetitions here.
+          for (let count = 1; count < repetitions; count += 1) {
+            result.push(...repeatedBlock);
+          }
+          continue;
+        }
+      }
+
+      result.push(step);
+    }
+    return result;
+  };
+
+  return expandRange(0, maxIndex + 1);
+}
+
+function averageNumber(values) {
+  const valid = values.filter(Number.isFinite);
+  return valid.length
+    ? Math.round(valid.reduce((sum, value) => sum + value, 0) / valid.length)
+    : null;
+}
+
+function recordDistanceMeters(record) {
+  return Number.isFinite(record?.[5]) ? record[5] / 100 : null;
+}
+
+function recordTimestamp(record) {
+  return Number.isFinite(record?.[253]) ? record[253] : null;
+}
+
+function interpolateTimestampAtDistance(records, targetDistance) {
+  if (!records.length) return null;
+
+  for (let i = 0; i < records.length; i += 1) {
+    const currentDistance = recordDistanceMeters(records[i]);
+    const currentTime = recordTimestamp(records[i]);
+    if (currentDistance == null || currentTime == null) continue;
+
+    if (currentDistance >= targetDistance) {
+      if (i === 0) return currentTime;
+      const previousDistance = recordDistanceMeters(records[i - 1]);
+      const previousTime = recordTimestamp(records[i - 1]);
+      if (
+        previousDistance == null ||
+        previousTime == null ||
+        currentDistance <= previousDistance
+      ) return currentTime;
+
+      const ratio = Math.max(0, Math.min(1,
+        (targetDistance - previousDistance) / (currentDistance - previousDistance)
+      ));
+      return previousTime + (currentTime - previousTime) * ratio;
+    }
+  }
+
+  const last = records.at(-1);
+  return recordTimestamp(last);
+}
+
+function statsForDistanceRange(records, startDistance, endDistance) {
+  if (!records.length || endDistance <= startDistance) return null;
+
+  const startTime = interpolateTimestampAtDistance(records, startDistance);
+  const endTime = interpolateTimestampAtDistance(records, endDistance);
+  const duration = startTime != null && endTime != null
+    ? Math.max(1, endTime - startTime)
+    : null;
+
+  const selected = records.filter(record => {
+    const distance = recordDistanceMeters(record);
+    return distance != null && distance >= startDistance && distance <= endDistance;
+  });
+
+  const heartRates = selected
+    .map(record => record[3])
+    .filter(value => Number.isFinite(value) && value > 0 && value < 255);
+
+  const cadence = selected
+    .map(record => {
+      if (!Number.isFinite(record[4])) return null;
+      const fractional = Number.isFinite(record[53]) ? record[53] / 128 : 0;
+      return (record[4] + fractional) * 2;
+    })
+    .filter(value => Number.isFinite(value) && value > 0 && value < 255);
+
+  const altitudes = selected
+    .map(record => Number.isFinite(record[2]) ? record[2] / 5 - 500 : null)
+    .filter(Number.isFinite);
+
+  let ascent = 0;
+  let descent = 0;
+  for (let i = 1; i < altitudes.length; i += 1) {
+    const delta = altitudes[i] - altitudes[i - 1];
+    if (delta > 2) ascent += delta;
+    if (delta < -2) descent += Math.abs(delta);
+  }
+
+  const distance = endDistance - startDistance;
+  return {
+    duration,
+    distance,
+    pace: duration != null && distance > 1
+      ? secondsToPace(duration / (distance / 1000))
+      : '—',
+    heartRate: averageNumber(heartRates),
+    cadence: cadence.length ? Math.round(cadence.reduce((a, b) => a + b, 0) / cadence.length) : null,
+    ascent: Math.round(ascent),
+    descent: Math.round(descent),
+    elevation: Math.round(ascent - descent)
+  };
+}
+
+function statsForTimeRange(records, startTime, endTime) {
+  if (!records.length || endTime <= startTime) return null;
+  const selected = records.filter(record => {
+    const timestamp = recordTimestamp(record);
+    return timestamp != null && timestamp >= startTime && timestamp <= endTime;
+  });
+  if (!selected.length) return null;
+
+  const firstDistance = recordDistanceMeters(selected[0]);
+  const lastDistance = recordDistanceMeters(selected.at(-1));
+  const distance = firstDistance != null && lastDistance != null
+    ? Math.max(0, lastDistance - firstDistance)
+    : 0;
+
+  const heartRates = selected.map(record => record[3]).filter(value => Number.isFinite(value) && value > 0 && value < 255);
+  const cadence = selected.map(record => {
+    if (!Number.isFinite(record[4])) return null;
+    const fractional = Number.isFinite(record[53]) ? record[53] / 128 : 0;
+    return (record[4] + fractional) * 2;
+  }).filter(value => Number.isFinite(value) && value > 0 && value < 255);
+
+  return {
+    duration: Math.max(1, endTime - startTime),
+    distance,
+    pace: distance > 1 ? secondsToPace((endTime - startTime) / (distance / 1000)) : '—',
+    heartRate: averageNumber(heartRates),
+    cadence: cadence.length ? Math.round(cadence.reduce((a, b) => a + b, 0) / cadence.length) : null,
+    ascent: 0,
+    descent: 0,
+    elevation: 0
+  };
+}
+
+function explicitWorkoutStructure(workoutSteps = [], records = []) {
+  const expanded = expandWorkoutSteps(workoutSteps);
+  if (!expanded.length) return null;
+
+  const distanceBased = expanded.every(step => Number(step[1]) === 1 || Number(step[1]) === 5);
+  if (!distanceBased) return null;
+
+  const totalRecordDistance = recordDistanceMeters(records.at(-1));
+  if (!Number.isFinite(totalRecordDistance)) return null;
+
+  const structures = [];
+  let cursor = 0;
+  let currentBlock = null;
+
+  const flushBlock = () => {
+    if (!currentBlock?.repetitions?.length) return;
+    const distance = currentBlock.repetitions[0]?.work?.distance || 0;
+    currentBlock.label = `Робота ${currentBlock.repetitions.length} × ${Math.round(distance)} м`;
+    currentBlock.workCount = currentBlock.repetitions.length;
+    structures.push(currentBlock);
+    currentBlock = null;
+  };
+
+  const addStandalone = (type, label, stats) => {
+    if (!stats) return;
+    flushBlock();
+    structures.push({ type, label, ...stats });
+  };
+
+  for (let i = 0; i < expanded.length; i += 1) {
+    const step = expanded[i];
+    const intensity = Number(step[7]);
+    const durationType = Number(step[1]);
+    const stepDistance = workoutStepDistanceMeters(step);
+
+    // An open cooldown has no programmed distance. Use the remaining
+    // recorded distance so we do not silently drop the final segment.
+    if (durationType === 5 && intensity === 3 && cursor < totalRecordDistance) {
+      const stats = statsForDistanceRange(records, cursor, totalRecordDistance);
+      addStandalone('cooldown', 'Заминка', stats);
+      cursor = totalRecordDistance;
+      continue;
+    }
+
+    if (durationType !== 1 || !Number.isFinite(stepDistance) || stepDistance <= 0) continue;
+
+    const start = cursor;
+    const end = Math.min(totalRecordDistance, cursor + stepDistance);
+    const stats = statsForDistanceRange(records, start, end);
+    cursor += stepDistance;
+
+    if (intensity === 2) {
+      addStandalone('warmup', 'Розминка', stats);
+      continue;
+    }
+
+    if (intensity === 3) {
+      addStandalone('cooldown', 'Заминка', stats);
+      continue;
+    }
+
+    if (intensity === 0) {
+      const workDistance = Math.round(stepDistance);
+      const previousWorkDistance = Math.round(currentBlock?.repetitions?.at(-1)?.work?.distance || 0);
+      if (currentBlock && previousWorkDistance && Math.abs(previousWorkDistance - workDistance) > 50) {
+        flushBlock();
+      }
+      if (!currentBlock) {
+        currentBlock = { type: 'intervals', label: '', repetitions: [], workCount: 0 };
+      }
+      currentBlock.repetitions.push({
+        number: currentBlock.repetitions.length + 1,
+        work: stats,
+        recovery: null
+      });
+      currentBlock.workCount = currentBlock.repetitions.length;
+      continue;
+    }
+
+    if (intensity === 1) {
+      const next = expanded[i + 1];
+      const nextIsActive = next && Number(next[7]) === 0 && Number(next[1]) === 1;
+      if (currentBlock && nextIsActive) {
+        currentBlock.repetitions.at(-1).recovery = stats;
+      } else {
+        flushBlock();
+        addStandalone('recovery', 'Відновлення', stats);
+      }
+    }
+  }
+
+  flushBlock();
+  return structures.length ? structures : null;
+}
+
+function analyzeWorkoutStructure({ laps = [], records = [], workoutSteps = [] }) {
+  const explicit = explicitWorkoutStructure(workoutSteps, records);
+  if (explicit) return explicit;
+
   const validLaps = (laps || []).map((lap, index) => ({
     index,
     duration: Number.isFinite(lap[8]) ? lap[8] / 1000 : (Number.isFinite(lap[7]) ? lap[7] / 1000 : null),
@@ -283,14 +569,12 @@ function analyzeWorkoutStructure({ laps = [], records = [] }) {
     heartRate: Number.isFinite(lap[15]) ? Math.round(lap[15]) : null,
     cadence: Number.isFinite(lap[17]) ? Math.round(lap[17] * 2) : null,
     ascent: Number.isFinite(lap[21]) ? Math.round(lap[21]) : 0,
-    descent: Number.isFinite(lap[22]) ? Math.round(lap[22]) : 0,
   })).filter(lap => lap.duration > 0 && lap.distance > 0 && (lap.distance >= 50 || lap.duration >= 20));
 
   const stats = lap => ({
     duration: Math.round(lap.duration), distance: Math.round(lap.distance),
     pace: lap.distance > 1 ? secondsToPace(lap.duration / (lap.distance / 1000)) : '—',
-    heartRate: lap.heartRate, cadence: lap.cadence, ascent: lap.ascent, descent: lap.descent,
-    elevation: lap.ascent - lap.descent
+    heartRate: lap.heartRate, cadence: lap.cadence, ascent: lap.ascent
   });
 
   if (validLaps.length >= 4) {
@@ -312,7 +596,7 @@ function analyzeWorkoutStructure({ laps = [], records = [] }) {
           const distance = items.reduce((s,l) => s+l.distance,0);
           const hr = items.map(l=>l.heartRate).filter(Number.isFinite);
           const cad = items.map(l=>l.cadence).filter(Number.isFinite);
-          const ascent = items.reduce((s,l)=>s+l.ascent,0); const descent = items.reduce((s,l)=>s+l.descent,0); const elevation = ascent - descent; return { duration:Math.round(duration), distance:Math.round(distance), pace:distance>1?secondsToPace(duration/(distance/1000)):'—', heartRate:hr.length?Math.round(hr.reduce((a,b)=>a+b,0)/hr.length):null, cadence:cad.length?Math.round(cad.reduce((a,b)=>a+b,0)/cad.length):null, ascent, descent, elevation };
+          return { duration:Math.round(duration), distance:Math.round(distance), pace:distance>1?secondsToPace(duration/(distance/1000)):'—', heartRate:hr.length?Math.round(hr.reduce((a,b)=>a+b,0)/hr.length):null, cadence:cad.length?Math.round(cad.reduce((a,b)=>a+b,0)/cad.length):null, ascent:items.reduce((s,l)=>s+l.ascent,0) };
         };
         const result=[];
         const warmup=validLaps.slice(0,firstWork), cooldown=validLaps.slice(lastWork+1);
@@ -332,14 +616,14 @@ function analyzeWorkoutStructure({ laps = [], records = [] }) {
   }
 
   if(validLaps.length){
-    const total=validLaps.reduce((a,l)=>{a.duration+=l.duration;a.distance+=l.distance;a.ascent+=l.ascent;a.descent+=l.descent;if(Number.isFinite(l.heartRate))a.hr.push(l.heartRate);if(Number.isFinite(l.cadence))a.cad.push(l.cadence);return a},{duration:0,distance:0,ascent:0,descent:0,hr:[],cad:[]});
-    return [{type:'easy',label:'Непрерывный бег',duration:Math.round(total.duration),distance:Math.round(total.distance),pace:total.distance>1?secondsToPace(total.duration/(total.distance/1000)):'—',heartRate:total.hr.length?Math.round(total.hr.reduce((a,b)=>a+b,0)/total.hr.length):null,cadence:total.cad.length?Math.round(total.cad.reduce((a,b)=>a+b,0)/total.cad.length):null,ascent:total.ascent,descent:total.descent,elevation:total.ascent - total.descent,repetitions:1}];
+    const total=validLaps.reduce((a,l)=>{a.duration+=l.duration;a.distance+=l.distance;a.ascent+=l.ascent;if(Number.isFinite(l.heartRate))a.hr.push(l.heartRate);if(Number.isFinite(l.cadence))a.cad.push(l.cadence);return a},{duration:0,distance:0,ascent:0,hr:[],cad:[]});
+    return [{type:'easy',label:'Непрерывный бег',duration:Math.round(total.duration),distance:Math.round(total.distance),pace:total.distance>1?secondsToPace(total.duration/(total.distance/1000)):'—',heartRate:total.hr.length?Math.round(total.hr.reduce((a,b)=>a+b,0)/total.hr.length):null,cadence:total.cad.length?Math.round(total.cad.reduce((a,b)=>a+b,0)/total.cad.length):null,ascent:total.ascent,repetitions:1}];
   }
   if(records.length<2) return [];
   return [{type:'easy',label:'Тренировка',duration:0,distance:0,pace:'—',heartRate:null,cadence:null,ascent:0,repetitions:1}];
 }
 
-function calculateSummary({ sessions, laps, records }) {
+function calculateSummary({ sessions, laps, records, workoutSteps = [] }) {
   const session = sessions.at(-1) || {};
   const lastRecord = records.at(-1) || {};
 
@@ -490,7 +774,7 @@ if (records.length > 0) {
     calories: session[11] != null && Number.isFinite(Number(session[11]))
       ? Math.round(Number(session[11]))
       : null,
-    structure: analyzeWorkoutStructure({ laps, records }),
+    structure: analyzeWorkoutStructure({ laps, records, workoutSteps }),
 
     ascent: Math.round(ascent),
 splits,
