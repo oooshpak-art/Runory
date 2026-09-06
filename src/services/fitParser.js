@@ -477,6 +477,16 @@ function explicitWorkoutStructure(workoutSteps = [], records = []) {
   let cursor = 0;
   let currentBlock = null;
 
+  // Garmin sometimes stores an easy opening segment simply as intensity=Run,
+  // even when the athlete used it as a warmup. A common reliable signal is a
+  // standalone first distance step followed by a programmed repeat block.
+  const hasRepeatStep = workoutSteps.some(step => Number(step?.[1]) === 6);
+  const firstStep = expanded[0];
+  const firstStepIsDistanceRun =
+    firstStep && Number(firstStep[1]) === 1 && Number(firstStep[7]) === 0 &&
+    Number.isFinite(workoutStepDistanceMeters(firstStep));
+  const inferredWarmupIndex = hasRepeatStep && firstStepIsDistanceRun ? 0 : -1;
+
   const flushBlock = () => {
     if (!currentBlock?.repetitions?.length) return;
     const distance = currentBlock.repetitions[0]?.work?.distance || 0;
@@ -498,8 +508,8 @@ function explicitWorkoutStructure(workoutSteps = [], records = []) {
     const durationType = Number(step[1]);
     const stepDistance = workoutStepDistanceMeters(step);
 
-    // An open cooldown has no programmed distance. Use the remaining
-    // recorded distance so we do not silently drop the final segment.
+    // An open cooldown has no programmed distance. Everything still recorded
+    // after it is the final cooldown segment.
     if (durationType === 5 && intensity === 3 && cursor < totalRecordDistance) {
       const stats = statsForDistanceRange(records, cursor, totalRecordDistance);
       addStandalone('cooldown', 'Заминка', stats);
@@ -513,6 +523,14 @@ function explicitWorkoutStructure(workoutSteps = [], records = []) {
     const end = Math.min(totalRecordDistance, cursor + stepDistance);
     const stats = statsForDistanceRange(records, start, end);
     cursor += stepDistance;
+
+    // See the note above: treat the standalone first Run step before a repeat
+    // block as warmup. This preserves Garmin's raw meaning while reflecting
+    // the athlete's actual workout structure.
+    if (i === inferredWarmupIndex) {
+      addStandalone('warmup', 'Розминка', stats);
+      continue;
+    }
 
     if (intensity === 2) {
       addStandalone('warmup', 'Розминка', stats);
@@ -543,32 +561,49 @@ function explicitWorkoutStructure(workoutSteps = [], records = []) {
     }
 
     if (intensity === 1) {
-      const next = expanded[i + 1];
-      const nextIsActive = next && Number(next[7]) === 0 && Number(next[1]) === 1;
-      const nextIsCooldown = next && Number(next[7]) === 3;
-
-      // Recovery immediately following an interval belongs to that repetition,
-      // even when it is the final recovery of the block. The old logic only
-      // attached recovery when another active step followed, which turned the
-      // last 400/200 m recoveries into separate blocks.
       if (currentBlock && currentBlock.repetitions.length) {
-        // A recovery followed by Garmin's open cooldown (or by the end of the
-        // programmed workout) is the transition into cooldown. Merge it with
-        // the remaining recorded distance so the UI shows one final cooldown
-        // instead of a standalone recovery.
-        if (nextIsCooldown || !next) {
-          flushBlock();
-          const cooldownEnd = totalRecordDistance;
-          const cooldownStats = statsForDistanceRange(records, cursor, cooldownEnd);
-          addStandalone('cooldown', 'Заминка', cooldownStats);
-          cursor = cooldownEnd;
+        const previousRecoveries = currentBlock.repetitions
+          .map(rep => rep.recovery?.distance)
+          .filter(value => Number.isFinite(value) && value > 0);
+
+        const typicalRecovery = previousRecoveries.length
+          ? previousRecoveries.reduce((sum, value) => sum + value, 0) / previousRecoveries.length
+          : null;
+
+        // A recovery belongs to the interval block when it is consistent with
+        // the block's existing recovery distance. A large jump (for example
+        // 200 m -> 2 km) needs extra context: if there are no more work steps
+        // after this point, Garmin's long Recovery step is effectively the
+        // cooldown, even when Garmin labels it as Recovery. If another work
+        // step follows, keep it as a standalone recovery between blocks.
+        const recoveryFitsBlock =
+          typicalRecovery == null ||
+          (stepDistance >= typicalRecovery * 0.5 && stepDistance <= typicalRecovery * 2.5);
+
+        if (recoveryFitsBlock && !currentBlock.repetitions.at(-1).recovery) {
+          currentBlock.repetitions.at(-1).recovery = stats;
           continue;
         }
 
-        currentBlock.repetitions.at(-1).recovery = stats;
-      } else {
+        const hasFutureWork = expanded
+          .slice(i + 1)
+          .some(nextStep => Number(nextStep?.[1]) === 1 && Number(nextStep?.[7]) === 0 && Number.isFinite(workoutStepDistanceMeters(nextStep)));
+
+        if (!hasFutureWork) {
+          flushBlock();
+          const cooldownStart = start;
+          const cooldownStats = statsForDistanceRange(records, cooldownStart, totalRecordDistance);
+          addStandalone('cooldown', 'Заминка', cooldownStats);
+          cursor = totalRecordDistance;
+          continue;
+        }
+
+        flushBlock();
         addStandalone('recovery', 'Відновлення', stats);
+        continue;
       }
+
+      addStandalone('recovery', 'Відновлення', stats);
     }
   }
 
