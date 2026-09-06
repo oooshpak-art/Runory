@@ -1378,6 +1378,124 @@ function generateLongRunInsight(summary) {
   return `${parts.join(" · ")}.`;
 }
 
+function generateFartlekInsight(summary) {
+  const pattern = getWorkoutPattern(summary);
+  if (pattern.type !== "fartlek") return null;
+
+  const splits = Array.isArray(summary?.splits) ? summary.splits : [];
+  const items = splits.map((split, index) => ({
+    index,
+    pace: paceToSeconds(split?.pace),
+    hr: Number(split?.heartRate),
+    state: pattern.states?.[index] || "neutral"
+  })).filter(item => Number.isFinite(item.pace));
+
+  const fast = items.filter(item => item.state === "fast");
+  const slow = items.filter(item => item.state === "slow");
+  if (fast.length < 3 || slow.length < 2) return null;
+
+  const avg = values => values.length
+    ? values.reduce((sum, value) => sum + value, 0) / values.length
+    : null;
+
+  const fastPaces = fast.map(item => item.pace);
+  const fastAverage = avg(fastPaces);
+  const fastSpread = Math.max(...fastPaces) - Math.min(...fastPaces);
+
+  const firstFast = fast.slice(0, Math.max(1, Math.floor(fast.length / 3)));
+  const lastFast = fast.slice(-Math.max(1, Math.floor(fast.length / 3)));
+  const firstFastPace = avg(firstFast.map(item => item.pace));
+  const lastFastPace = avg(lastFast.map(item => item.pace));
+  const paceDelta = firstFastPace - lastFastPace;
+
+  const firstFastHr = avg(firstFast.map(item => item.hr).filter(value => Number.isFinite(value) && value > 0));
+  const lastFastHr = avg(lastFast.map(item => item.hr).filter(value => Number.isFinite(value) && value > 0));
+  const hrDelta = firstFastHr != null && lastFastHr != null ? lastFastHr - firstFastHr : null;
+
+  const recoveryPaces = slow.map(item => item.pace);
+  const recoverySpread = Math.max(...recoveryPaces) - Math.min(...recoveryPaces);
+
+  const fastDistanceKm = fast.length;
+  const volumeKm = Number(summary?.distance);
+  const volumeLabel = Number.isFinite(volumeKm) && volumeKm > 0
+    ? `${String(Number(volumeKm.toFixed(1))).replace(".", currentLanguage === "uk" ? "," : ".")} км`
+    : `${items.length} км`;
+
+  let dynamics = "stable";
+  if (paceDelta > 8) dynamics = "faster";
+  else if (paceDelta < -8) dynamics = "slower";
+
+  const unstable = fastSpread > 18;
+  const recoveryVariable = recoverySpread > 25;
+  const strongFatigue = dynamics === "slower" && hrDelta != null && hrDelta >= 8;
+  const moderateFatigue = dynamics === "slower" || (hrDelta != null && hrDelta >= 10 && dynamics !== "faster");
+
+  if (currentLanguage === "uk") {
+    const parts = [
+      `Фартлек · ${volumeLabel}`,
+      `${fast.length} прискорень`,
+      `середній темп швидких відрізків — ${formatInsightPace(fastAverage)}/км`,
+      `розкид — ${Math.round(fastSpread)} с/км`
+    ];
+
+    if (dynamics === "faster") parts.push("швидкі відрізки до кінця ставали швидшими");
+    else if (dynamics === "slower") parts.push("швидкі відрізки до кінця сповільнювалися");
+    else parts.push("темп швидких відрізків залишався відносно стабільним");
+
+    if (hrDelta != null && hrDelta >= 5) parts.push(`ЧСС на швидких відрізках зросла приблизно на ${Math.round(hrDelta)} уд/хв`);
+    else if (hrDelta != null && hrDelta <= -5) parts.push("ЧСС на швидких відрізках знижувалась до кінця");
+    else if (hrDelta != null) parts.push("ЧСС на швидких відрізках залишалась відносно стабільною");
+
+    if (recoveryVariable) parts.push("відновлення були нерівномірними");
+    else parts.push("відновлення залишались відносно стабільними");
+
+    let conclusion;
+    if (strongFatigue) {
+      conclusion = "Наприкінці швидких відрізків помітна втома: темп знизився, а ЧСС зросла.";
+    } else if (unstable && recoveryVariable) {
+      conclusion = "Інтенсивність і відновлення помітно коливалися — фартлек вийшов нерівномірним.";
+    } else if (moderateFatigue) {
+      conclusion = "До кінця роботи з'явилися ознаки накопичення втоми.";
+    } else if (unstable) {
+      conclusion = "Швидкі відрізки виконувалися з помітною різницею в темпі.";
+    } else if (recoveryVariable) {
+      conclusion = "Швидкі відрізки були достатньо стабільними, але відновлення помітно відрізнялися.";
+    } else if (dynamics === "faster" && fastSpread <= 12) {
+      conclusion = "Фартлек виконано контрольовано, з хорошою динамікою до кінця.";
+    } else {
+      conclusion = "Фартлек виконано рівномірно та контрольовано.";
+    }
+
+    parts.push(`загальний обсяг швидкої роботи — ${fastDistanceKm} км`);
+    parts.push(conclusion);
+    return `${parts.join(" · ")}.`;
+  }
+
+  const parts = [
+    `Fartlek · ${volumeLabel}`,
+    `${fast.length} fast segments`,
+    `average fast-segment pace ${formatInsightPace(fastAverage)}/km`,
+    `spread ${Math.round(fastSpread)} sec/km`
+  ];
+  if (dynamics === "faster") parts.push("fast segments got faster toward the end");
+  else if (dynamics === "slower") parts.push("fast segments slowed toward the end");
+  else parts.push("fast-segment pace stayed relatively stable");
+  if (hrDelta != null && hrDelta >= 5) parts.push(`HR rose by about ${Math.round(hrDelta)} bpm on fast segments`);
+  else if (hrDelta != null && hrDelta <= -5) parts.push("HR decreased on fast segments toward the end");
+  else if (hrDelta != null) parts.push("HR stayed relatively stable on fast segments");
+  parts.push(recoveryVariable ? "recoveries were variable" : "recoveries stayed relatively stable");
+  let conclusion;
+  if (strongFatigue) conclusion = "Fatigue was noticeable toward the end: pace slowed while HR rose.";
+  else if (unstable && recoveryVariable) conclusion = "Both intensity and recoveries varied noticeably — the fartlek was uneven.";
+  else if (moderateFatigue) conclusion = "There were signs of accumulating fatigue toward the end.";
+  else if (unstable) conclusion = "Fast segments varied noticeably in pace.";
+  else if (recoveryVariable) conclusion = "Fast segments were fairly stable, but recoveries varied noticeably.";
+  else if (dynamics === "faster" && fastSpread <= 12) conclusion = "The fartlek was controlled, with good late-session dynamics.";
+  else conclusion = "The fartlek was even and controlled.";
+  parts.push(`total fast-work volume ${fastDistanceKm} km`, conclusion);
+  return `${parts.join(" · ")}.`;
+}
+
 function workHrText(summary, bpm) {
   const analysis = getIntervalAnalysis(summary);
   if (!analysis) return "";
@@ -1389,6 +1507,9 @@ function workHrText(summary, bpm) {
 function generateWorkoutInsight(summary) {
   const intervalInsight = generateIntervalInsight(summary);
   if (intervalInsight) return intervalInsight;
+
+  const fartlekInsight = generateFartlekInsight(summary);
+  if (fartlekInsight) return fartlekInsight;
 
   const tempoInsight = generateTempoInsight(summary);
   if (tempoInsight) return tempoInsight;
