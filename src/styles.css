@@ -1335,3 +1335,136 @@
   .history-bars { height:125px; gap:5px; }
   .history-bar-track { width:min(28px,80%); }
 }
+
+/* === Runory mobile history refinement === */
+@media (max-width:680px) {
+  .history-item {
+    position:relative;
+    display:block;
+    padding:14px 15px 14px;
+    min-height:0;
+  }
+
+  .history-type-icon {
+    display:none;
+  }
+
+  .history-item-main {
+    width:100%;
+  }
+
+  .history-item-heading {
+    width:100%;
+    min-height:0;
+    padding-right:128px;
+  }
+
+  .history-item-heading h3 {
+    font-size:16px;
+    line-height:1.28;
+    padding-right:0;
+  }
+
+  .history-item-heading .eyebrow {
+    margin-bottom:4px;
+  }
+
+  .history-distance {
+    position:absolute;
+    top:14px;
+    right:15px;
+    z-index:2;
+    font-size:18px;
+    line-height:1.05;
+    letter-spacing:-.7px;
+    text-align:right;
+  }
+
+  .history-metrics {
+    margin-top:10px;
+    gap:5px 12px;
+    padding-right:0;
+    font-size:10px;
+  }
+
+  .history-item-actions {
+    width:100%;
+    margin-top:12px;
+    gap:7px;
+  }
+
+  .history-view-button {
+    min-height:42px;
+    padding:10px 12px;
+    border-radius:9px;
+    font-size:11px;
+  }
+
+  .history-delete-button {
+    width:42px;
+    height:42px;
+    flex:0 0 42px;
+    border-radius:9px;
+  }
+
+  .history-dynamics-card {
+    padding:14px 15px;
+  }
+
+  .history-dynamic-row {
+    padding:10px 0;
+  }
+
+  .history-dynamic-row span {
+    font-size:11px;
+  }
+
+  .history-dynamic-row strong {
+    font-size:20px;
+  }
+
+  .history-dynamic-row small {
+    font-size:12px;
+  }
+
+  .history-dynamics-card p {
+    margin-top:9px;
+    font-size:9px;
+  }
+
+  .history-chart-card {
+    padding:14px 15px;
+  }
+
+  .history-bars {
+    height:112px;
+  }
+}
+
+/* === Runory profile centering correction === */
+.profile-page {
+  width:100%;
+  max-width:980px;
+  margin-left:auto;
+  margin-right:auto;
+}
+
+.profile-page-heading,
+.profile-card {
+  margin-left:auto;
+  margin-right:auto;
+}
+
+@media (max-width:680px) {
+  .profile-page {
+    width:100%;
+    max-width:none;
+    padding-left:0;
+    padding-right:0;
+  }
+
+  .profile-page-heading,
+  .profile-card {
+    width:100%;
+  }
+}
