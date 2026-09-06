@@ -1468,3 +1468,75 @@
     width:100%;
   }
 }
+
+/* === Runory: explicit save/cancel after FIT analysis === */
+.workout-save-actions {
+  margin-top: 14px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+.workout-save-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.workout-save-copy strong {
+  font-size: 14px;
+  letter-spacing: -.2px;
+}
+.workout-save-copy span {
+  color: #68746d;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.workout-save-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+.workout-save-button,
+.workout-cancel-button {
+  min-height: 42px;
+  border-radius: 10px;
+  padding: 0 16px;
+  font: 700 12px Manrope, sans-serif;
+  cursor: pointer;
+}
+.workout-save-button {
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: #fff;
+}
+.workout-save-button:disabled {
+  opacity: .55;
+  cursor: wait;
+}
+.workout-cancel-button {
+  border: 1px solid var(--line);
+  background: var(--white);
+  color: var(--ink);
+}
+@media (max-width: 680px) {
+  .workout-save-actions {
+    display: grid;
+    gap: 12px;
+    padding: 14px;
+  }
+  .workout-save-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1.35fr;
+    width: 100%;
+  }
+  .workout-save-button,
+  .workout-cancel-button {
+    width: 100%;
+    min-height: 44px;
+  }
+}
