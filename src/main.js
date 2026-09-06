@@ -1019,6 +1019,108 @@ function generateIntervalInsight(summary) {
   return `${parts.join(" · ")}. ${conclusion}`;
 }
 
+function generateTempoInsight(summary) {
+  const pattern = getWorkoutPattern(summary);
+  if (pattern.type !== "tempo") return null;
+
+  const splits = Array.isArray(summary?.splits) ? summary.splits : [];
+  const start = Number(pattern.tempoStart);
+  const end = Number(pattern.tempoEnd);
+  if (!Number.isInteger(start) || !Number.isInteger(end) || end < start) return null;
+
+  const tempoSplits = splits.slice(start, end + 1);
+  const paces = tempoSplits.map(split => paceToSeconds(split.pace)).filter(Number.isFinite);
+  if (paces.length < 3) return null;
+
+  const average = paces.reduce((sum, pace) => sum + pace, 0) / paces.length;
+  const spread = Math.max(...paces) - Math.min(...paces);
+  const firstCount = Math.max(1, Math.floor(paces.length / 3));
+  const lastCount = Math.max(1, Math.floor(paces.length / 3));
+  const firstAvg = paces.slice(0, firstCount).reduce((sum, pace) => sum + pace, 0) / firstCount;
+  const lastAvg = paces.slice(-lastCount).reduce((sum, pace) => sum + pace, 0) / lastCount;
+  const paceDelta = firstAvg - lastAvg;
+
+  const hrValues = tempoSplits
+    .map(split => Number(split.heartRate))
+    .filter(value => Number.isFinite(value) && value > 0);
+  let hrTrend = "unknown";
+  if (hrValues.length >= 3) {
+    const hrFirstCount = Math.max(1, Math.floor(hrValues.length / 3));
+    const hrLastCount = Math.max(1, Math.floor(hrValues.length / 3));
+    const hrFirst = hrValues.slice(0, hrFirstCount).reduce((sum, value) => sum + value, 0) / hrFirstCount;
+    const hrLast = hrValues.slice(-hrLastCount).reduce((sum, value) => sum + value, 0) / hrLastCount;
+    const hrDelta = hrLast - hrFirst;
+    hrTrend = hrDelta >= 5 ? "rising" : hrDelta <= -5 ? "falling" : "stable";
+  }
+
+  let dynamics = "stable";
+  if (paceDelta > 5) dynamics = "faster";
+  else if (paceDelta < -5) dynamics = "slower";
+
+  const distanceKm = tempoSplits.reduce((sum, split) => {
+    const km = Number(split?.km);
+    return sum + (Number.isFinite(km) ? 1 : 0);
+  }, 0);
+  const volumeLabel = distanceKm > 0
+    ? `${Number.isInteger(distanceKm) ? distanceKm : distanceKm.toFixed(1).replace(".", currentLanguage === "uk" ? "," : ".")} км`
+    : `${paces.length} км`;
+
+  const paceLabel = formatInsightPace(average);
+  const spreadLabel = Math.round(spread);
+
+  if (currentLanguage === "uk") {
+    const parts = [
+      `Темпове · ${volumeLabel}`,
+      `середній темп — ${paceLabel}/км`,
+      `розкид темпу — ${spreadLabel} с/км`
+    ];
+
+    if (dynamics === "faster") parts.push("до кінця темп поступово зростав");
+    else if (dynamics === "slower") parts.push("до кінця темп поступово знижувався");
+    else parts.push("темп залишався стабільним");
+
+    if (hrTrend === "rising") parts.push("ЧСС поступово зростала");
+    else if (hrTrend === "falling") parts.push("ЧСС поступово знижувалась");
+    else if (hrTrend === "stable") parts.push("ЧСС залишалась стабільною");
+
+    let conclusion = "Темпову роботу виконано контрольовано.";
+    if (spread <= 5 && dynamics !== "slower") {
+      conclusion = "Темп добре контролювався протягом усієї роботи.";
+    } else if (dynamics === "slower" && spread > 10) {
+      conclusion = "До кінця темп просів — навантаження було близьким до межі.";
+    } else if (dynamics === "faster") {
+      conclusion = "Роботу виконано впевнено, із сильним фінішем.";
+    }
+
+    return `${parts.join(" · ")}. ${conclusion}`;
+  }
+
+  const parts = [
+    `Tempo · ${volumeLabel}`,
+    `average pace ${paceLabel}/km`,
+    `pace spread ${spreadLabel} sec/km`
+  ];
+
+  if (dynamics === "faster") parts.push("pace gradually increased toward the end");
+  else if (dynamics === "slower") parts.push("pace gradually decreased toward the end");
+  else parts.push("pace stayed stable");
+
+  if (hrTrend === "rising") parts.push("HR gradually rose");
+  else if (hrTrend === "falling") parts.push("HR gradually decreased");
+  else if (hrTrend === "stable") parts.push("HR stayed stable");
+
+  let conclusion = "The tempo work was controlled.";
+  if (spread <= 5 && dynamics !== "slower") {
+    conclusion = "Pace was well controlled throughout the work.";
+  } else if (dynamics === "slower" && spread > 10) {
+    conclusion = "The pace dropped toward the end — the load was close to the limit.";
+  } else if (dynamics === "faster") {
+    conclusion = "The work was completed confidently, with a strong finish.";
+  }
+
+  return `${parts.join(" · ")}. ${conclusion}`;
+}
+
 function workHrText(summary, bpm) {
   const analysis = getIntervalAnalysis(summary);
   if (!analysis) return "";
@@ -1030,6 +1132,9 @@ function workHrText(summary, bpm) {
 function generateWorkoutInsight(summary) {
   const intervalInsight = generateIntervalInsight(summary);
   if (intervalInsight) return intervalInsight;
+
+  const tempoInsight = generateTempoInsight(summary);
+  if (tempoInsight) return tempoInsight;
 
   const splits = summary.splits || [];
   const paces = splits.map(s => paceToSeconds(s.pace)).filter(Number.isFinite);
