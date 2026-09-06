@@ -434,7 +434,10 @@ function setLanguage(language) {
 }
 
 
-function setActiveView(viewName) {
+function setActiveView(viewName, { syncUrl = true } = {}) {
+  const validViews = new Set(["analysis", "profile", "history"]);
+  if (!validViews.has(viewName)) viewName = "analysis";
+
   document.querySelectorAll("[data-view-panel]").forEach(panel => {
     panel.classList.toggle("is-active", panel.id === viewName);
   });
@@ -444,6 +447,16 @@ function setActiveView(viewName) {
     button.classList.toggle("is-active", active);
     button.setAttribute("aria-current", active ? "page" : "false");
   });
+
+  // Keep the current Runory section in the URL so a page refresh does not
+  // send the user back to the analysis page. replaceState avoids an extra
+  // browser-history entry for every sidebar click.
+  if (syncUrl) {
+    const nextHash = viewName === "analysis" ? "#top" : `#${viewName}`;
+    if (window.location.hash !== nextHash) {
+      window.history.replaceState(null, "", nextHash);
+    }
+  }
 
   if (viewName === "history") {
     loadWorkoutHistory();
@@ -459,9 +472,22 @@ function setActiveView(viewName) {
   }
 }
 
+function viewFromHash() {
+  const hash = window.location.hash.replace(/^#/, "");
+  if (hash === "profile" || hash === "history") return hash;
+  return "analysis";
+}
+
 document.querySelectorAll("[data-view-target]").forEach(button => {
   button.addEventListener("click", () => setActiveView(button.dataset.viewTarget));
 });
+
+window.addEventListener("hashchange", () => {
+  setActiveView(viewFromHash(), { syncUrl: false });
+});
+
+// Restore the section that was open before a refresh.
+setActiveView(viewFromHash(), { syncUrl: false });
 
 const sidebarProfileButton = document.querySelector("#sidebarProfileButton");
 const accountSidebar = document.querySelector("#accountSidebar");
@@ -2135,6 +2161,9 @@ async function initAuth() {
   historyLoaded = false;
   if (data?.session?.user) {
     await ensureUserProfile(data.session.user);
+    if (document.querySelector("#history")?.classList.contains("is-active")) {
+      await loadWorkoutHistory(true);
+    }
   }
 
   supabaseClient.auth.onAuthStateChange((event, session) => {
