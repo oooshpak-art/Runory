@@ -1427,17 +1427,39 @@ function formatPaceSeconds(seconds) {
   return `${Math.floor(rounded / 60)}:${String(rounded % 60).padStart(2, "0")}`;
 }
 
+function historyLocalDate(value) {
+  const source = value ? new Date(value) : null;
+  if (!source || Number.isNaN(source.getTime())) return null;
+  // Keep the calendar date in the user's local timezone. Avoid ISO/UTC conversions
+  // here because they can move a Garmin workout to the previous/next calendar day.
+  return new Date(source.getFullYear(), source.getMonth(), source.getDate());
+}
+
 function getWeekStart(date) {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
+  const d = historyLocalDate(date);
+  if (!d) return null;
   const day = d.getDay();
   const diff = day === 0 ? -6 : 1 - day;
   d.setDate(d.getDate() + diff);
   return d;
 }
 
-function formatWeekLabel(date) {
+function getWeekKey(date) {
+  const start = getWeekStart(date);
+  if (!start) return null;
+  return `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-${String(start.getDate()).padStart(2, "0")}`;
+}
+
+function formatShortDate(date) {
   return date.toLocaleDateString(translations[currentLanguage].locale, { day: "2-digit", month: "2-digit" });
+}
+
+function formatWeekLabel(date) {
+  const start = getWeekStart(date);
+  if (!start) return "—";
+  const end = new Date(start);
+  end.setDate(end.getDate() + 6);
+  return `${formatShortDate(start)} – ${formatShortDate(end)}`;
 }
 
 function renderHistoryAnalytics(workouts) {
@@ -1447,10 +1469,12 @@ function renderHistoryAnalytics(workouts) {
 
   const byWeek = new Map();
   workouts.forEach(workout => {
-    const date = workout.workout_date ? new Date(workout.workout_date) : null;
-    if (!date || Number.isNaN(date.getTime())) return;
-    const key = getWeekStart(date).toISOString().slice(0, 10);
-    if (!byWeek.has(key)) byWeek.set(key, { date: getWeekStart(date), distance: 0, paceWeighted: 0, paceDistance: 0, hrWeighted: 0, hrDistance: 0 });
+    const date = historyLocalDate(workout.workout_date);
+    if (!date) return;
+    const weekStart = getWeekStart(date);
+    const key = getWeekKey(date);
+    if (!key || !weekStart) return;
+    if (!byWeek.has(key)) byWeek.set(key, { date: weekStart, distance: 0, paceWeighted: 0, paceDistance: 0, hrWeighted: 0, hrDistance: 0 });
     const row = byWeek.get(key);
     const distance = Number(workout.distance_km) || 0;
     row.distance += distance;
@@ -1467,7 +1491,7 @@ function renderHistoryAnalytics(workouts) {
     <div class="history-bar-col" title="${escapeHtml(formatWeekLabel(w.date))}: ${escapeHtml(w.distance.toFixed(1))} km">
       <div class="history-bar-track"><div class="history-bar" style="height:${Math.max(5, (w.distance / maxDistance) * 100)}%"></div></div>
       <span>${escapeHtml(formatWeekLabel(w.date))}</span>
-      <strong>${escapeHtml(w.distance.toFixed(1))}</strong>
+      <strong>${escapeHtml(w.distance.toFixed(1))} ${currentLanguage === "uk" ? "км" : "km"}</strong>
     </div>`).join("") : `<div class="history-chart-empty">${escapeHtml(t("historyNoData"))}</div>`;
 
   const paceRows = weeks.filter(w => w.paceDistance > 0);
@@ -1487,7 +1511,7 @@ function renderHistoryAnalytics(workouts) {
     <div class="history-analytics-heading"><span class="eyebrow">${escapeHtml(t("historyOverview"))}</span></div>
     <div class="history-analytics-grid">
       <article class="history-chart-card">
-        <div class="history-card-heading"><h3>${escapeHtml(t("historyWeeklyDistance"))}</h3><span>${escapeHtml(t("historyWeek"))}</span></div>
+        <div class="history-card-heading"><h3>${escapeHtml(t("historyWeeklyDistance"))}</h3></div>
         <div class="history-bars">${chart}</div>
       </article>
       <article class="history-dynamics-card">
