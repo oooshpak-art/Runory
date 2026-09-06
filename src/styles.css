@@ -1263,3 +1263,35 @@
     font-size: 9px;
   }
 }
+
+/* === Runory history v2 === */
+.history-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin-bottom:14px; }
+.history-stat-card { min-height:108px; padding:18px 20px; border:1px solid var(--line); border-radius:14px; background:#fff; display:flex; flex-direction:column; justify-content:space-between; box-shadow:0 8px 25px rgba(31,40,31,.025); }
+.history-stat-label { color:#7a857e; font:700 10px 'DM Mono',monospace; letter-spacing:1px; text-transform:uppercase; }
+.history-stat-card strong { font-size:28px; letter-spacing:-1.4px; }
+.history-stat-card small { font-size:12px; letter-spacing:0; color:#68746e; font-weight:700; }
+.history-item { position:relative; padding:20px 20px 20px 72px; min-height:100px; }
+.history-type-icon { position:absolute; left:20px; top:20px; width:36px; height:36px; display:grid; place-items:center; border-radius:10px; background:#edf1ec; color:#526058; font:700 18px Manrope,sans-serif; }
+.history-item .history-type-icon.intervals { color:var(--lime); background:#17201b; }
+.history-item .history-type-icon.tempo { color:#66736c; }
+.history-item .history-type-icon.fartlek { color:#66736c; }
+.history-item .history-type-icon.long { color:#66736c; }
+.history-metrics b { color:#3f4944; font-family:Manrope,sans-serif; font-size:10px; margin-right:3px; }
+.history-empty { min-height:240px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; }
+.history-empty-icon { width:46px; height:46px; display:grid; place-items:center; margin-bottom:5px; border-radius:13px; background:#edf1ec; font-size:22px; }
+.history-empty-button { margin-top:14px; border:0; border-radius:10px; background:var(--ink); color:#fff; padding:11px 16px; font:700 11px Manrope,sans-serif; cursor:pointer; }
+.history-empty-button:hover { transform:translateY(-1px); }
+@media (max-width:680px) {
+  .history-stats { grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; }
+  .history-stat-card { min-height:86px; padding:13px 11px; border-radius:12px; }
+  .history-stat-label { font-size:8px; letter-spacing:.7px; }
+  .history-stat-card strong { font-size:20px; letter-spacing:-1px; }
+  .history-stat-card small { font-size:9px; }
+  .history-item { padding:15px 15px 15px 61px; }
+  .history-type-icon { left:15px; top:15px; width:34px; height:34px; }
+  .history-item-heading { gap:8px; }
+  .history-item-heading h3 { font-size:15px; }
+  .history-distance { font-size:18px; }
+  .history-metrics { gap:7px 11px; }
+  .history-metrics b { display:none; }
+}
