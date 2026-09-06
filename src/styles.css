@@ -1133,3 +1133,133 @@
   .language-button { min-width: 32px; width: 32px; }
   .nav-tab { font-size: 11px; padding-left: 4px; padding-right: 4px; }
 }
+
+/* === Final mobile navigation correction === */
+@media (max-width: 680px) {
+  .topbar {
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr) 82px;
+    grid-template-areas:
+      "toggle brand auth"
+      "nav nav lang";
+    column-gap: 8px;
+    row-gap: 10px;
+    align-items: center;
+  }
+
+  .sidebar-mobile-toggle {
+    grid-area: toggle;
+    position: relative;
+    left: auto;
+    top: auto;
+    width: 42px;
+    height: 42px;
+  }
+
+  .brand {
+    grid-area: brand;
+    min-width: 0;
+    display: flex;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .brand-logo {
+    width: min(100%, 158px);
+    max-width: 158px;
+    height: auto;
+  }
+
+  .auth-button {
+    grid-area: auth;
+    width: 82px;
+    min-width: 82px;
+    max-width: 82px;
+    height: 40px;
+    padding: 0 7px;
+    font-size: 10px;
+  }
+
+  .app-nav {
+    grid-area: nav;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 6px;
+    overflow: hidden;
+  }
+
+  .nav-tab {
+    min-width: 0;
+    width: 100%;
+    padding: 11px 6px;
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .language-switcher {
+    grid-area: lang;
+    justify-self: end;
+    box-sizing: border-box;
+    width: 68px;
+    min-width: 68px;
+    height: 34px;
+    padding: 2px;
+    gap: 1px;
+    border-radius: 9px;
+    overflow: hidden;
+  }
+
+  .language-button,
+  .language-button.is-active {
+    box-sizing: border-box;
+    min-width: 0;
+    width: 31px;
+    height: 28px;
+    padding: 0;
+    border-radius: 7px;
+    flex: 1 1 0;
+    font-size: 9px;
+    line-height: 28px;
+  }
+}
+
+@media (max-width: 390px) {
+  .topbar {
+    grid-template-columns: 40px minmax(0, 1fr) 78px;
+    column-gap: 6px;
+  }
+
+  .sidebar-mobile-toggle {
+    width: 40px;
+    height: 40px;
+  }
+
+  .brand-logo {
+    max-width: 145px;
+  }
+
+  .auth-button {
+    width: 78px;
+    min-width: 78px;
+    max-width: 78px;
+  }
+
+  .language-switcher {
+    width: 64px;
+    min-width: 64px;
+    height: 32px;
+  }
+
+  .language-button,
+  .language-button.is-active {
+    width: 29px;
+    height: 26px;
+    line-height: 26px;
+    font-size: 9px;
+  }
+}
