@@ -643,47 +643,60 @@ function explicitWorkoutStructure(workoutSteps = [], records = [], laps = []) {
     const queue = lapQueues.get(sourceIndex);
     if (!queue?.length) return null;
 
-    // Never consume the whole queue blindly. A non-repeated time-based rest
-    // (for example the final 10-minute recovery) must keep its own lap and
-    // must not swallow another lap that Garmin assigned to the same source
-    // step. For distance/time steps, consume only as many laps as are needed
-    // to satisfy that step's prescribed duration.
     const expectedDistance = isDistanceStep(step) ? stepDistance(step) : null;
     const expectedTime = isTimeStep(step) ? stepTime(step) : null;
     const picked = [];
     let distance = 0;
     let duration = 0;
 
-    while (queue.length) {
-      const candidate = queue[0];
-      picked.push(queue.shift());
-      distance += Number(candidate.distance) || 0;
-      duration += Number(candidate.duration) || 0;
+    // For every finite time/distance step, consume only the laps needed to
+    // cover that step. Garmin may split one workout step across automatic
+    // 1-km laps, and repeated steps reuse the same source message index.
+    // Consuming the whole queue here makes the first repeated interval steal
+    // all later repetitions and their recoveries.
+    if (expectedDistance != null || expectedTime != null) {
+      while (queue.length) {
+        const candidate = queue[0];
+        picked.push(queue.shift());
+        distance += Number(candidate.distance) || 0;
+        duration += Number(candidate.duration) || 0;
 
-      if (expectedDistance != null && distance >= expectedDistance - 1) break;
-      if (expectedTime != null && duration >= expectedTime - 1) break;
-      if (expectedDistance == null && expectedTime == null) break;
+        if (expectedDistance != null && distance >= expectedDistance - 1) break;
+        if (expectedTime != null && duration >= expectedTime - 1) break;
+      }
+      return mergeLapStats(picked);
     }
 
-    return mergeLapStats(picked);
+    // Open steps have no finite boundary in the workout definition, so all
+    // laps carrying this exact source index belong to that step.
+    const all = queue.splice(0, queue.length);
+    return mergeLapStats(all);
   };
 
-
-  // A plain easy run is a single OPEN active workout step. Regardless of
-  // whether Garmin also attached workout_step_index to its automatic laps,
-  // do not expose a workout structure for it. Aggregate the whole activity
-  // as one continuous run.
+  // A plain easy run is often stored as one OPEN workout step without
+  // workout_step_index on the automatic laps. In that case the structural
+  // interval heuristic must not invent warmup/cooldown/intervals from pace
+  // fluctuations. Aggregate the recorded laps as one continuous run.
   const hasAnyStepLap = [...lapQueues.values()].some(queue => queue.length > 0);
   const hasRepeatedSteps = expanded.some(step => Boolean(step.__repeated));
   const hasRestSteps = expanded.some(step => isRest(intensity(step)));
   const hasExplicitCooldown = expanded.some(step => isCooldown(intensity(step)));
   const hasExplicitWarmup = expanded.some(step => isWarmup(intensity(step)));
-  const isSingleOpenRun =
-    expanded.length === 1 &&
-    isOpenStep(expanded[0]) &&
-    isActive(intensity(expanded[0]));
+  // Ordinary running workouts (easy run, steady run, long run) should not
+  // expose Garmin's internal workout structure. If there is one active run
+  // step and the only other step is an open cooldown, aggregate the whole
+  // activity as one continuous run. Structured workouts with rests,
+  // intervals, repeats, warmups or cooldowns with finite boundaries keep
+  // their structure.
+  const activeSteps = expanded.filter(step => isActive(intensity(step)));
+  const ordinaryRunOnly =
+    !hasRepeatedSteps &&
+    !hasRestSteps &&
+    !hasExplicitWarmup &&
+    activeSteps.length === 1 &&
+    (expanded.length === 1 || (expanded.length === 2 && isOpenStep(expanded[1]) && isCooldown(intensity(expanded[1]))));
 
-  if (isSingleOpenRun && !hasRepeatedSteps && !hasRestSteps && !hasExplicitCooldown && !hasExplicitWarmup) {
+  if (ordinaryRunOnly) {
     const allLapStats = (laps || []).map(statsFromLap).filter(Boolean);
     const aggregated = mergeLapStats(allLapStats);
     if (aggregated) return [{ type: 'easy', label: 'Біг', ...aggregated, repetitions: 1 }];
@@ -768,6 +781,16 @@ function explicitWorkoutStructure(workoutSteps = [], records = [], laps = []) {
     (isDistanceStep(step) || isTimeStep(step)) &&
     isActive(intensity(step));
 
+  // Only rest/recovery steps that are part of the repeated block belong to
+  // an interval repetition. A separate rest after the repeat block (for
+  // example a 10-minute post-set recovery) must remain a standalone step.
+  const repeatedRecoverySourceIndices = new Set(
+    expanded
+      .filter(step => Boolean(step.__repeated) && isRest(intensity(step)))
+      .map(step => Number(step.__sourceIndex))
+      .filter(Number.isFinite)
+  );
+
   const repeatedWorkIndices = expanded
     .map((step, index) => ({ step, index }))
     .filter(item => isRepeatedWork(item.step))
@@ -833,7 +856,11 @@ function explicitWorkoutStructure(workoutSteps = [], records = [], laps = []) {
     }
 
     if (isRest(level)) {
-      if (currentBlock?.repetitions?.length) {
+      const belongsToRepeat =
+        Boolean(step.__repeated) ||
+        repeatedRecoverySourceIndices.has(Number(step.__sourceIndex));
+
+      if (currentBlock?.repetitions?.length && belongsToRepeat) {
         currentBlock.repetitions.at(-1).recovery = stats;
       } else {
         addStandalone('recovery', 'Відновлення', stats);
