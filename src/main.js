@@ -20,6 +20,9 @@ const splitsBody = document.querySelector("#splitsBody");
 const structureCard = document.querySelector("#structureCard");
 const structureBody = document.querySelector("#structureBody");
 const aiAnalyzeButton = document.querySelector("#aiAnalyzeButton");
+const workoutSaveActions = document.querySelector("#workoutSaveActions");
+const saveWorkoutButton = document.querySelector("#saveWorkoutButton");
+const cancelWorkoutButton = document.querySelector("#cancelWorkoutButton");
 const aiAnalysis = document.querySelector("#aiAnalysis");
 const aiAnalysisText = document.querySelector("#aiAnalysisText");
 
@@ -67,6 +70,12 @@ const translations = {
     insightEyebrow: "ПЕРШИЙ ПОГЛЯД",
     insightEmpty: "Завантаж тренування, щоб побачити реальні дані Garmin.",
     aiButton: "Проаналізувати тренування",
+    saveWorkoutTitle: "Зберегти тренування?",
+    saveWorkoutCopy: "Збережи його, щоб додати до «Мої тренування» та статистики.",
+    saveWorkout: "Зберегти тренування",
+    cancelWorkout: "Скасувати",
+    workoutSaved: "Тренування збережено.",
+    loginToSaveWorkout: "Увійди в Runory, щоб зберегти тренування.",
     aiLoading: "Аналізую тренування…",
     aiEyebrow: "AI-АНАЛІЗ ТРЕНЕРА",
     aiTitle: "Що говорить твоє тренування",
@@ -234,6 +243,12 @@ const translations = {
     insightEyebrow: "FIRST LOOK",
     insightEmpty: "Upload a workout to see your real Garmin data.",
     aiButton: "Analyze workout",
+    saveWorkoutTitle: "Save this workout?",
+    saveWorkoutCopy: "Save it to add it to My workouts and your statistics.",
+    saveWorkout: "Save workout",
+    cancelWorkout: "Cancel",
+    workoutSaved: "Workout saved.",
+    loginToSaveWorkout: "Sign in to Runory to save this workout.",
     aiLoading: "Analyzing workout…",
     aiEyebrow: "AI COACH ANALYSIS",
     aiTitle: "What your workout tells us",
@@ -1266,6 +1281,11 @@ function renderSummary(summary) {
 
   if (aiAnalysis) aiAnalysis.hidden = true;
   if (aiAnalysisText) aiAnalysisText.innerHTML = "";
+  if (workoutSaveActions) workoutSaveActions.hidden = false;
+  if (saveWorkoutButton) {
+    saveWorkoutButton.disabled = false;
+    saveWorkoutButton.textContent = t("saveWorkout");
+  }
 }
 
 function workoutDateIso(summary) {
@@ -1743,10 +1763,6 @@ async function analyzeWithAI() {
         renderAiAnalysis(analysisText);
     }
 
-    if (currentSession?.user) {
-      await saveWorkoutToHistory(currentWorkout, analysisText);
-    }
-
     if (aiAnalysis) {
       aiAnalysis.classList.remove("is-loading");
       aiAnalysis.scrollIntoView({
@@ -1807,10 +1823,6 @@ async function selectFile(file) {
 
     renderSummary(summary);
 
-    if (currentSession?.user) {
-      await saveWorkoutToHistory(summary);
-    }
-
     progressBar.style.width = "100%";
     progressValue.textContent = "100%";
     fileStatus.textContent = t("readyToView");
@@ -1832,6 +1844,55 @@ async function selectFile(file) {
       error.message || t("readFileError");
   }
 }
+
+async function confirmSaveWorkout() {
+  if (!currentWorkout || !saveWorkoutButton) return;
+
+  if (!currentSession?.user) {
+    const message = t("loginToSaveWorkout");
+    openAuthModal();
+    return;
+  }
+
+  saveWorkoutButton.disabled = true;
+  saveWorkoutButton.textContent = currentLanguage === "uk" ? "Зберігаємо…" : "Saving…";
+
+  try {
+    const saved = await saveWorkoutToHistory(currentWorkout, currentWorkout._aiAnalysis || null);
+    if (!saved) throw new Error(t("historySaveError"));
+    if (workoutSaveActions) workoutSaveActions.hidden = true;
+    if (uploadState) fileStatus.textContent = t("workoutSaved");
+  } catch (error) {
+    saveWorkoutButton.disabled = false;
+    saveWorkoutButton.textContent = t("saveWorkout");
+    if (uploadState) fileStatus.textContent = error.message || t("historySaveError");
+  }
+}
+
+function cancelCurrentWorkout() {
+  input.value = "";
+  uploadState.hidden = true;
+  results.hidden = true;
+  currentWorkout = null;
+  currentHistoryId = null;
+
+  progressBar.style.width = "0%";
+  progressValue.textContent = "0%";
+  fileName.textContent = "Тренування.fit";
+  fileStatus.textContent = t("fileReady");
+
+  if (workoutSaveActions) workoutSaveActions.hidden = true;
+  if (aiAnalysis) aiAnalysis.hidden = true;
+  if (aiAnalysisText) aiAnalysisText.innerHTML = "";
+  if (splitsBody) splitsBody.innerHTML = `<tr><td colspan="5" class="splits-empty">${escapeHtml(t("splitsEmpty"))}</td></tr>`;
+  if (structureBody) structureBody.innerHTML = "";
+  if (structureCard) structureCard.hidden = true;
+
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+saveWorkoutButton?.addEventListener("click", confirmSaveWorkout);
+cancelWorkoutButton?.addEventListener("click", cancelCurrentWorkout);
 
 input?.addEventListener("change", event => {
   selectFile(event.target.files[0]);
@@ -1860,10 +1921,12 @@ resetButton?.addEventListener("click", () => {
   uploadState.hidden = true;
   results.hidden = true;
   currentWorkout = null;
+  currentHistoryId = null;
 
   progressBar.style.width = "0%";
   progressValue.textContent = "0%";
 
+  if (workoutSaveActions) workoutSaveActions.hidden = true;
   if (aiAnalysis) aiAnalysis.hidden = true;
   if (splitsBody) splitsBody.innerHTML = "";
   if (structureBody) structureBody.innerHTML = "";
