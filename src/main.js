@@ -923,6 +923,7 @@ function getIntervalAnalysis(summary) {
 
   return {
     reps,
+    recoveries,
     average,
     spread,
     dynamics,
