@@ -864,11 +864,11 @@
 
 
 /* === Runory profile page === */
-.profile-page { padding:74px 0 40px; max-width:980px; }
-.profile-page-heading { max-width:760px; margin-bottom:34px; }
+.profile-page { padding:74px 0 40px; max-width:980px; margin-left:auto; margin-right:auto; }
+.profile-page-heading { max-width:760px; margin:0 auto 34px; }
 .profile-page-heading h1 { margin:0; font-size:clamp(44px,6vw,72px); line-height:1.03; letter-spacing:-3.8px; }
 .profile-page-heading > p:last-child { margin:18px 0 0; max-width:680px; color:var(--muted); font-size:15px; line-height:1.75; }
-.profile-card { max-width:760px; padding:32px; border:1px solid var(--line); border-radius:18px; background:#fff; box-shadow:0 12px 35px rgba(31,40,31,.035); }
+.profile-card { max-width:760px; margin-left:auto; margin-right:auto; padding:32px; border:1px solid var(--line); border-radius:18px; background:#fff; box-shadow:0 12px 35px rgba(31,40,31,.035); }
 .profile-section { margin-top:0; padding-top:0; border-top:0; }
 .profile-section-heading { margin-bottom:20px; }
 .profile-section-heading .eyebrow { margin-bottom:7px; }
@@ -890,10 +890,10 @@
 .history-list { display:grid; gap:10px; width:100%; }
 .history-item { display:flex; align-items:center; justify-content:space-between; gap:20px; padding:19px 20px; border:1px solid var(--line); border-radius:14px; background:#fff; box-shadow:0 8px 25px rgba(31,40,31,.025); }
 .history-item-main { min-width:0; flex:1; }
-.history-item-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:20px; }
+.history-item-heading { position:relative; display:block; min-height:44px; padding-right:145px; }
 .history-item-heading h3 { margin:0; font-size:17px; letter-spacing:-.5px; }
 .history-item-heading .eyebrow { margin:0 0 5px; }
-.history-distance { white-space:nowrap; font-size:20px; letter-spacing:-.8px; }
+.history-distance { position:absolute; top:0; right:0; white-space:nowrap; font-size:20px; line-height:1.05; letter-spacing:-.8px; text-align:right; }
 .history-metrics { display:flex; flex-wrap:wrap; gap:8px 16px; margin-top:12px; color:#68746e; font:11px 'DM Mono'; }
 .history-item-actions { display:flex; align-items:center; gap:8px; flex:0 0 auto; }
 .history-view-button { border:0; background:var(--ink); color:#fff; padding:10px 13px; border-radius:9px; font:700 11px Manrope,sans-serif; cursor:pointer; }
@@ -1289,9 +1289,49 @@
   .history-stat-card small { font-size:9px; }
   .history-item { padding:15px 15px 15px 61px; }
   .history-type-icon { left:15px; top:15px; width:34px; height:34px; }
-  .history-item-heading { gap:8px; }
+  .history-item-heading { min-height:42px; padding-right:116px; }
   .history-item-heading h3 { font-size:15px; }
-  .history-distance { font-size:18px; }
+  .history-distance { top:0; right:0; font-size:18px; }
   .history-metrics { gap:7px 11px; }
   .history-metrics b { display:none; }
+}
+
+/* === Runory history analytics === */
+.history-controls { display:flex; flex-wrap:wrap; gap:14px 24px; margin:0 0 18px; padding:14px 0 2px; border-top:1px solid var(--line); }
+.history-filter-group { display:flex; align-items:center; gap:9px; flex-wrap:wrap; }
+.history-filter-label { color:#7a857e; font:700 9px 'DM Mono',monospace; letter-spacing:1px; text-transform:uppercase; }
+.history-filter-row { display:flex; gap:5px; flex-wrap:wrap; }
+.history-filter { border:1px solid var(--line); background:#fff; color:#66716b; border-radius:999px; padding:7px 11px; font:700 10px Manrope,sans-serif; cursor:pointer; transition:.16s ease; }
+.history-filter:hover { border-color:#aeb8b1; transform:translateY(-1px); }
+.history-filter.is-active { background:var(--ink); color:#fff; border-color:var(--ink); }
+.history-analytics { margin:0 0 18px; }
+.history-analytics-heading { margin:0 0 9px; }
+.history-analytics-grid { display:grid; grid-template-columns:minmax(0,1.65fr) minmax(260px,.75fr); gap:12px; }
+.history-chart-card,.history-dynamics-card { border:1px solid var(--line); border-radius:14px; background:#fff; padding:18px 20px; box-shadow:0 8px 25px rgba(31,40,31,.025); }
+.history-card-heading { display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:14px; }
+.history-card-heading h3 { margin:0; font-size:14px; letter-spacing:-.25px; }
+.history-card-heading span { color:#8a948e; font:700 9px 'DM Mono',monospace; text-transform:uppercase; letter-spacing:.8px; }
+.history-bars { height:145px; display:flex; align-items:flex-end; gap:8px; border-bottom:1px solid #e7ebe7; padding:0 2px 7px; }
+.history-bar-col { min-width:0; flex:1; height:100%; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; gap:4px; }
+.history-bar-track { width:min(34px,75%); height:100%; display:flex; align-items:flex-end; }
+.history-bar { width:100%; min-height:5px; border-radius:7px 7px 2px 2px; background:var(--ink); transition:height .25s ease; }
+.history-bar-col > span { color:#89938d; font:700 8px 'DM Mono',monospace; }
+.history-bar-col > strong { font-size:9px; line-height:1; }
+.history-chart-empty { width:100%; align-self:center; text-align:center; color:#8a948e; font-size:12px; }
+.history-dynamic-row { display:flex; justify-content:space-between; align-items:center; gap:15px; padding:14px 0; border-bottom:1px solid #edf0ed; }
+.history-dynamic-row:last-of-type { border-bottom:0; }
+.history-dynamic-row span { color:#737e77; font-size:11px; font-weight:700; }
+.history-dynamic-row strong { font-size:22px; letter-spacing:-.8px; white-space:nowrap; }
+.history-dynamic-row small { color:#6c7770; font-size:13px; margin-left:3px; }
+.history-dynamics-card p { margin:12px 0 0; color:#8a948e; font-size:10px; line-height:1.45; }
+@media (max-width:820px) { .history-analytics-grid { grid-template-columns:1fr; } }
+@media (max-width:680px) {
+  .history-controls { gap:11px; padding-top:12px; }
+  .history-filter-group { align-items:flex-start; flex-direction:column; gap:6px; width:100%; }
+  .history-filter-row { width:100%; overflow-x:auto; flex-wrap:nowrap; scrollbar-width:none; padding-bottom:2px; }
+  .history-filter-row::-webkit-scrollbar { display:none; }
+  .history-filter { flex:0 0 auto; padding:7px 10px; }
+  .history-chart-card,.history-dynamics-card { padding:15px; border-radius:12px; }
+  .history-bars { height:125px; gap:5px; }
+  .history-bar-track { width:min(28px,80%); }
 }
