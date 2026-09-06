@@ -20,11 +20,12 @@ const splitsBody = document.querySelector("#splitsBody");
 const structureCard = document.querySelector("#structureCard");
 const structureBody = document.querySelector("#structureBody");
 const aiAnalyzeButton = document.querySelector("#aiAnalyzeButton");
-const workoutSaveActions = document.querySelector("#workoutSaveActions");
-const saveWorkoutButton = document.querySelector("#saveWorkoutButton");
-const cancelWorkoutButton = document.querySelector("#cancelWorkoutButton");
 const aiAnalysis = document.querySelector("#aiAnalysis");
 const aiAnalysisText = document.querySelector("#aiAnalysisText");
+const workoutSavePanel = document.querySelector("#workoutSavePanel");
+const saveWorkoutButton = document.querySelector("#saveWorkoutButton");
+const cancelWorkoutButton = document.querySelector("#cancelWorkoutButton");
+const workoutSaveStatus = document.querySelector("#workoutSaveStatus");
 
 let currentWorkout = null;
 let currentHistoryId = null;
@@ -70,12 +71,13 @@ const translations = {
     insightEyebrow: "ПЕРШИЙ ПОГЛЯД",
     insightEmpty: "Завантаж тренування, щоб побачити реальні дані Garmin.",
     aiButton: "Проаналізувати тренування",
-    saveWorkoutTitle: "Зберегти тренування?",
-    saveWorkoutCopy: "Збережи його, щоб додати до «Мої тренування» та статистики.",
+    saveWorkoutEyebrow: "ЗБЕРЕЖЕННЯ",
+    saveWorkoutQuestion: "Зберегти це тренування?",
     saveWorkout: "Зберегти тренування",
     cancelWorkout: "Скасувати",
-    workoutSaved: "Тренування збережено.",
-    loginToSaveWorkout: "Увійди в Runory, щоб зберегти тренування.",
+    savingWorkout: "Зберігаємо…",
+    workoutSaved: "✓ Тренування збережено",
+    historySaveError: "Не вдалося зберегти тренування",
     aiLoading: "Аналізую тренування…",
     aiEyebrow: "AI-АНАЛІЗ ТРЕНЕРА",
     aiTitle: "Що говорить твоє тренування",
@@ -243,12 +245,13 @@ const translations = {
     insightEyebrow: "FIRST LOOK",
     insightEmpty: "Upload a workout to see your real Garmin data.",
     aiButton: "Analyze workout",
-    saveWorkoutTitle: "Save this workout?",
-    saveWorkoutCopy: "Save it to add it to My workouts and your statistics.",
+    saveWorkoutEyebrow: "SAVE WORKOUT",
+    saveWorkoutQuestion: "Save this workout?",
     saveWorkout: "Save workout",
     cancelWorkout: "Cancel",
-    workoutSaved: "Workout saved.",
-    loginToSaveWorkout: "Sign in to Runory to save this workout.",
+    savingWorkout: "Saving…",
+    workoutSaved: "✓ Workout saved",
+    historySaveError: "Could not save workout",
     aiLoading: "Analyzing workout…",
     aiEyebrow: "AI COACH ANALYSIS",
     aiTitle: "What your workout tells us",
@@ -449,10 +452,7 @@ function setLanguage(language) {
 }
 
 
-function setActiveView(viewName, { syncUrl = true } = {}) {
-  const validViews = new Set(["analysis", "profile", "history"]);
-  if (!validViews.has(viewName)) viewName = "analysis";
-
+function setActiveView(viewName) {
   document.querySelectorAll("[data-view-panel]").forEach(panel => {
     panel.classList.toggle("is-active", panel.id === viewName);
   });
@@ -462,16 +462,6 @@ function setActiveView(viewName, { syncUrl = true } = {}) {
     button.classList.toggle("is-active", active);
     button.setAttribute("aria-current", active ? "page" : "false");
   });
-
-  // Keep the current Runory section in the URL so a page refresh does not
-  // send the user back to the analysis page. replaceState avoids an extra
-  // browser-history entry for every sidebar click.
-  if (syncUrl) {
-    const nextHash = viewName === "analysis" ? "#top" : `#${viewName}`;
-    if (window.location.hash !== nextHash) {
-      window.history.replaceState(null, "", nextHash);
-    }
-  }
 
   if (viewName === "history") {
     loadWorkoutHistory();
@@ -487,22 +477,9 @@ function setActiveView(viewName, { syncUrl = true } = {}) {
   }
 }
 
-function viewFromHash() {
-  const hash = window.location.hash.replace(/^#/, "");
-  if (hash === "profile" || hash === "history") return hash;
-  return "analysis";
-}
-
 document.querySelectorAll("[data-view-target]").forEach(button => {
   button.addEventListener("click", () => setActiveView(button.dataset.viewTarget));
 });
-
-window.addEventListener("hashchange", () => {
-  setActiveView(viewFromHash(), { syncUrl: false });
-});
-
-// Restore the section that was open before a refresh.
-setActiveView(viewFromHash(), { syncUrl: false });
 
 const sidebarProfileButton = document.querySelector("#sidebarProfileButton");
 const accountSidebar = document.querySelector("#accountSidebar");
@@ -1242,6 +1219,7 @@ function renderStructure(structure = [], summary = null) {
 }
 
 function renderSummary(summary) {
+  if (workoutSavePanel) workoutSavePanel.hidden = true;
   if (distanceValue) distanceValue.textContent = summary.distance != null ? `${String(summary.distance).replace(".", currentLanguage === "uk" ? "," : ".")} ${currentLanguage === "uk" ? "км" : "km"}` : "—";
   if (durationValue) durationValue.textContent = summary.duration ?? "—";
   if (paceValue) paceValue.textContent = summary.pace != null ? `${summary.pace} /${currentLanguage === "uk" ? "км" : "km"}` : "—";
@@ -1281,11 +1259,6 @@ function renderSummary(summary) {
 
   if (aiAnalysis) aiAnalysis.hidden = true;
   if (aiAnalysisText) aiAnalysisText.innerHTML = "";
-  if (workoutSaveActions) workoutSaveActions.hidden = false;
-  if (saveWorkoutButton) {
-    saveWorkoutButton.disabled = false;
-    saveWorkoutButton.textContent = t("saveWorkout");
-  }
 }
 
 function workoutDateIso(summary) {
@@ -1447,39 +1420,17 @@ function formatPaceSeconds(seconds) {
   return `${Math.floor(rounded / 60)}:${String(rounded % 60).padStart(2, "0")}`;
 }
 
-function historyLocalDate(value) {
-  const source = value ? new Date(value) : null;
-  if (!source || Number.isNaN(source.getTime())) return null;
-  // Keep the calendar date in the user's local timezone. Avoid ISO/UTC conversions
-  // here because they can move a Garmin workout to the previous/next calendar day.
-  return new Date(source.getFullYear(), source.getMonth(), source.getDate());
-}
-
 function getWeekStart(date) {
-  const d = historyLocalDate(date);
-  if (!d) return null;
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
   const day = d.getDay();
   const diff = day === 0 ? -6 : 1 - day;
   d.setDate(d.getDate() + diff);
   return d;
 }
 
-function getWeekKey(date) {
-  const start = getWeekStart(date);
-  if (!start) return null;
-  return `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-${String(start.getDate()).padStart(2, "0")}`;
-}
-
-function formatShortDate(date) {
-  return date.toLocaleDateString(translations[currentLanguage].locale, { day: "2-digit", month: "2-digit" });
-}
-
 function formatWeekLabel(date) {
-  const start = getWeekStart(date);
-  if (!start) return "—";
-  const end = new Date(start);
-  end.setDate(end.getDate() + 6);
-  return `${formatShortDate(start)} – ${formatShortDate(end)}`;
+  return date.toLocaleDateString(translations[currentLanguage].locale, { day: "2-digit", month: "2-digit" });
 }
 
 function renderHistoryAnalytics(workouts) {
@@ -1489,12 +1440,10 @@ function renderHistoryAnalytics(workouts) {
 
   const byWeek = new Map();
   workouts.forEach(workout => {
-    const date = historyLocalDate(workout.workout_date);
-    if (!date) return;
-    const weekStart = getWeekStart(date);
-    const key = getWeekKey(date);
-    if (!key || !weekStart) return;
-    if (!byWeek.has(key)) byWeek.set(key, { date: weekStart, distance: 0, paceWeighted: 0, paceDistance: 0, hrWeighted: 0, hrDistance: 0 });
+    const date = workout.workout_date ? new Date(workout.workout_date) : null;
+    if (!date || Number.isNaN(date.getTime())) return;
+    const key = getWeekStart(date).toISOString().slice(0, 10);
+    if (!byWeek.has(key)) byWeek.set(key, { date: getWeekStart(date), distance: 0, paceWeighted: 0, paceDistance: 0, hrWeighted: 0, hrDistance: 0 });
     const row = byWeek.get(key);
     const distance = Number(workout.distance_km) || 0;
     row.distance += distance;
@@ -1511,7 +1460,7 @@ function renderHistoryAnalytics(workouts) {
     <div class="history-bar-col" title="${escapeHtml(formatWeekLabel(w.date))}: ${escapeHtml(w.distance.toFixed(1))} km">
       <div class="history-bar-track"><div class="history-bar" style="height:${Math.max(5, (w.distance / maxDistance) * 100)}%"></div></div>
       <span>${escapeHtml(formatWeekLabel(w.date))}</span>
-      <strong>${escapeHtml(w.distance.toFixed(1))} ${currentLanguage === "uk" ? "км" : "km"}</strong>
+      <strong>${escapeHtml(w.distance.toFixed(1))}</strong>
     </div>`).join("") : `<div class="history-chart-empty">${escapeHtml(t("historyNoData"))}</div>`;
 
   const paceRows = weeks.filter(w => w.paceDistance > 0);
@@ -1531,7 +1480,7 @@ function renderHistoryAnalytics(workouts) {
     <div class="history-analytics-heading"><span class="eyebrow">${escapeHtml(t("historyOverview"))}</span></div>
     <div class="history-analytics-grid">
       <article class="history-chart-card">
-        <div class="history-card-heading"><h3>${escapeHtml(t("historyWeeklyDistance"))}</h3></div>
+        <div class="history-card-heading"><h3>${escapeHtml(t("historyWeeklyDistance"))}</h3><span>${escapeHtml(t("historyWeek"))}</span></div>
         <div class="history-bars">${chart}</div>
       </article>
       <article class="history-dynamics-card">
@@ -1786,6 +1735,63 @@ async function analyzeWithAI() {
 
 aiAnalyzeButton?.addEventListener("click", analyzeWithAI);
 
+function showWorkoutSavePanel() {
+  if (!workoutSavePanel) return;
+  workoutSavePanel.hidden = false;
+  if (workoutSaveStatus) workoutSaveStatus.textContent = "";
+  if (saveWorkoutButton) {
+    saveWorkoutButton.disabled = false;
+    saveWorkoutButton.hidden = false;
+    saveWorkoutButton.textContent = t("saveWorkout");
+  }
+  if (cancelWorkoutButton) {
+    cancelWorkoutButton.disabled = false;
+    cancelWorkoutButton.hidden = false;
+  }
+}
+
+function setWorkoutSaveBusy(isBusy) {
+  if (saveWorkoutButton) {
+    saveWorkoutButton.disabled = isBusy;
+    saveWorkoutButton.textContent = isBusy ? t("savingWorkout") : t("saveWorkout");
+  }
+  if (cancelWorkoutButton) cancelWorkoutButton.disabled = isBusy;
+}
+
+async function handleSaveWorkout() {
+  if (!currentWorkout || !currentSession?.user || !saveWorkoutButton) return;
+
+  setWorkoutSaveBusy(true);
+  saveWorkoutButton.hidden = true;
+  cancelWorkoutButton.hidden = true;
+  if (workoutSaveStatus) workoutSaveStatus.textContent = t("savingWorkout");
+
+  const saved = await saveWorkoutToHistory(currentWorkout, currentWorkout._aiAnalysis || null);
+  if (saved) {
+    if (workoutSaveStatus) workoutSaveStatus.textContent = t("workoutSaved");
+  } else {
+    saveWorkoutButton.hidden = false;
+    cancelWorkoutButton.hidden = false;
+    setWorkoutSaveBusy(false);
+    if (workoutSaveStatus) workoutSaveStatus.textContent = t("historySaveError");
+  }
+}
+
+function handleCancelWorkout() {
+  currentWorkout = null;
+  currentHistoryId = null;
+  if (workoutSavePanel) workoutSavePanel.hidden = true;
+  if (results) results.hidden = true;
+  if (aiAnalysis) aiAnalysis.hidden = true;
+  if (aiAnalysisText) aiAnalysisText.innerHTML = "";
+  if (input) input.value = "";
+  if (uploadState) uploadState.hidden = true;
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+saveWorkoutButton?.addEventListener("click", handleSaveWorkout);
+cancelWorkoutButton?.addEventListener("click", handleCancelWorkout);
+
 async function selectFile(file) {
   if (!file) return;
 
@@ -1822,6 +1828,7 @@ async function selectFile(file) {
     currentHistoryId = null;
 
     renderSummary(summary);
+    showWorkoutSavePanel();
 
     progressBar.style.width = "100%";
     progressValue.textContent = "100%";
@@ -1844,55 +1851,6 @@ async function selectFile(file) {
       error.message || t("readFileError");
   }
 }
-
-async function confirmSaveWorkout() {
-  if (!currentWorkout || !saveWorkoutButton) return;
-
-  if (!currentSession?.user) {
-    const message = t("loginToSaveWorkout");
-    openAuthModal();
-    return;
-  }
-
-  saveWorkoutButton.disabled = true;
-  saveWorkoutButton.textContent = currentLanguage === "uk" ? "Зберігаємо…" : "Saving…";
-
-  try {
-    const saved = await saveWorkoutToHistory(currentWorkout, currentWorkout._aiAnalysis || null);
-    if (!saved) throw new Error(t("historySaveError"));
-    if (workoutSaveActions) workoutSaveActions.hidden = true;
-    if (uploadState) fileStatus.textContent = t("workoutSaved");
-  } catch (error) {
-    saveWorkoutButton.disabled = false;
-    saveWorkoutButton.textContent = t("saveWorkout");
-    if (uploadState) fileStatus.textContent = error.message || t("historySaveError");
-  }
-}
-
-function cancelCurrentWorkout() {
-  input.value = "";
-  uploadState.hidden = true;
-  results.hidden = true;
-  currentWorkout = null;
-  currentHistoryId = null;
-
-  progressBar.style.width = "0%";
-  progressValue.textContent = "0%";
-  fileName.textContent = "Тренування.fit";
-  fileStatus.textContent = t("fileReady");
-
-  if (workoutSaveActions) workoutSaveActions.hidden = true;
-  if (aiAnalysis) aiAnalysis.hidden = true;
-  if (aiAnalysisText) aiAnalysisText.innerHTML = "";
-  if (splitsBody) splitsBody.innerHTML = `<tr><td colspan="5" class="splits-empty">${escapeHtml(t("splitsEmpty"))}</td></tr>`;
-  if (structureBody) structureBody.innerHTML = "";
-  if (structureCard) structureCard.hidden = true;
-
-  window.scrollTo({ top: 0, behavior: "smooth" });
-}
-
-saveWorkoutButton?.addEventListener("click", confirmSaveWorkout);
-cancelWorkoutButton?.addEventListener("click", cancelCurrentWorkout);
 
 input?.addEventListener("change", event => {
   selectFile(event.target.files[0]);
@@ -1921,12 +1879,10 @@ resetButton?.addEventListener("click", () => {
   uploadState.hidden = true;
   results.hidden = true;
   currentWorkout = null;
-  currentHistoryId = null;
 
   progressBar.style.width = "0%";
   progressValue.textContent = "0%";
 
-  if (workoutSaveActions) workoutSaveActions.hidden = true;
   if (aiAnalysis) aiAnalysis.hidden = true;
   if (splitsBody) splitsBody.innerHTML = "";
   if (structureBody) structureBody.innerHTML = "";
@@ -2248,9 +2204,6 @@ async function initAuth() {
   historyLoaded = false;
   if (data?.session?.user) {
     await ensureUserProfile(data.session.user);
-    if (document.querySelector("#history")?.classList.contains("is-active")) {
-      await loadWorkoutHistory(true);
-    }
   }
 
   supabaseClient.auth.onAuthStateChange((event, session) => {
