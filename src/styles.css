@@ -698,6 +698,7 @@
 .account-sidebar-link.is-active { background:var(--ink); color:#fff; }
 .account-sidebar-icon { width:24px; height:24px; flex:0 0 24px; display:grid; place-items:center; border-radius:7px; background:#edf1ec; color:#526058; font-size:16px; line-height:1; }
 .account-sidebar-link.is-active .account-sidebar-icon { background:rgba(255,255,255,.12); color:var(--lime); }
+.account-sidebar-icon svg { width:17px; height:17px; fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }
 .account-sidebar-link > span:last-child { overflow:hidden; white-space:nowrap; }
 .account-sidebar.is-collapsed { padding-right:10px; }
 .account-sidebar.is-collapsed .account-sidebar-label { display:none; }
@@ -849,11 +850,11 @@
 
 
 /* === Runory profile page === */
-.profile-page { padding:74px 0 40px; max-width:980px; }
-.profile-page-heading { max-width:760px; margin-bottom:34px; }
+.profile-page { padding:74px 0 40px; width:min(100%, 900px); margin:0 auto; }
+.profile-page-heading { width:100%; max-width:none; margin-bottom:34px; }
 .profile-page-heading h1 { margin:0; font-size:clamp(44px,6vw,72px); line-height:1.03; letter-spacing:-3.8px; }
 .profile-page-heading > p:last-child { margin:18px 0 0; max-width:680px; color:var(--muted); font-size:15px; line-height:1.75; }
-.profile-card { max-width:760px; padding:32px; border:1px solid var(--line); border-radius:18px; background:#fff; box-shadow:0 12px 35px rgba(31,40,31,.035); }
+.profile-card { width:100%; max-width:none; padding:32px; border:1px solid var(--line); border-radius:18px; background:#fff; box-shadow:0 12px 35px rgba(31,40,31,.035); }
 .profile-section { margin-top:0; padding-top:0; border-top:0; }
 .profile-section-heading { margin-bottom:20px; }
 .profile-section-heading .eyebrow { margin-bottom:7px; }
