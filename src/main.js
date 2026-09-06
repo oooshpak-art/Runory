@@ -1258,6 +1258,126 @@ function generateEasyRunInsight(summary) {
   return `${parts.join(" · ")}.`;
 }
 
+
+function generateLongRunInsight(summary) {
+  const pattern = getWorkoutPattern(summary);
+  if (pattern.type !== "long") return null;
+
+  const splits = Array.isArray(summary?.splits) ? summary.splits : [];
+  const valid = splits
+    .map(split => ({
+      pace: paceToSeconds(split?.pace),
+      hr: Number(split?.heartRate)
+    }))
+    .filter(item => Number.isFinite(item.pace));
+
+  if (valid.length < 6) return null;
+
+  const half = Math.floor(valid.length / 2);
+  const first = valid.slice(0, half);
+  const second = valid.slice(-half);
+  const avg = items => items.length
+    ? items.reduce((sum, item) => sum + item.pace, 0) / items.length
+    : null;
+  const avgHr = items => {
+    const values = items.map(item => item.hr).filter(value => Number.isFinite(value) && value > 0);
+    return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null;
+  };
+
+  const firstPace = avg(first);
+  const secondPace = avg(second);
+  const paceDelta = firstPace - secondPace; // positive = faster later
+  const firstHr = avgHr(first);
+  const secondHr = avgHr(second);
+  const hrDelta = firstHr != null && secondHr != null ? secondHr - firstHr : null;
+
+  const paces = valid.map(item => item.pace);
+  const paceSpread = Math.max(...paces) - Math.min(...paces);
+  const similarPace = Math.abs(paceDelta) <= 12;
+  const moderateDrift = similarPace && hrDelta != null && hrDelta >= 5;
+  const strongDrift = similarPace && hrDelta != null && hrDelta >= 10;
+  const slowdown = paceDelta <= -10;
+  const strongSlowdown = paceDelta <= -20;
+  const finishFaster = paceDelta >= 10;
+  const uneven = paceSpread > 30;
+
+  const volumeKm = Number(summary?.distance);
+  const volumeLabel = Number.isFinite(volumeKm) && volumeKm > 0
+    ? `${String(Number(volumeKm.toFixed(1))).replace(".", currentLanguage === "uk" ? "," : ".")} км`
+    : `${valid.length} км`;
+
+  if (currentLanguage === "uk") {
+    const parts = [`Довгий біг · ${volumeLabel}`];
+    if (summary?.pace) parts.push(`середній темп — ${summary.pace}/км`);
+
+    if (uneven) parts.push("темп помітно коливався протягом дистанції");
+    else if (finishFaster) parts.push("у другій половині темп став швидшим");
+    else if (strongSlowdown) parts.push("у другій половині темп помітно сповільнився");
+    else if (slowdown) parts.push("у другій половині темп трохи сповільнився");
+    else parts.push("темп залишався стабільним протягом дистанції");
+
+    if (strongDrift) parts.push(`ЧСС зросла приблизно на ${Math.round(hrDelta)} уд/хв при схожому темпі`);
+    else if (moderateDrift) parts.push(`ЧСС зросла приблизно на ${Math.round(hrDelta)} уд/хв при схожому темпі`);
+    else if (hrDelta != null && hrDelta <= -5) parts.push("ЧСС знижувалась у другій половині");
+    else if (hrDelta != null) parts.push("ЧСС залишалась відносно стабільною");
+
+    let conclusion;
+    if (strongSlowdown && strongDrift) {
+      conclusion = "Наприкінці одночасно просів темп і зросла ЧСС — накопичення втоми було помітним.";
+    } else if (strongDrift) {
+      conclusion = "Помітний кардіодрифт: ЧСС зростала без відповідного прискорення темпу.";
+    } else if (moderateDrift) {
+      conclusion = "Є помірний кардіодрифт — для довгого бігу варто стежити за реакцією ЧСС у другій половині.";
+    } else if (strongSlowdown) {
+      conclusion = "У другій половині дистанції темп помітно просів — втома вже вплинула на виконання.";
+    } else if (slowdown) {
+      conclusion = "Невелике уповільнення в другій половині помітне, але без різкого просідання.";
+    } else if (uneven) {
+      conclusion = "Темп був нерівномірним протягом дистанції — довгий біг виконано без чіткої рівномірності.";
+    } else if (finishFaster) {
+      conclusion = "Дистанцію завершено швидше, ніж розпочато, без помітної втрати контролю.";
+    } else {
+      const variationKey = Math.round((volumeKm || valid.length) * 10) + Math.round(firstPace) + Math.round(firstHr || 0);
+      const stableConclusions = [
+        "Дистанцію пройдено рівномірно, без помітного кардіодрифту.",
+        "Темп і ЧСС залишалися стабільними — довгий біг виконано контрольовано.",
+        "Основна частина дистанції пройшла рівно, без вираженої зміни темпу чи ЧСС.",
+        "Рівномірний довгий біг: темп стабільний, реакція ЧСС без помітного погіршення.",
+        "Довгий біг виконано спокійно й рівно, без явних ознак накопичення втоми."
+      ];
+      conclusion = stableConclusions[Math.abs(variationKey) % stableConclusions.length];
+    }
+
+    parts.push(conclusion);
+    return `${parts.join(" · ")}.`;
+  }
+
+  const parts = [`Long run · ${volumeLabel}`];
+  if (summary?.pace) parts.push(`average pace ${summary.pace}/km`);
+  if (uneven) parts.push("pace varied noticeably throughout the distance");
+  else if (finishFaster) parts.push("pace was faster in the second half");
+  else if (strongSlowdown) parts.push("pace slowed noticeably in the second half");
+  else if (slowdown) parts.push("pace slowed slightly in the second half");
+  else parts.push("pace stayed stable throughout the distance");
+
+  if (hrDelta != null && hrDelta >= 5) parts.push(`HR rose by about ${Math.round(hrDelta)} bpm at a similar pace`);
+  else if (hrDelta != null && hrDelta <= -5) parts.push("HR decreased in the second half");
+  else if (hrDelta != null) parts.push("HR stayed relatively stable");
+
+  let conclusion;
+  if (strongSlowdown && strongDrift) conclusion = "Pace fell while HR rose toward the end — fatigue was noticeable.";
+  else if (strongDrift) conclusion = "Noticeable cardiac drift: HR rose without a matching pace increase.";
+  else if (moderateDrift) conclusion = "Moderate cardiac drift was present in the second half.";
+  else if (strongSlowdown) conclusion = "Pace dropped noticeably in the second half.";
+  else if (slowdown) conclusion = "There was a small pace drop in the second half, without a major slowdown.";
+  else if (uneven) conclusion = "Pace was uneven throughout the long run.";
+  else if (finishFaster) conclusion = "The run finished faster than it started, without a clear loss of control.";
+  else conclusion = "The long run was even, with no clear cardiac drift.";
+
+  parts.push(conclusion);
+  return `${parts.join(" · ")}.`;
+}
+
 function workHrText(summary, bpm) {
   const analysis = getIntervalAnalysis(summary);
   if (!analysis) return "";
@@ -1272,6 +1392,9 @@ function generateWorkoutInsight(summary) {
 
   const tempoInsight = generateTempoInsight(summary);
   if (tempoInsight) return tempoInsight;
+
+  const longRunInsight = generateLongRunInsight(summary);
+  if (longRunInsight) return longRunInsight;
 
   const easyInsight = generateEasyRunInsight(summary);
   if (easyInsight) return easyInsight;
