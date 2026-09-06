@@ -81,6 +81,12 @@ const translations = {
     historyDeleteError: "Не вдалося видалити тренування.",
     historyDeleted: "Тренування видалено." ,
     futureHistory: "Історія тренувань",
+    historyStatsWorkouts: "Тренування",
+    historyStatsDistance: "Дистанція",
+    historyStatsTime: "Час",
+    historyOpen: "Відкрити аналіз",
+    historyDelete: "Видалити",
+    historyEmptyAction: "Додати тренування",
     futureGarmin: "Garmin Connect",
     futureAi: "AI-аналіз тренера",
     aiScoreExcellent: "Відмінна робота",
@@ -227,6 +233,12 @@ const translations = {
     historyDeleteError: "Could not delete workout.",
     historyDeleted: "Workout deleted.",
     futureHistory: "Workout history",
+    historyStatsWorkouts: "Workouts",
+    historyStatsDistance: "Distance",
+    historyStatsTime: "Time",
+    historyOpen: "Open analysis",
+    historyDelete: "Delete",
+    historyEmptyAction: "Add a workout",
     futureGarmin: "Garmin Connect",
     futureAi: "AI coach analysis",
     aiScoreExcellent: "Excellent work",
@@ -1298,19 +1310,70 @@ function formatHistoryDistance(value) {
   return Number.isFinite(Number(value)) ? `${Number(value).toFixed(2).replace(".", currentLanguage === "uk" ? "," : ".")} ${currentLanguage === "uk" ? "км" : "km"}` : "—";
 }
 
+function formatHistoryTotalTime(seconds) {
+  const total = Math.max(0, Math.round(Number(seconds) || 0));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  if (h) return `${h} ${currentLanguage === "uk" ? "год" : "h"} ${m} ${currentLanguage === "uk" ? "хв" : "min"}`;
+  return `${m} ${currentLanguage === "uk" ? "хв" : "min"}`;
+}
+
+function historyTypeClass(value) {
+  return ["intervals", "tempo", "fartlek", "long", "run"].includes(value) ? value : "run";
+}
+
+function historyTypeIcon(value) {
+  const type = historyTypeClass(value);
+  if (type === "intervals") return "↯";
+  if (type === "tempo") return "≈";
+  if (type === "fartlek") return "✦";
+  if (type === "long") return "↗";
+  return "•";
+}
+
 function renderHistoryList(workouts = []) {
   const container = document.querySelector("#historyList");
   const status = document.querySelector("#historyStatus");
+  const stats = document.querySelector("#historyStats");
   if (!container) return;
 
   if (!workouts.length) {
-    container.innerHTML = `<div class="history-empty"><strong>${escapeHtml(t("historyEmpty"))}</strong></div>`;
+    if (stats) stats.innerHTML = "";
+    container.innerHTML = `
+      <div class="history-empty">
+        <div class="history-empty-icon">🏃</div>
+        <strong>${escapeHtml(t("historyEmpty"))}</strong>
+        <p>${escapeHtml(t("historyCopy"))}</p>
+        <button type="button" class="history-empty-button" data-view-target="analysis">
+          ${escapeHtml(t("historyEmptyAction"))}
+        </button>
+      </div>`;
     if (status) status.textContent = "";
     return;
   }
 
+  const totalDistance = workouts.reduce((sum, w) => sum + (Number(w.distance_km) || 0), 0);
+  const totalTime = workouts.reduce((sum, w) => sum + (Number(w.duration_sec) || 0), 0);
+
+  if (stats) {
+    stats.innerHTML = `
+      <article class="history-stat-card">
+        <span class="history-stat-label">${escapeHtml(t("historyStatsWorkouts"))}</span>
+        <strong>${workouts.length}</strong>
+      </article>
+      <article class="history-stat-card">
+        <span class="history-stat-label">${escapeHtml(t("historyStatsDistance"))}</span>
+        <strong>${escapeHtml(totalDistance.toFixed(1).replace(".", currentLanguage === "uk" ? "," : "."))} <small>${currentLanguage === "uk" ? "км" : "km"}</small></strong>
+      </article>
+      <article class="history-stat-card">
+        <span class="history-stat-label">${escapeHtml(t("historyStatsTime"))}</span>
+        <strong>${escapeHtml(formatHistoryTotalTime(totalTime))}</strong>
+      </article>`;
+  }
+
   container.innerHTML = workouts.map(workout => `
     <article class="history-item" data-history-id="${escapeHtml(workout.id)}">
+      <div class="history-type-icon ${historyTypeClass(workout.workout_type)}" aria-hidden="true">${historyTypeIcon(workout.workout_type)}</div>
       <div class="history-item-main">
         <div class="history-item-heading">
           <div>
@@ -1320,14 +1383,14 @@ function renderHistoryList(workouts = []) {
           <strong class="history-distance">${escapeHtml(formatHistoryDistance(workout.distance_km))}</strong>
         </div>
         <div class="history-metrics">
-          <span>${escapeHtml(workout.pace || "—")} /${currentLanguage === "uk" ? "км" : "km"}</span>
-          <span>${escapeHtml(formatHistoryDuration(workout.duration_sec))}</span>
-          <span>${workout.heart_rate != null ? `${Math.round(workout.heart_rate)} ${currentLanguage === "uk" ? "уд/хв" : "bpm"}` : "—"}</span>
-          <span>${workout.ascent_m != null ? `+${Math.round(workout.ascent_m)} ${currentLanguage === "uk" ? "м" : "m"}` : "—"}</span>
+          <span><b>${escapeHtml(t("pace"))}</b> ${escapeHtml(workout.pace || "—")}</span>
+          <span><b>${escapeHtml(t("time"))}</b> ${escapeHtml(formatHistoryDuration(workout.duration_sec))}</span>
+          <span><b>${escapeHtml(t("heartRate"))}</b> ${workout.heart_rate != null ? `${Math.round(workout.heart_rate)} ${currentLanguage === "uk" ? "уд/хв" : "bpm"}` : "—"}</span>
+          <span><b>${escapeHtml(t("ascent"))}</b> ${workout.ascent_m != null ? `+${Math.round(workout.ascent_m)} ${currentLanguage === "uk" ? "м" : "m"}` : "—"}</span>
         </div>
       </div>
       <div class="history-item-actions">
-        <button type="button" class="history-view-button" data-history-view="${escapeHtml(workout.id)}">${escapeHtml(t("historyView"))}</button>
+        <button type="button" class="history-view-button" data-history-view="${escapeHtml(workout.id)}">${escapeHtml(t("historyOpen"))}</button>
         <button type="button" class="history-delete-button" data-history-delete="${escapeHtml(workout.id)}" aria-label="${escapeHtml(t("historyDelete"))}">×</button>
       </div>
     </article>
