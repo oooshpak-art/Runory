@@ -965,7 +965,7 @@ function generateIntervalInsight(summary) {
 
     if (analysis.hrTrend === "rising") parts.push(`ЧСС поступово зростала від першого до останнього повторення${workHrText(summary, bpm)}`);
     else if (analysis.hrTrend === "falling") parts.push("ЧСС знижувалась до кінця серії");
-    else if (analysis.hrTrend === "stable") parts.push("ЧСС без різкого стрибка");
+    else if (analysis.hrTrend === "stable") parts.push("ЧСС залишалась стабільною");
 
     if (analysis.recoveries.length) {
       parts.push(analysis.recoveryTrend === "variable"
@@ -973,13 +973,19 @@ function generateIntervalInsight(summary) {
         : "відновлення залишались стабільними");
     }
 
-    let conclusion = "Робота виконана контрольовано.";
-    if (analysis.spread <= 5 && analysis.dynamics !== "slower") {
-      conclusion = "Робота виконана дуже рівно, без розвалу.";
-    } else if (analysis.dynamics === "slower" && analysis.spread > 10) {
-      conclusion = "До кінця серії темп просів — навантаження було на межі.";
-    } else if (analysis.dynamics === "faster") {
-      conclusion = "Серію пройдено з хорошим контролем, із сильним фінішем.";
+    let conclusion;
+    if (analysis.dynamics === "slower" && analysis.spread > 10) {
+      conclusion = "До кінця серії темп помітно просів — навантаження було високим.";
+    } else if (analysis.dynamics === "slower") {
+      conclusion = "Наприкінці серії помітне невелике просідання темпу.";
+    } else if (analysis.recoveryTrend === "variable") {
+      conclusion = "Основна робота була виконана рівно, але відновлення були нестабільними.";
+    } else if (analysis.dynamics === "faster" && analysis.spread <= 8) {
+      conclusion = "Серію виконано рівно, з хорошим прискоренням наприкінці.";
+    } else if (analysis.spread > 12) {
+      conclusion = "Темп помітно коливався між повтореннями — робота була нерівномірною.";
+    } else {
+      conclusion = "Роботу виконано контрольовано.";
     }
 
     parts.push(`загальний обсяг швидкої роботи — ${workDistanceLabel} ${unit}`);
@@ -998,21 +1004,25 @@ function generateIntervalInsight(summary) {
 
   if (analysis.hrTrend === "rising") parts.push(`HR rose from the first to the last rep`);
   else if (analysis.hrTrend === "falling") parts.push("HR decreased toward the end");
-  else if (analysis.hrTrend === "stable") parts.push("HR stayed without a sharp jump");
+  else if (analysis.hrTrend === "stable") parts.push("HR stayed stable");
 
   if (analysis.recoveries.length) {
-    parts.push(analysis.recoveryTrend === "variable"
-      ? "recoveries were variable"
-      : "recoveries stayed stable");
+    parts.push(analysis.recoveryTrend === "variable" ? "recoveries were variable" : "recoveries stayed stable");
   }
 
-  let conclusion = "The workout was controlled.";
-  if (analysis.spread <= 5 && analysis.dynamics !== "slower") {
-    conclusion = "The work was very even, with no breakdown.";
-  } else if (analysis.dynamics === "slower" && analysis.spread > 10) {
-    conclusion = "The pace dropped toward the end — the load was close to the limit.";
-  } else if (analysis.dynamics === "faster") {
-    conclusion = "The set was well controlled, with a strong finish.";
+  let conclusion;
+  if (analysis.dynamics === "slower" && analysis.spread > 10) {
+    conclusion = "The pace dropped noticeably toward the end — the load was high.";
+  } else if (analysis.dynamics === "slower") {
+    conclusion = "There was a small pace drop toward the end of the set.";
+  } else if (analysis.recoveryTrend === "variable") {
+    conclusion = "The main work was even, but recoveries were inconsistent.";
+  } else if (analysis.dynamics === "faster" && analysis.spread <= 8) {
+    conclusion = "The set was even, with a strong acceleration at the end.";
+  } else if (analysis.spread > 12) {
+    conclusion = "Pace varied noticeably between reps — the work was uneven.";
+  } else {
+    conclusion = "The work was controlled.";
   }
 
   parts.push(`total fast-work volume ${workDistanceLabel} ${unit}`);
@@ -1040,16 +1050,15 @@ function generateTempoInsight(summary) {
   const lastAvg = paces.slice(-lastCount).reduce((sum, pace) => sum + pace, 0) / lastCount;
   const paceDelta = firstAvg - lastAvg;
 
-  const hrValues = tempoSplits
-    .map(split => Number(split.heartRate))
-    .filter(value => Number.isFinite(value) && value > 0);
+  const hrValues = tempoSplits.map(split => Number(split.heartRate)).filter(value => Number.isFinite(value) && value > 0);
   let hrTrend = "unknown";
+  let hrDelta = null;
   if (hrValues.length >= 3) {
     const hrFirstCount = Math.max(1, Math.floor(hrValues.length / 3));
     const hrLastCount = Math.max(1, Math.floor(hrValues.length / 3));
     const hrFirst = hrValues.slice(0, hrFirstCount).reduce((sum, value) => sum + value, 0) / hrFirstCount;
     const hrLast = hrValues.slice(-hrLastCount).reduce((sum, value) => sum + value, 0) / hrLastCount;
-    const hrDelta = hrLast - hrFirst;
+    hrDelta = hrLast - hrFirst;
     hrTrend = hrDelta >= 5 ? "rising" : hrDelta <= -5 ? "falling" : "stable";
   }
 
@@ -1075,21 +1084,27 @@ function generateTempoInsight(summary) {
       `розкид темпу — ${spreadLabel} с/км`
     ];
 
-    if (dynamics === "faster") parts.push("до кінця темп поступово зростав");
-    else if (dynamics === "slower") parts.push("до кінця темп поступово знижувався");
+    if (dynamics === "faster") parts.push("до кінця темп поступово прискорювався");
+    else if (dynamics === "slower") parts.push("до кінця темп поступово сповільнювався");
     else parts.push("темп залишався стабільним");
 
     if (hrTrend === "rising") parts.push("ЧСС поступово зростала");
     else if (hrTrend === "falling") parts.push("ЧСС поступово знижувалась");
     else if (hrTrend === "stable") parts.push("ЧСС залишалась стабільною");
 
-    let conclusion = "Темпову роботу виконано контрольовано.";
-    if (spread <= 5 && dynamics !== "slower") {
-      conclusion = "Темп добре контролювався протягом усієї роботи.";
-    } else if (dynamics === "slower" && spread > 10) {
-      conclusion = "До кінця темп просів — навантаження було близьким до межі.";
-    } else if (dynamics === "faster") {
-      conclusion = "Роботу виконано впевнено, із сильним фінішем.";
+    let conclusion;
+    if (dynamics === "slower" && spread > 10) {
+      conclusion = "До кінця темп помітно просів — навантаження було високим.";
+    } else if (dynamics === "slower") {
+      conclusion = "Наприкінці роботи помітне невелике просідання темпу.";
+    } else if (spread > 12) {
+      conclusion = "Темп помітно коливався — робота була нерівномірною.";
+    } else if (dynamics === "faster" && spread <= 8) {
+      conclusion = "Темп добре контролювався, із сильним фінішем.";
+    } else if (hrDelta !== null && hrDelta >= 10 && dynamics !== "faster") {
+      conclusion = "ЧСС помітно зросла без відповідного прискорення темпу — наприкінці накопичувалась втома.";
+    } else {
+      conclusion = "Темпову роботу виконано контрольовано.";
     }
 
     return `${parts.join(" · ")}. ${conclusion}`;
@@ -1109,14 +1124,13 @@ function generateTempoInsight(summary) {
   else if (hrTrend === "falling") parts.push("HR gradually decreased");
   else if (hrTrend === "stable") parts.push("HR stayed stable");
 
-  let conclusion = "The tempo work was controlled.";
-  if (spread <= 5 && dynamics !== "slower") {
-    conclusion = "Pace was well controlled throughout the work.";
-  } else if (dynamics === "slower" && spread > 10) {
-    conclusion = "The pace dropped toward the end — the load was close to the limit.";
-  } else if (dynamics === "faster") {
-    conclusion = "The work was completed confidently, with a strong finish.";
-  }
+  let conclusion;
+  if (dynamics === "slower" && spread > 10) conclusion = "The pace dropped noticeably toward the end — the load was high.";
+  else if (dynamics === "slower") conclusion = "There was a small pace drop toward the end.";
+  else if (spread > 12) conclusion = "Pace varied noticeably — the work was uneven.";
+  else if (dynamics === "faster" && spread <= 8) conclusion = "Pace was well controlled, with a strong finish.";
+  else if (hrDelta !== null && hrDelta >= 10 && dynamics !== "faster") conclusion = "HR rose noticeably without a matching pace increase — fatigue accumulated toward the end.";
+  else conclusion = "The tempo work was controlled.";
 
   return `${parts.join(" · ")}. ${conclusion}`;
 }
