@@ -940,6 +940,11 @@ function generateIntervalInsight(summary) {
   const unit = currentLanguage === "uk" ? "км" : "km";
   const bpm = currentLanguage === "uk" ? "уд/хв" : "bpm";
   const repsLabel = analysis.reps.length;
+  const firstWorkDistance = Number(analysis.reps[0]?.work?.distance || 0);
+  const repDistanceKm = firstWorkDistance / 1000;
+  const repDistanceLabel = Number.isInteger(repDistanceKm)
+    ? String(repDistanceKm)
+    : repDistanceKm.toFixed(1).replace(".", currentLanguage === "uk" ? "," : ".");
   const workDistanceKm = analysis.totalWorkDistance / 1000;
   const workDistanceLabel = Number.isInteger(workDistanceKm)
     ? String(workDistanceKm)
@@ -949,16 +954,16 @@ function generateIntervalInsight(summary) {
 
   if (currentLanguage === "uk") {
     const parts = [
-      `Інтервальна · ${repsLabel} повторів`,
-      `середній темп роботи ${pace}/км`,
-      `розкид ${spread} с/км`
+      `Інтервальна · ${repsLabel}×${repDistanceLabel} км`,
+      `середній темп роботи — ${pace}/км`,
+      `розкид темпу — ${spread} с/км`
     ];
 
     if (analysis.dynamics === "faster") parts.push("останні повторення швидші за перші");
     else if (analysis.dynamics === "slower") parts.push("останні повторення повільніші за перші");
-    else parts.push("темп роботи залишався рівним");
+    else parts.push("темп залишався стабільним");
 
-    if (analysis.hrTrend === "rising") parts.push(`ЧСС зростала від першого до останнього повторення${workHrText(summary, bpm)}`);
+    if (analysis.hrTrend === "rising") parts.push(`ЧСС поступово зростала від першого до останнього повторення${workHrText(summary, bpm)}`);
     else if (analysis.hrTrend === "falling") parts.push("ЧСС знижувалась до кінця серії");
     else if (analysis.hrTrend === "stable") parts.push("ЧСС без різкого стрибка");
 
@@ -977,8 +982,8 @@ function generateIntervalInsight(summary) {
       conclusion = "Серію пройдено з хорошим контролем, із сильним фінішем.";
     }
 
-    parts.push(`загальний обсяг швидкої роботи ${workDistanceLabel} ${unit}`);
-    return `${parts.join(" · ")}. ${conclusion}`;
+    parts.push(`загальний обсяг швидкої роботи — ${workDistanceLabel} ${unit}`);
+    return `${parts.join(" · ")}. ${conclusion.replace("Робота виконана", "Роботу виконано")}`;
   }
 
   const parts = [
