@@ -541,8 +541,11 @@ function statsFromLap(lap) {
     Number.isFinite(lap[7]) ? lap[7] / 1000 :
     null;
 
-  const distance = Number.isFinite(lap[9]) ? lap[9] / 100 : null;
-  if (!(duration > 0) || !(distance > 0)) return null;
+  const distance = Number.isFinite(lap[9]) ? lap[9] / 100 : 0;
+  // A time-based recovery can legitimately have zero distance (for example
+  // when the runner stops). Keep the lap so the fixed recovery duration is
+  // not lost.
+  if (!(duration > 0) || !Number.isFinite(distance) || distance < 0) return null;
 
   const heartRate = Number.isFinite(lap[15]) ? Math.round(lap[15]) : null;
   const cadence = Number.isFinite(lap[17]) ? Math.round(lap[17] * 2) : null;
@@ -552,7 +555,7 @@ function statsFromLap(lap) {
   return {
     duration,
     distance,
-    pace: secondsToPace(duration / (distance / 1000)),
+    pace: distance > 1 ? secondsToPace(duration / (distance / 1000)) : '—',
     heartRate,
     cadence,
     ascent,
@@ -611,20 +614,22 @@ function explicitWorkoutStructure(workoutSteps = [], records = [], laps = []) {
     if (!statsList?.length) return null;
     const duration = statsList.reduce((sum, s) => sum + (Number(s.duration) || 0), 0);
     const distance = statsList.reduce((sum, s) => sum + (Number(s.distance) || 0), 0);
-    if (!(duration > 0) || !(distance > 0)) return null;
+    if (!(duration > 0) || !(distance >= 0)) return null;
 
     const weighted = (key) => {
       const values = statsList.filter(s => Number.isFinite(s?.[key]));
       if (!values.length) return null;
       const totalWeight = values.reduce((sum, s) => sum + (Number(s.distance) || 0), 0);
-      if (!(totalWeight > 0)) return null;
+      if (!(totalWeight > 0)) {
+        return Math.round(values.reduce((sum, s) => sum + s[key], 0) / values.length);
+      }
       return Math.round(values.reduce((sum, s) => sum + s[key] * (s.distance || 0), 0) / totalWeight);
     };
 
     return {
       duration,
       distance,
-      pace: secondsToPace(duration / (distance / 1000)),
+      pace: distance > 1 ? secondsToPace(duration / (distance / 1000)) : '—',
       heartRate: weighted('heartRate'),
       cadence: weighted('cadence'),
       ascent: Math.round(statsList.reduce((sum, s) => sum + (Number(s.ascent) || 0), 0)),
@@ -666,6 +671,26 @@ function explicitWorkoutStructure(workoutSteps = [], records = [], laps = []) {
     return mergeLapStats(picked);
   };
 
+
+  // A plain easy run is often stored as one OPEN workout step without
+  // workout_step_index on the automatic laps. In that case the structural
+  // interval heuristic must not invent warmup/cooldown/intervals from pace
+  // fluctuations. Aggregate the recorded laps as one continuous run.
+  const hasAnyStepLap = [...lapQueues.values()].some(queue => queue.length > 0);
+  const hasRepeatedSteps = expanded.some(step => Boolean(step.__repeated));
+  const hasRestSteps = expanded.some(step => isRest(intensity(step)));
+  const hasExplicitCooldown = expanded.some(step => isCooldown(intensity(step)));
+  const hasExplicitWarmup = expanded.some(step => isWarmup(intensity(step)));
+  const isSingleOpenRun =
+    expanded.length === 1 &&
+    isOpenStep(expanded[0]) &&
+    isActive(intensity(expanded[0]));
+
+  if (isSingleOpenRun && !hasAnyStepLap && !hasRepeatedSteps && !hasRestSteps && !hasExplicitCooldown && !hasExplicitWarmup) {
+    const allLapStats = (laps || []).map(statsFromLap).filter(Boolean);
+    const aggregated = mergeLapStats(allLapStats);
+    if (aggregated) return [{ type: 'easy', label: 'Біг', ...aggregated, repetitions: 1 }];
+  }
 
   /*
    * Fallback only when Garmin did not give us a workout-step lap.
@@ -732,7 +757,7 @@ function explicitWorkoutStructure(workoutSteps = [], records = [], laps = []) {
   };
 
   const addStandalone = (type, label, stats) => {
-    if (!stats || !(stats.distance > 0)) return;
+    if (!stats || !(stats.duration > 0) || !(stats.distance >= 0)) return;
     flushBlock();
     structures.push({ type, label, ...stats });
   };
