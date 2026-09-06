@@ -809,7 +809,7 @@ function explicitWorkoutStructure(workoutSteps = [], records = [], laps = []) {
 
     if (isOpenStep(step)) {
       flushBlock();
-      const stats = takeLapStats(step) || fallbackStats(step);
+      const stats = takeLapStats(step) || (!hasAnyStepLap ? fallbackStats(step) : null);
 
       // Open cooldown is only cooldown when Garmin explicitly says so.
       if (isCooldown(level)) {
@@ -824,7 +824,7 @@ function explicitWorkoutStructure(workoutSteps = [], records = [], laps = []) {
 
     if (!(isDistanceStep(step) || isTimeStep(step))) continue;
 
-    const stats = takeLapStats(step) || fallbackStats(step);
+    const stats = takeLapStats(step) || (!hasAnyStepLap ? fallbackStats(step) : null);
     if (!stats) continue;
 
     if (isWarmup(level)) {
