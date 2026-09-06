@@ -857,7 +857,174 @@ function detectWorkoutType(summary) {
   return t("workoutRun");
 }
 
+function formatInsightPace(seconds) {
+  if (!Number.isFinite(seconds) || seconds <= 0) return "—";
+  const total = Math.round(seconds);
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
+}
+
+function statsPaceSeconds(stats) {
+  const distance = Number(stats?.distance);
+  const duration = Number(stats?.duration);
+  if (!Number.isFinite(distance) || distance <= 0 || !Number.isFinite(duration) || duration <= 0) return null;
+  return duration / (distance / 1000);
+}
+
+function getIntervalAnalysis(summary) {
+  const structure = Array.isArray(summary?.structure) ? summary.structure : [];
+  const block = structure.find(item =>
+    item?.type === "intervals" && Array.isArray(item.repetitions) && item.repetitions.length > 0
+  );
+
+  if (!block) return null;
+
+  const reps = block.repetitions.filter(rep => rep?.work);
+  if (!reps.length) return null;
+
+  const works = reps.map(rep => rep.work).filter(Boolean);
+  const recoveries = reps.map(rep => rep.recovery).filter(Boolean);
+  const workPaces = works.map(statsPaceSeconds).filter(Number.isFinite);
+  const workHr = works.map(item => Number(item.heartRate)).filter(Number.isFinite);
+  const recoveryPaces = recoveries.map(statsPaceSeconds).filter(Number.isFinite);
+  const recoveryDurations = recoveries.map(item => Number(item.duration)).filter(Number.isFinite);
+
+  if (!workPaces.length) return null;
+
+  const average = workPaces.reduce((a, b) => a + b, 0) / workPaces.length;
+  const spread = Math.max(...workPaces) - Math.min(...workPaces);
+  const firstCount = Math.max(1, Math.ceil(workPaces.length / 2));
+  const firstAvg = workPaces.slice(0, firstCount).reduce((a, b) => a + b, 0) / firstCount;
+  const last = workPaces.slice(-firstCount);
+  const lastAvg = last.reduce((a, b) => a + b, 0) / last.length;
+  const delta = firstAvg - lastAvg;
+
+  let dynamics = "even";
+  if (delta > 3) dynamics = "faster";
+  else if (delta < -3) dynamics = "slower";
+
+  let hrTrend = "stable";
+  if (workHr.length >= 2) {
+    const hrDelta = workHr[workHr.length - 1] - workHr[0];
+    if (hrDelta >= 5) hrTrend = "rising";
+    else if (hrDelta <= -5) hrTrend = "falling";
+  }
+
+  let recoveryTrend = "stable";
+  if (recoveryPaces.length >= 2) {
+    const recoverySpread = Math.max(...recoveryPaces) - Math.min(...recoveryPaces);
+    if (recoverySpread > 20) recoveryTrend = "variable";
+  }
+  if (recoveryDurations.length >= 2) {
+    const recoveryDurationSpread = Math.max(...recoveryDurations) - Math.min(...recoveryDurations);
+    if (recoveryDurationSpread > 10) recoveryTrend = "variable";
+  }
+
+  const totalWorkDistance = works.reduce((sum, item) => sum + Number(item.distance || 0), 0);
+
+  return {
+    reps,
+    average,
+    spread,
+    dynamics,
+    hrTrend,
+    recoveryTrend,
+    totalWorkDistance
+  };
+}
+
+function generateIntervalInsight(summary) {
+  const analysis = getIntervalAnalysis(summary);
+  if (!analysis) return null;
+
+  const unit = currentLanguage === "uk" ? "км" : "km";
+  const bpm = currentLanguage === "uk" ? "уд/хв" : "bpm";
+  const repsLabel = analysis.reps.length;
+  const workDistanceKm = analysis.totalWorkDistance / 1000;
+  const workDistanceLabel = Number.isInteger(workDistanceKm)
+    ? String(workDistanceKm)
+    : workDistanceKm.toFixed(1).replace(".", currentLanguage === "uk" ? "," : ".");
+  const pace = formatInsightPace(analysis.average);
+  const spread = Math.round(analysis.spread);
+
+  if (currentLanguage === "uk") {
+    const parts = [
+      `Інтервальна · ${repsLabel} повторів`,
+      `середній темп роботи ${pace}/км`,
+      `розкид ${spread} с/км`
+    ];
+
+    if (analysis.dynamics === "faster") parts.push("останні повторення швидші за перші");
+    else if (analysis.dynamics === "slower") parts.push("останні повторення повільніші за перші");
+    else parts.push("темп роботи залишався рівним");
+
+    if (analysis.hrTrend === "rising") parts.push(`ЧСС зростала від першого до останнього повторення${workHrText(summary, bpm)}`);
+    else if (analysis.hrTrend === "falling") parts.push("ЧСС знижувалась до кінця серії");
+    else if (analysis.hrTrend === "stable") parts.push("ЧСС без різкого стрибка");
+
+    if (analysis.recoveries.length) {
+      parts.push(analysis.recoveryTrend === "variable"
+        ? "відновлення були нерівномірними"
+        : "відновлення залишались стабільними");
+    }
+
+    let conclusion = "Робота виконана контрольовано.";
+    if (analysis.spread <= 5 && analysis.dynamics !== "slower") {
+      conclusion = "Робота виконана дуже рівно, без розвалу.";
+    } else if (analysis.dynamics === "slower" && analysis.spread > 10) {
+      conclusion = "До кінця серії темп просів — навантаження було на межі.";
+    } else if (analysis.dynamics === "faster") {
+      conclusion = "Серію пройдено з хорошим контролем, із сильним фінішем.";
+    }
+
+    parts.push(`загальний обсяг швидкої роботи ${workDistanceLabel} ${unit}`);
+    return `${parts.join(" · ")}. ${conclusion}`;
+  }
+
+  const parts = [
+    `Intervals · ${repsLabel} reps`,
+    `average work pace ${pace}/km`,
+    `spread ${spread} sec/km`
+  ];
+
+  if (analysis.dynamics === "faster") parts.push("the last reps were faster than the first");
+  else if (analysis.dynamics === "slower") parts.push("the last reps were slower than the first");
+  else parts.push("work pace stayed even");
+
+  if (analysis.hrTrend === "rising") parts.push(`HR rose from the first to the last rep`);
+  else if (analysis.hrTrend === "falling") parts.push("HR decreased toward the end");
+  else if (analysis.hrTrend === "stable") parts.push("HR stayed without a sharp jump");
+
+  if (analysis.recoveries.length) {
+    parts.push(analysis.recoveryTrend === "variable"
+      ? "recoveries were variable"
+      : "recoveries stayed stable");
+  }
+
+  let conclusion = "The workout was controlled.";
+  if (analysis.spread <= 5 && analysis.dynamics !== "slower") {
+    conclusion = "The work was very even, with no breakdown.";
+  } else if (analysis.dynamics === "slower" && analysis.spread > 10) {
+    conclusion = "The pace dropped toward the end — the load was close to the limit.";
+  } else if (analysis.dynamics === "faster") {
+    conclusion = "The set was well controlled, with a strong finish.";
+  }
+
+  parts.push(`total fast-work volume ${workDistanceLabel} ${unit}`);
+  return `${parts.join(" · ")}. ${conclusion}`;
+}
+
+function workHrText(summary, bpm) {
+  const analysis = getIntervalAnalysis(summary);
+  if (!analysis) return "";
+  const hr = analysis.reps.map(rep => Number(rep.work?.heartRate)).filter(Number.isFinite);
+  if (hr.length < 2) return "";
+  return ` (${Math.round(hr[0])}→${Math.round(hr[hr.length - 1])} ${bpm})`;
+}
+
 function generateWorkoutInsight(summary) {
+  const intervalInsight = generateIntervalInsight(summary);
+  if (intervalInsight) return intervalInsight;
+
   const splits = summary.splits || [];
   const paces = splits.map(s => paceToSeconds(s.pace)).filter(Number.isFinite);
 
