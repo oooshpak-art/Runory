@@ -1135,6 +1135,118 @@ function generateTempoInsight(summary) {
   return `${parts.join(" · ")}. ${conclusion}`;
 }
 
+function generateEasyRunInsight(summary) {
+  const pattern = getWorkoutPattern(summary);
+  if (pattern.type !== "run") return null;
+
+  const splits = Array.isArray(summary?.splits) ? summary.splits : [];
+  const valid = splits
+    .map(split => ({
+      pace: paceToSeconds(split?.pace),
+      hr: Number(split?.heartRate)
+    }))
+    .filter(item => Number.isFinite(item.pace));
+
+  if (valid.length < 4) return null;
+
+  const half = Math.floor(valid.length / 2);
+  const first = valid.slice(0, half);
+  const second = valid.slice(-half);
+  const avg = items => items.reduce((sum, item) => sum + item.pace, 0) / items.length;
+  const avgHr = items => {
+    const values = items.map(item => item.hr).filter(value => Number.isFinite(value) && value > 0);
+    return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null;
+  };
+
+  const firstPace = avg(first);
+  const secondPace = avg(second);
+  const paceDelta = firstPace - secondPace; // positive = faster later
+  const firstHr = avgHr(first);
+  const secondHr = avgHr(second);
+  const hrDelta = firstHr != null && secondHr != null ? secondHr - firstHr : null;
+
+  const paceValues = valid.map(item => item.pace);
+  const paceSpread = Math.max(...paceValues) - Math.min(...paceValues);
+
+  // Cardiac drift is most meaningful when pace stays broadly similar while HR rises.
+  const similarPace = Math.abs(paceDelta) <= 10;
+  const cardiacDrift = similarPace && hrDelta != null && hrDelta >= 5;
+  const highDrift = similarPace && hrDelta != null && hrDelta >= 10;
+  const paceDrop = paceDelta <= -10;
+  const paceDropStrong = paceDelta <= -20;
+  const acceleration = paceDelta >= 10;
+  const unstable = paceSpread > 25;
+
+  const volumeKm = Number(summary?.distance);
+  const volumeLabel = Number.isFinite(volumeKm) && volumeKm > 0
+    ? `${String(Number(volumeKm.toFixed(1))).replace(".", currentLanguage === "uk" ? "," : ".")} км`
+    : `${valid.length} км`;
+
+  if (currentLanguage === "uk") {
+    const parts = [`Легкий біг · ${volumeLabel}`];
+
+    if (summary?.pace) parts.push(`середній темп — ${summary.pace}/км`);
+
+    if (unstable) parts.push("темп помітно коливався протягом тренування");
+    else if (acceleration) parts.push("у другій половині темп став швидшим");
+    else if (paceDropStrong) parts.push("у другій половині темп помітно сповільнився");
+    else if (paceDrop) parts.push("у другій половині темп трохи сповільнився");
+    else parts.push("темп залишався стабільним");
+
+    if (highDrift) parts.push(`ЧСС зросла приблизно на ${Math.round(hrDelta)} уд/хв при схожому темпі`);
+    else if (cardiacDrift) parts.push(`ЧСС зросла приблизно на ${Math.round(hrDelta)} уд/хв при схожому темпі`);
+    else if (hrDelta != null && hrDelta <= -5) parts.push("ЧСС знижувалась у другій половині");
+    else if (hrDelta != null) parts.push("ЧСС залишалась відносно стабільною");
+
+    let conclusion;
+    if (paceDropStrong && highDrift) {
+      conclusion = "У другій половині одночасно знизився темп і зросла ЧСС — наприкінці тренування помітна втома.";
+    } else if (highDrift) {
+      conclusion = "Помітний кардіодрифт: ЧСС зростала без відповідного прискорення темпу.";
+    } else if (cardiacDrift) {
+      conclusion = "Є помірний кардіодрифт — ЧСС зростала при приблизно незмінному темпі.";
+    } else if (paceDropStrong) {
+      conclusion = "Наприкінці тренування темп помітно просів.";
+    } else if (unstable) {
+      conclusion = "Для легкого бігу темп був нерівномірним.";
+    } else if (acceleration) {
+      conclusion = "Тренування завершено швидше, ніж розпочато, без помітної втрати контролю.";
+    } else if (paceDrop) {
+      conclusion = "Невелике уповільнення наприкінці тренування є помітним, але без різкого просідання.";
+    } else {
+      conclusion = "Легкий біг виконано рівномірно, без помітного кардіодрифту.";
+    }
+
+    parts.push(conclusion);
+    return `${parts.join(" · ")}.`;
+  }
+
+  const parts = [`Easy run · ${volumeLabel}`];
+  if (summary?.pace) parts.push(`average pace ${summary.pace}/km`);
+  if (unstable) parts.push("pace varied noticeably throughout the run");
+  else if (acceleration) parts.push("pace was faster in the second half");
+  else if (paceDropStrong) parts.push("pace slowed noticeably in the second half");
+  else if (paceDrop) parts.push("pace slowed slightly in the second half");
+  else parts.push("pace stayed stable");
+
+  if (hrDelta != null && hrDelta >= 5) parts.push(`HR rose by about ${Math.round(hrDelta)} bpm at a similar pace`);
+  else if (hrDelta != null && hrDelta <= -5) parts.push("HR decreased in the second half");
+  else if (hrDelta != null) parts.push("HR stayed relatively stable");
+
+  let conclusion;
+  if (paceDropStrong && highDrift) conclusion = "Pace fell while HR rose toward the end — fatigue was noticeable.";
+  else if (highDrift) conclusion = "Noticeable cardiac drift: HR rose without a matching pace increase.";
+  else if (cardiacDrift) conclusion = "Moderate cardiac drift was present.";
+  else if (paceDropStrong) conclusion = "Pace dropped noticeably toward the end.";
+  else if (unstable) conclusion = "Pace was uneven for an easy run.";
+  else if (acceleration) conclusion = "The run finished faster than it started, without a clear loss of control.";
+  else if (paceDrop) conclusion = "There was a small pace drop toward the end, without a major slowdown.";
+  else conclusion = "The easy run was even, with no clear cardiac drift.";
+
+  parts.push(conclusion);
+  return `${parts.join(" · ")}.`;
+}
+
 function workHrText(summary, bpm) {
   const analysis = getIntervalAnalysis(summary);
   if (!analysis) return "";
@@ -1149,6 +1261,9 @@ function generateWorkoutInsight(summary) {
 
   const tempoInsight = generateTempoInsight(summary);
   if (tempoInsight) return tempoInsight;
+
+  const easyInsight = generateEasyRunInsight(summary);
+  if (easyInsight) return easyInsight;
 
   const splits = summary.splits || [];
   const paces = splits.map(s => paceToSeconds(s.pace)).filter(Number.isFinite);
