@@ -864,11 +864,11 @@
 
 
 /* === Runory profile page === */
-.profile-page { padding:74px 0 40px; max-width:980px; margin-left:auto; margin-right:auto; }
-.profile-page-heading { max-width:760px; margin:0 auto 34px; }
+.profile-page { padding:74px 0 40px; max-width:980px; }
+.profile-page-heading { max-width:760px; margin-bottom:34px; }
 .profile-page-heading h1 { margin:0; font-size:clamp(44px,6vw,72px); line-height:1.03; letter-spacing:-3.8px; }
 .profile-page-heading > p:last-child { margin:18px 0 0; max-width:680px; color:var(--muted); font-size:15px; line-height:1.75; }
-.profile-card { max-width:760px; margin-left:auto; margin-right:auto; padding:32px; border:1px solid var(--line); border-radius:18px; background:#fff; box-shadow:0 12px 35px rgba(31,40,31,.035); }
+.profile-card { max-width:760px; padding:32px; border:1px solid var(--line); border-radius:18px; background:#fff; box-shadow:0 12px 35px rgba(31,40,31,.035); }
 .profile-section { margin-top:0; padding-top:0; border-top:0; }
 .profile-section-heading { margin-bottom:20px; }
 .profile-section-heading .eyebrow { margin-bottom:7px; }
@@ -890,10 +890,10 @@
 .history-list { display:grid; gap:10px; width:100%; }
 .history-item { display:flex; align-items:center; justify-content:space-between; gap:20px; padding:19px 20px; border:1px solid var(--line); border-radius:14px; background:#fff; box-shadow:0 8px 25px rgba(31,40,31,.025); }
 .history-item-main { min-width:0; flex:1; }
-.history-item-heading { position:relative; display:block; min-height:44px; padding-right:145px; }
+.history-item-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:20px; }
 .history-item-heading h3 { margin:0; font-size:17px; letter-spacing:-.5px; }
 .history-item-heading .eyebrow { margin:0 0 5px; }
-.history-distance { position:absolute; top:0; right:0; white-space:nowrap; font-size:20px; line-height:1.05; letter-spacing:-.8px; text-align:right; }
+.history-distance { white-space:nowrap; font-size:20px; letter-spacing:-.8px; }
 .history-metrics { display:flex; flex-wrap:wrap; gap:8px 16px; margin-top:12px; color:#68746e; font:11px 'DM Mono'; }
 .history-item-actions { display:flex; align-items:center; gap:8px; flex:0 0 auto; }
 .history-view-button { border:0; background:var(--ink); color:#fff; padding:10px 13px; border-radius:9px; font:700 11px Manrope,sans-serif; cursor:pointer; }
@@ -1289,9 +1289,9 @@
   .history-stat-card small { font-size:9px; }
   .history-item { padding:15px 15px 15px 61px; }
   .history-type-icon { left:15px; top:15px; width:34px; height:34px; }
-  .history-item-heading { min-height:42px; padding-right:116px; }
+  .history-item-heading { gap:8px; }
   .history-item-heading h3 { font-size:15px; }
-  .history-distance { top:0; right:0; font-size:18px; }
+  .history-distance { font-size:18px; }
   .history-metrics { gap:7px 11px; }
   .history-metrics b { display:none; }
 }
@@ -1336,207 +1336,5 @@
   .history-bar-track { width:min(28px,80%); }
 }
 
-/* === Runory mobile history refinement === */
-@media (max-width:680px) {
-  .history-item {
-    position:relative;
-    display:block;
-    padding:14px 15px 14px;
-    min-height:0;
-  }
-
-  .history-type-icon {
-    display:none;
-  }
-
-  .history-item-main {
-    width:100%;
-  }
-
-  .history-item-heading {
-    width:100%;
-    min-height:0;
-    padding-right:128px;
-  }
-
-  .history-item-heading h3 {
-    font-size:16px;
-    line-height:1.28;
-    padding-right:0;
-  }
-
-  .history-item-heading .eyebrow {
-    margin-bottom:4px;
-  }
-
-  .history-distance {
-    position:absolute;
-    top:14px;
-    right:15px;
-    z-index:2;
-    font-size:18px;
-    line-height:1.05;
-    letter-spacing:-.7px;
-    text-align:right;
-  }
-
-  .history-metrics {
-    margin-top:10px;
-    gap:5px 12px;
-    padding-right:0;
-    font-size:10px;
-  }
-
-  .history-item-actions {
-    width:100%;
-    margin-top:12px;
-    gap:7px;
-  }
-
-  .history-view-button {
-    min-height:42px;
-    padding:10px 12px;
-    border-radius:9px;
-    font-size:11px;
-  }
-
-  .history-delete-button {
-    width:42px;
-    height:42px;
-    flex:0 0 42px;
-    border-radius:9px;
-  }
-
-  .history-dynamics-card {
-    padding:14px 15px;
-  }
-
-  .history-dynamic-row {
-    padding:10px 0;
-  }
-
-  .history-dynamic-row span {
-    font-size:11px;
-  }
-
-  .history-dynamic-row strong {
-    font-size:20px;
-  }
-
-  .history-dynamic-row small {
-    font-size:12px;
-  }
-
-  .history-dynamics-card p {
-    margin-top:9px;
-    font-size:9px;
-  }
-
-  .history-chart-card {
-    padding:14px 15px;
-  }
-
-  .history-bars {
-    height:112px;
-  }
-}
-
-/* === Runory profile centering correction === */
-.profile-page {
-  width:100%;
-  max-width:980px;
-  margin-left:auto;
-  margin-right:auto;
-}
-
-.profile-page-heading,
-.profile-card {
-  margin-left:auto;
-  margin-right:auto;
-}
-
-@media (max-width:680px) {
-  .profile-page {
-    width:100%;
-    max-width:none;
-    padding-left:0;
-    padding-right:0;
-  }
-
-  .profile-page-heading,
-  .profile-card {
-    width:100%;
-  }
-}
-
-/* === Runory: explicit save/cancel after FIT analysis === */
-.workout-save-actions {
-  margin-top: 14px;
-  padding: 16px 18px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--white);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 18px;
-}
-.workout-save-copy {
-  display: grid;
-  gap: 4px;
-  min-width: 0;
-}
-.workout-save-copy strong {
-  font-size: 14px;
-  letter-spacing: -.2px;
-}
-.workout-save-copy span {
-  color: #68746d;
-  font-size: 12px;
-  line-height: 1.5;
-}
-.workout-save-buttons {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex: 0 0 auto;
-}
-.workout-save-button,
-.workout-cancel-button {
-  min-height: 42px;
-  border-radius: 10px;
-  padding: 0 16px;
-  font: 700 12px Manrope, sans-serif;
-  cursor: pointer;
-}
-.workout-save-button {
-  border: 1px solid var(--ink);
-  background: var(--ink);
-  color: #fff;
-}
-.workout-save-button:disabled {
-  opacity: .55;
-  cursor: wait;
-}
-.workout-cancel-button {
-  border: 1px solid var(--line);
-  background: var(--white);
-  color: var(--ink);
-}
-@media (max-width: 680px) {
-  .workout-save-actions {
-    display: grid;
-    gap: 12px;
-    padding: 14px;
-  }
-  .workout-save-buttons {
-    display: grid;
-    grid-template-columns: 1fr 1.35fr;
-    width: 100%;
-  }
-  .workout-save-button,
-  .workout-cancel-button {
-    width: 100%;
-    min-height: 44px;
-  }
-}
+/* === Workout save confirmation === */
+.workout-save-panel{margin-top:14px;padding:20px 22px;border:1px solid var(--line);border-radius:14px;background:#fff;display:flex;justify-content:space-between;align-items:center;gap:20px}.workout-save-panel[hidden]{display:none}.workout-save-panel strong{display:block;font-size:16px;margin-top:2px}.workout-save-status{margin:6px 0 0;color:#68746d;font-size:12px;min-height:16px}.workout-save-actions{display:flex;gap:9px;align-items:center;flex-shrink:0}.workout-save-button,.workout-cancel-button{border:0;border-radius:10px;padding:11px 15px;font:700 12px Manrope,sans-serif;cursor:pointer}.workout-save-button{background:var(--ink);color:#fff}.workout-cancel-button{background:#f1f3f0;color:var(--ink)}.workout-save-button:disabled,.workout-cancel-button:disabled{opacity:.55;cursor:wait}@media(max-width:680px){.workout-save-panel{display:block;padding:18px}.workout-save-actions{margin-top:14px;display:grid;grid-template-columns:1fr 1.35fr}.workout-save-button,.workout-cancel-button{width:100%;min-height:44px}}
