@@ -295,6 +295,24 @@ function expandWorkoutSteps(workoutSteps = []) {
 
   const byIndex = new Map(ordered.map(step => [Number(step[254]), step]));
   const maxIndex = Math.max(...ordered.map(step => Number(step[254])));
+  const repeatBodyIndices = new Set();
+
+  for (const step of ordered) {
+    if (Number(step[1]) !== 6) continue;
+    const repeatFrom = Number(step[2]);
+    const repetitions = Number(step[4]);
+    if (!Number.isInteger(repeatFrom) || !Number.isInteger(repetitions) || repetitions <= 0) continue;
+    for (let index = repeatFrom; index < Number(step[254]); index += 1) {
+      repeatBodyIndices.add(index);
+    }
+  }
+
+  const cloneStep = (step, repeated = false) => {
+    const clone = Array.isArray(step) ? [...step] : Object.assign([], step);
+    clone.__sourceIndex = Number(step[254]);
+    clone.__repeated = repeated || repeatBodyIndices.has(Number(step[254]));
+    return clone;
+  };
 
   const expandRange = (fromIndex, toIndex, stack = []) => {
     const result = [];
@@ -315,17 +333,19 @@ function expandWorkoutSteps(workoutSteps = []) {
           !stack.includes(index)
         ) {
           const repeatedBlock = expandRange(repeatFrom, index, [...stack, index]);
-          // The original block has already been emitted by the outer loop.
-          // target_value is the total number of repetitions, so add only
-          // the remaining repetitions here.
           for (let count = 1; count < repetitions; count += 1) {
-            result.push(...repeatedBlock);
+            for (const item of repeatedBlock) {
+              const clone = [...item];
+              clone.__sourceIndex = item.__sourceIndex;
+              clone.__repeated = true;
+              result.push(clone);
+            }
           }
           continue;
         }
       }
 
-      result.push(step);
+      result.push(cloneStep(step));
     }
     return result;
   };
@@ -467,70 +487,70 @@ function explicitWorkoutStructure(workoutSteps = [], records = []) {
   const expanded = expandWorkoutSteps(workoutSteps);
   if (!expanded.length) return null;
 
-  const distanceBased = expanded.every(step => Number(step[1]) === 1 || Number(step[1]) === 5);
-  if (!distanceBased) return null;
-
   const totalRecordDistance = recordDistanceMeters(records.at(-1));
   if (!Number.isFinite(totalRecordDistance)) return null;
 
   const structures = [];
   let cursor = 0;
   let currentBlock = null;
-
-  // Garmin sometimes stores an easy opening segment simply as intensity=Run,
-  // even when the athlete used it as a warmup. A common reliable signal is a
-  // standalone first distance step followed by a programmed repeat block.
-  const hasRepeatStep = workoutSteps.some(step => Number(step?.[1]) === 6);
-  const firstStep = expanded[0];
-  const firstStepIsDistanceRun =
-    firstStep && Number(firstStep[1]) === 1 && Number(firstStep[7]) === 0 &&
-    Number.isFinite(workoutStepDistanceMeters(firstStep));
-  const inferredWarmupIndex = hasRepeatStep && firstStepIsDistanceRun ? 0 : -1;
+  let seenIntervalWork = false;
+  let lastIntervalWorkIndex = -1;
 
   const flushBlock = () => {
     if (!currentBlock?.repetitions?.length) return;
-    const distance = currentBlock.repetitions[0]?.work?.distance || 0;
-    currentBlock.label = `Робота ${currentBlock.repetitions.length} × ${Math.round(distance)} м`;
-    currentBlock.workCount = currentBlock.repetitions.length;
+    const distances = currentBlock.repetitions.map(rep => rep.work?.distance).filter(Number.isFinite);
+    const distance = distances.length ? distances[0] : 0;
+    const sameDistance = distances.length && distances.every(value => Math.abs(value - distance) <= 50);
+    const count = currentBlock.repetitions.length;
+    currentBlock.label = sameDistance
+      ? `Робота ${count} × ${Math.round(distance)} м`
+      : `Робота ${count} повторів`;
+    currentBlock.workCount = count;
     structures.push(currentBlock);
     currentBlock = null;
   };
 
   const addStandalone = (type, label, stats) => {
-    if (!stats) return;
+    if (!stats || stats.distance <= 0) return;
     flushBlock();
     structures.push({ type, label, ...stats });
   };
 
+  const isDistanceStep = step => Number(step[1]) === 1 && Number.isFinite(workoutStepDistanceMeters(step));
+  const isOpenCooldown = step => Number(step[1]) === 5 && Number(step[7]) === 3;
+  const isRepeatedWork = step => isDistanceStep(step) && Number(step[7]) === 0 && step.__repeated;
+
+  // Find the first/last genuinely repeated active step. A single long active
+  // step such as a 15 km easy run must not become "Work 1 × 15000 m".
+  const repeatedWorkIndices = expanded
+    .map((step, index) => ({ step, index }))
+    .filter(item => isRepeatedWork(item.step));
+  const firstRepeatedWorkIndex = repeatedWorkIndices.length ? repeatedWorkIndices[0].index : -1;
+  const lastRepeatedWorkIndex = repeatedWorkIndices.length ? repeatedWorkIndices.at(-1).index : -1;
+
+  // If Garmin stored a real repeated workout, everything before its first
+  // repeated work step that is plain running is treated as warm-up. This is
+  // important for workouts where Garmin labels the warm-up simply as Run.
   for (let i = 0; i < expanded.length; i += 1) {
     const step = expanded[i];
     const intensity = Number(step[7]);
     const durationType = Number(step[1]);
     const stepDistance = workoutStepDistanceMeters(step);
 
-    // An open cooldown has no programmed distance. Everything still recorded
-    // after it is the final cooldown segment.
-    if (durationType === 5 && intensity === 3 && cursor < totalRecordDistance) {
+    if (isOpenCooldown(step)) {
+      flushBlock();
       const stats = statsForDistanceRange(records, cursor, totalRecordDistance);
       addStandalone('cooldown', 'Заминка', stats);
       cursor = totalRecordDistance;
-      continue;
+      break;
     }
 
-    if (durationType !== 1 || !Number.isFinite(stepDistance) || stepDistance <= 0) continue;
+    if (!isDistanceStep(step)) continue;
 
     const start = cursor;
     const end = Math.min(totalRecordDistance, cursor + stepDistance);
     const stats = statsForDistanceRange(records, start, end);
-    cursor += stepDistance;
-
-    // See the note above: treat the standalone first Run step before a repeat
-    // block as warmup. This preserves Garmin's raw meaning while reflecting
-    // the athlete's actual workout structure.
-    if (i === inferredWarmupIndex) {
-      addStandalone('warmup', 'Розминка', stats);
-      continue;
-    }
+    cursor = end;
 
     if (intensity === 2) {
       addStandalone('warmup', 'Розминка', stats);
@@ -543,64 +563,64 @@ function explicitWorkoutStructure(workoutSteps = [], records = []) {
     }
 
     if (intensity === 0) {
-      const workDistance = Math.round(stepDistance);
-      const previousWorkDistance = Math.round(currentBlock?.repetitions?.at(-1)?.work?.distance || 0);
-      if (currentBlock && previousWorkDistance && Math.abs(previousWorkDistance - workDistance) > 50) {
-        flushBlock();
+      const repeated = Boolean(step.__repeated);
+      if (repeated) {
+        seenIntervalWork = true;
+        lastIntervalWorkIndex = i;
+        const workDistance = Math.round(stepDistance);
+        const previousWorkDistance = Math.round(currentBlock?.repetitions?.at(-1)?.work?.distance || 0);
+        if (currentBlock && previousWorkDistance && Math.abs(previousWorkDistance - workDistance) > 50) {
+          flushBlock();
+        }
+        if (!currentBlock) {
+          currentBlock = { type: 'intervals', label: '', repetitions: [], workCount: 0 };
+        }
+        currentBlock.repetitions.push({
+          number: currentBlock.repetitions.length + 1,
+          work: stats,
+          recovery: null
+        });
+        continue;
       }
-      if (!currentBlock) {
-        currentBlock = { type: 'intervals', label: '', repetitions: [], workCount: 0 };
+
+      // Plain Run before a real repeated block is the warm-up, even when
+      // Garmin did not label it as Warmup.
+      if (firstRepeatedWorkIndex >= 0 && i < firstRepeatedWorkIndex) {
+        addStandalone('warmup', 'Розминка', stats);
+        continue;
       }
-      currentBlock.repetitions.push({
-        number: currentBlock.repetitions.length + 1,
-        work: stats,
-        recovery: null
-      });
-      currentBlock.workCount = currentBlock.repetitions.length;
+
+      // A plain Run after the interval block but before an explicit cooldown
+      // is ordinary running, not a new interval.
+      addStandalone('easy', 'Біг', stats);
       continue;
     }
 
     if (intensity === 1) {
-      if (currentBlock && currentBlock.repetitions.length) {
-        const previousRecoveries = currentBlock.repetitions
-          .map(rep => rep.recovery?.distance)
-          .filter(value => Number.isFinite(value) && value > 0);
+      if (currentBlock?.repetitions?.length) {
+        const nextRepeatedWork = expanded.slice(i + 1).findIndex(next => isRepeatedWork(next));
+        const hasLaterRepeatedWork = nextRepeatedWork >= 0;
 
-        const typicalRecovery = previousRecoveries.length
-          ? previousRecoveries.reduce((sum, value) => sum + value, 0) / previousRecoveries.length
-          : null;
+        // A short recovery belongs to the preceding repetition whenever the
+        // interval series continues. The final short recovery also stays
+        // attached to the final repetition.
+        const recoveryStats = stats;
+        const recoveryDistance = recoveryStats.distance;
+        const isLongPostIntervalRecovery = !hasLaterRepeatedWork && recoveryDistance >= 1000;
 
-        // A recovery belongs to the interval block when it is consistent with
-        // the block's existing recovery distance. A large jump (for example
-        // 200 m -> 2 km) needs extra context: if there are no more work steps
-        // after this point, Garmin's long Recovery step is effectively the
-        // cooldown, even when Garmin labels it as Recovery. If another work
-        // step follows, keep it as a standalone recovery between blocks.
-        const recoveryFitsBlock =
-          typicalRecovery == null ||
-          (stepDistance >= typicalRecovery * 0.5 && stepDistance <= typicalRecovery * 2.5);
-
-        if (recoveryFitsBlock && !currentBlock.repetitions.at(-1).recovery) {
-          currentBlock.repetitions.at(-1).recovery = stats;
+        if (!isLongPostIntervalRecovery) {
+          currentBlock.repetitions.at(-1).recovery = recoveryStats;
           continue;
         }
 
-        const hasFutureWork = expanded
-          .slice(i + 1)
-          .some(nextStep => Number(nextStep?.[1]) === 1 && Number(nextStep?.[7]) === 0 && Number.isFinite(workoutStepDistanceMeters(nextStep)));
-
-        if (!hasFutureWork) {
-          flushBlock();
-          const cooldownStart = start;
-          const cooldownStats = statsForDistanceRange(records, cooldownStart, totalRecordDistance);
-          addStandalone('cooldown', 'Заминка', cooldownStats);
-          cursor = totalRecordDistance;
-          continue;
-        }
-
+        // A long recovery after the last interval is a cooldown in practical
+        // running terms. Do not drop it: start the cooldown at its beginning
+        // and include the remaining open-cooldown distance as well.
         flushBlock();
-        addStandalone('recovery', 'Відновлення', stats);
-        continue;
+        const cooldownStats = statsForDistanceRange(records, start, totalRecordDistance);
+        addStandalone('cooldown', 'Заминка', cooldownStats);
+        cursor = totalRecordDistance;
+        break;
       }
 
       addStandalone('recovery', 'Відновлення', stats);
@@ -608,6 +628,14 @@ function explicitWorkoutStructure(workoutSteps = [], records = []) {
   }
 
   flushBlock();
+
+  // If a repeated workout exists but there was no explicit/open cooldown,
+  // preserve any unconsumed recorded distance as cooldown rather than losing it.
+  if (seenIntervalWork && cursor < totalRecordDistance - 50) {
+    const stats = statsForDistanceRange(records, cursor, totalRecordDistance);
+    addStandalone('cooldown', 'Заминка', stats);
+  }
+
   return structures.length ? structures : null;
 }
 
@@ -630,7 +658,7 @@ function analyzeWorkoutStructure({ laps = [], records = [], workoutSteps = [] })
     heartRate: lap.heartRate, cadence: lap.cadence, ascent: lap.ascent
   });
 
-  if (validLaps.length >= 4) {
+  if (!workoutSteps.length && validLaps.length >= 4) {
     const candidates = [];
     for (let i = 0; i < validLaps.length - 1; i++) {
       const lap = validLaps[i], next = validLaps[i + 1];
