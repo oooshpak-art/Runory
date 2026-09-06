@@ -26,6 +26,9 @@ const aiAnalysisText = document.querySelector("#aiAnalysisText");
 let currentWorkout = null;
 let currentHistoryId = null;
 let historyLoaded = false;
+let historyWorkouts = [];
+let historyTypeFilter = "all";
+let historyPeriodFilter = "all";
 
 const translations = {
   uk: {
@@ -87,6 +90,21 @@ const translations = {
     historyOpen: "Відкрити аналіз",
     historyDelete: "Видалити",
     historyEmptyAction: "Додати тренування",
+    historyFilterAll: "Усі",
+    historyFilterEasy: "Легкі",
+    historyFilterTempo: "Темпові",
+    historyFilterIntervals: "Інтервали",
+    historyFilterLong: "Довгі",
+    historyPeriod7: "7 днів",
+    historyPeriod30: "30 днів",
+    historyPeriodAll: "Увесь час",
+    historyOverview: "Огляд",
+    historyWeeklyDistance: "Кілометраж по тижнях",
+    historyDynamics: "Динаміка",
+    historyAvgPace: "Середній темп",
+    historyAvgHr: "Середній пульс",
+    historyNoData: "Недостатньо даних для графіка",
+    historyWeek: "Тиждень",
     futureGarmin: "Garmin Connect",
     futureAi: "AI-аналіз тренера",
     aiScoreExcellent: "Відмінна робота",
@@ -239,6 +257,21 @@ const translations = {
     historyOpen: "Open analysis",
     historyDelete: "Delete",
     historyEmptyAction: "Add a workout",
+    historyFilterAll: "All",
+    historyFilterEasy: "Easy",
+    historyFilterTempo: "Tempo",
+    historyFilterIntervals: "Intervals",
+    historyFilterLong: "Long",
+    historyPeriod7: "7 days",
+    historyPeriod30: "30 days",
+    historyPeriodAll: "All time",
+    historyOverview: "Overview",
+    historyWeeklyDistance: "Weekly mileage",
+    historyDynamics: "Dynamics",
+    historyAvgPace: "Average pace",
+    historyAvgHr: "Average heart rate",
+    historyNoData: "Not enough data for a chart",
+    historyWeek: "Week",
     futureGarmin: "Garmin Connect",
     futureAi: "AI coach analysis",
     aiScoreExcellent: "Excellent work",
@@ -1331,22 +1364,144 @@ function historyTypeIcon(value) {
   return "•";
 }
 
-function renderHistoryList(workouts = []) {
+function historyFilterLabel(type) {
+  const map = { all: "historyFilterAll", run: "historyFilterEasy", tempo: "historyFilterTempo", intervals: "historyFilterIntervals", long: "historyFilterLong" };
+  return t(map[type] || "historyFilterAll");
+}
+
+function historyPeriodStart() {
+  if (historyPeriodFilter === "all") return null;
+  const days = historyPeriodFilter === "7" ? 7 : 30;
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  start.setDate(start.getDate() - (days - 1));
+  return start;
+}
+
+function historyFilteredWorkouts() {
+  const start = historyPeriodStart();
+  return historyWorkouts.filter(workout => {
+    const typeOk = historyTypeFilter === "all" || historyTypeClass(workout.workout_type) === historyTypeFilter;
+    const date = workout.workout_date ? new Date(workout.workout_date) : null;
+    const dateOk = !start || (date && !Number.isNaN(date.getTime()) && date >= start);
+    return typeOk && dateOk;
+  });
+}
+
+function paceToSeconds(value) {
+  if (typeof value === "number") return value > 20 ? value : value * 60;
+  const match = String(value || "").match(/(\d+)(?::|\.)(\d{1,2})/);
+  if (!match) return null;
+  return Number(match[1]) * 60 + Number(match[2]);
+}
+
+function formatPaceSeconds(seconds) {
+  if (!Number.isFinite(seconds)) return "—";
+  const rounded = Math.max(0, Math.round(seconds));
+  return `${Math.floor(rounded / 60)}:${String(rounded % 60).padStart(2, "0")}`;
+}
+
+function getWeekStart(date) {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  return d;
+}
+
+function formatWeekLabel(date) {
+  return date.toLocaleDateString(translations[currentLanguage].locale, { day: "2-digit", month: "2-digit" });
+}
+
+function renderHistoryAnalytics(workouts) {
+  const analytics = document.querySelector("#historyAnalytics");
+  if (!analytics) return;
+  if (!workouts.length) { analytics.innerHTML = ""; return; }
+
+  const byWeek = new Map();
+  workouts.forEach(workout => {
+    const date = workout.workout_date ? new Date(workout.workout_date) : null;
+    if (!date || Number.isNaN(date.getTime())) return;
+    const key = getWeekStart(date).toISOString().slice(0, 10);
+    if (!byWeek.has(key)) byWeek.set(key, { date: getWeekStart(date), distance: 0, paceWeighted: 0, paceDistance: 0, hrWeighted: 0, hrDistance: 0 });
+    const row = byWeek.get(key);
+    const distance = Number(workout.distance_km) || 0;
+    row.distance += distance;
+    const pace = paceToSeconds(workout.pace);
+    if (pace && distance) { row.paceWeighted += pace * distance; row.paceDistance += distance; }
+    const hr = Number(workout.heart_rate);
+    if (Number.isFinite(hr) && distance) { row.hrWeighted += hr * distance; row.hrDistance += distance; }
+  });
+
+  const weeks = [...byWeek.values()].sort((a, b) => a.date - b.date).slice(-8);
+  const maxDistance = Math.max(...weeks.map(w => w.distance), 1);
+  const hasChartData = weeks.length > 0;
+  const chart = hasChartData ? weeks.map(w => `
+    <div class="history-bar-col" title="${escapeHtml(formatWeekLabel(w.date))}: ${escapeHtml(w.distance.toFixed(1))} km">
+      <div class="history-bar-track"><div class="history-bar" style="height:${Math.max(5, (w.distance / maxDistance) * 100)}%"></div></div>
+      <span>${escapeHtml(formatWeekLabel(w.date))}</span>
+      <strong>${escapeHtml(w.distance.toFixed(1))}</strong>
+    </div>`).join("") : `<div class="history-chart-empty">${escapeHtml(t("historyNoData"))}</div>`;
+
+  const paceRows = weeks.filter(w => w.paceDistance > 0);
+  const hrRows = weeks.filter(w => w.hrDistance > 0);
+  const lastPace = paceRows.length ? paceRows[paceRows.length - 1].paceWeighted / paceRows[paceRows.length - 1].paceDistance : null;
+  const prevPace = paceRows.length > 1 ? paceRows[paceRows.length - 2].paceWeighted / paceRows[paceRows.length - 2].paceDistance : null;
+  const lastHr = hrRows.length ? hrRows[hrRows.length - 1].hrWeighted / hrRows[hrRows.length - 1].hrDistance : null;
+  const prevHr = hrRows.length > 1 ? hrRows[hrRows.length - 2].hrWeighted / hrRows[hrRows.length - 2].hrDistance : null;
+  const delta = (a, b, invert = false) => {
+    if (!Number.isFinite(a) || !Number.isFinite(b)) return "";
+    const diff = a - b;
+    if (Math.abs(diff) < 0.5) return "→";
+    return (invert ? diff < 0 : diff > 0) ? "↗" : "↘";
+  };
+
+  analytics.innerHTML = `
+    <div class="history-analytics-heading"><span class="eyebrow">${escapeHtml(t("historyOverview"))}</span></div>
+    <div class="history-analytics-grid">
+      <article class="history-chart-card">
+        <div class="history-card-heading"><h3>${escapeHtml(t("historyWeeklyDistance"))}</h3><span>${escapeHtml(t("historyWeek"))}</span></div>
+        <div class="history-bars">${chart}</div>
+      </article>
+      <article class="history-dynamics-card">
+        <div class="history-card-heading"><h3>${escapeHtml(t("historyDynamics"))}</h3></div>
+        <div class="history-dynamic-row"><span>${escapeHtml(t("historyAvgPace"))}</span><strong>${escapeHtml(formatPaceSeconds(lastPace))} <small>${lastPace ? ` ${delta(lastPace, prevPace, true)}` : ""}</small></strong></div>
+        <div class="history-dynamic-row"><span>${escapeHtml(t("historyAvgHr"))}</span><strong>${Number.isFinite(lastHr) ? `${Math.round(lastHr)} ${currentLanguage === "uk" ? "уд/хв" : "bpm"}` : "—"} <small>${Number.isFinite(lastHr) ? delta(lastHr, prevHr, true) : ""}</small></strong></div>
+        <p>${escapeHtml(currentLanguage === "uk" ? "Порівнюємо останній тиждень із попереднім." : "Comparing the latest week with the previous one.")}</p>
+      </article>
+    </div>`;
+}
+
+function renderHistoryControls() {
+  const controls = document.querySelector("#historyControls");
+  if (!controls) return;
+  const typeButtons = ["all", "run", "tempo", "intervals", "long"].map(type => `
+    <button type="button" class="history-filter ${historyTypeFilter === type ? "is-active" : ""}" data-history-type="${type}">${escapeHtml(historyFilterLabel(type))}</button>`).join("");
+  const periodButtons = ["7", "30", "all"].map(period => `
+    <button type="button" class="history-filter ${historyPeriodFilter === period ? "is-active" : ""}" data-history-period="${period}">${escapeHtml(t(period === "7" ? "historyPeriod7" : period === "30" ? "historyPeriod30" : "historyPeriodAll"))}</button>`).join("");
+  controls.innerHTML = `
+    <div class="history-filter-group"><span class="history-filter-label">${escapeHtml(currentLanguage === "uk" ? "Тип" : "Type")}</span><div class="history-filter-row">${typeButtons}</div></div>
+    <div class="history-filter-group"><span class="history-filter-label">${escapeHtml(currentLanguage === "uk" ? "Період" : "Period")}</span><div class="history-filter-row">${periodButtons}</div></div>`;
+}
+
+function renderHistoryList(workouts = historyFilteredWorkouts()) {
   const container = document.querySelector("#historyList");
   const status = document.querySelector("#historyStatus");
   const stats = document.querySelector("#historyStats");
   if (!container) return;
+
+  renderHistoryControls();
+  renderHistoryAnalytics(workouts);
 
   if (!workouts.length) {
     if (stats) stats.innerHTML = "";
     container.innerHTML = `
       <div class="history-empty">
         <div class="history-empty-icon">🏃</div>
-        <strong>${escapeHtml(t("historyEmpty"))}</strong>
-        <p>${escapeHtml(t("historyCopy"))}</p>
-        <button type="button" class="history-empty-button" data-view-target="analysis">
-          ${escapeHtml(t("historyEmptyAction"))}
-        </button>
+        <strong>${escapeHtml(historyWorkouts.length ? (currentLanguage === "uk" ? "За цими фільтрами тренувань немає." : "No workouts match these filters.") : t("historyEmpty"))}</strong>
+        <p>${escapeHtml(historyWorkouts.length ? (currentLanguage === "uk" ? "Спробуй змінити тип або період." : "Try another type or period.") : t("historyCopy"))}</p>
+        ${historyWorkouts.length ? "" : `<button type="button" class="history-empty-button" data-view-target="analysis">${escapeHtml(t("historyEmptyAction"))}</button>`}
       </div>`;
     if (status) status.textContent = "";
     return;
@@ -1354,48 +1509,22 @@ function renderHistoryList(workouts = []) {
 
   const totalDistance = workouts.reduce((sum, w) => sum + (Number(w.distance_km) || 0), 0);
   const totalTime = workouts.reduce((sum, w) => sum + (Number(w.duration_sec) || 0), 0);
-
   if (stats) {
     stats.innerHTML = `
-      <article class="history-stat-card">
-        <span class="history-stat-label">${escapeHtml(t("historyStatsWorkouts"))}</span>
-        <strong>${workouts.length}</strong>
-      </article>
-      <article class="history-stat-card">
-        <span class="history-stat-label">${escapeHtml(t("historyStatsDistance"))}</span>
-        <strong>${escapeHtml(totalDistance.toFixed(1).replace(".", currentLanguage === "uk" ? "," : "."))} <small>${currentLanguage === "uk" ? "км" : "km"}</small></strong>
-      </article>
-      <article class="history-stat-card">
-        <span class="history-stat-label">${escapeHtml(t("historyStatsTime"))}</span>
-        <strong>${escapeHtml(formatHistoryTotalTime(totalTime))}</strong>
-      </article>`;
+      <article class="history-stat-card"><span class="history-stat-label">${escapeHtml(t("historyStatsWorkouts"))}</span><strong>${workouts.length}</strong></article>
+      <article class="history-stat-card"><span class="history-stat-label">${escapeHtml(t("historyStatsDistance"))}</span><strong>${escapeHtml(totalDistance.toFixed(1).replace(".", currentLanguage === "uk" ? "," : "."))} <small>${currentLanguage === "uk" ? "км" : "km"}</small></strong></article>
+      <article class="history-stat-card"><span class="history-stat-label">${escapeHtml(t("historyStatsTime"))}</span><strong>${escapeHtml(formatHistoryTotalTime(totalTime))}</strong></article>`;
   }
 
   container.innerHTML = workouts.map(workout => `
     <article class="history-item" data-history-id="${escapeHtml(workout.id)}">
       <div class="history-type-icon ${historyTypeClass(workout.workout_type)}" aria-hidden="true">${historyTypeIcon(workout.workout_type)}</div>
       <div class="history-item-main">
-        <div class="history-item-heading">
-          <div>
-            <p class="eyebrow">${escapeHtml(formatHistoryDate(workout.workout_date))}</p>
-            <h3>${escapeHtml(workoutTypeLabel(workout.workout_type))}</h3>
-          </div>
-          <strong class="history-distance">${escapeHtml(formatHistoryDistance(workout.distance_km))}</strong>
-        </div>
-        <div class="history-metrics">
-          <span><b>${escapeHtml(t("pace"))}</b> ${escapeHtml(workout.pace || "—")}</span>
-          <span><b>${escapeHtml(t("time"))}</b> ${escapeHtml(formatHistoryDuration(workout.duration_sec))}</span>
-          <span><b>${escapeHtml(t("heartRate"))}</b> ${workout.heart_rate != null ? `${Math.round(workout.heart_rate)} ${currentLanguage === "uk" ? "уд/хв" : "bpm"}` : "—"}</span>
-          <span><b>${escapeHtml(t("ascent"))}</b> ${workout.ascent_m != null ? `+${Math.round(workout.ascent_m)} ${currentLanguage === "uk" ? "м" : "m"}` : "—"}</span>
-        </div>
+        <div class="history-item-heading"><div><p class="eyebrow">${escapeHtml(formatHistoryDate(workout.workout_date))}</p><h3>${escapeHtml(workoutTypeLabel(workout.workout_type))}</h3></div><strong class="history-distance">${escapeHtml(formatHistoryDistance(workout.distance_km))}</strong></div>
+        <div class="history-metrics"><span><b>${escapeHtml(t("pace"))}</b> ${escapeHtml(workout.pace || "—")}</span><span><b>${escapeHtml(t("time"))}</b> ${escapeHtml(formatHistoryDuration(workout.duration_sec))}</span><span><b>${escapeHtml(t("heartRate"))}</b> ${workout.heart_rate != null ? `${Math.round(workout.heart_rate)} ${currentLanguage === "uk" ? "уд/хв" : "bpm"}` : "—"}</span><span><b>${escapeHtml(t("ascent"))}</b> ${workout.ascent_m != null ? `+${Math.round(workout.ascent_m)} ${currentLanguage === "uk" ? "м" : "m"}` : "—"}</span></div>
       </div>
-      <div class="history-item-actions">
-        <button type="button" class="history-view-button" data-history-view="${escapeHtml(workout.id)}">${escapeHtml(t("historyOpen"))}</button>
-        <button type="button" class="history-delete-button" data-history-delete="${escapeHtml(workout.id)}" aria-label="${escapeHtml(t("historyDelete"))}">×</button>
-      </div>
-    </article>
-  `).join("");
-
+      <div class="history-item-actions"><button type="button" class="history-view-button" data-history-view="${escapeHtml(workout.id)}">${escapeHtml(t("historyOpen"))}</button><button type="button" class="history-delete-button" data-history-delete="${escapeHtml(workout.id)}" aria-label="${escapeHtml(t("historyDelete"))}">×</button></div>
+    </article>`).join("");
   if (status) status.textContent = `${workouts.length} ${currentLanguage === "uk" ? "тренувань" : "workouts"}`;
 }
 
@@ -1404,6 +1533,10 @@ async function loadWorkoutHistory(force = false) {
   const status = document.querySelector("#historyStatus");
   if (!container) return;
   if (!currentSession?.user) {
+    historyWorkouts = [];
+    renderHistoryControls();
+    renderHistoryAnalytics([]);
+    if (document.querySelector("#historyStats")) document.querySelector("#historyStats").innerHTML = "";
     container.innerHTML = `<div class="history-empty"><strong>${escapeHtml(t("historyLoginHint"))}</strong></div>`;
     if (status) status.textContent = "";
     historyLoaded = false;
@@ -1427,7 +1560,8 @@ async function loadWorkoutHistory(force = false) {
     return;
   }
 
-  renderHistoryList(data || []);
+  historyWorkouts = data || [];
+  renderHistoryList(historyFilteredWorkouts());
   historyLoaded = true;
 }
 
@@ -1483,6 +1617,20 @@ async function deleteWorkoutFromHistory(id) {
   setAuthMessage(t("historyDeleted"), "success");
   await loadWorkoutHistory(true);
 }
+
+document.addEventListener("click", event => {
+  const typeButton = event.target.closest("[data-history-type]");
+  if (typeButton) {
+    historyTypeFilter = typeButton.dataset.historyType || "all";
+    renderHistoryList(historyFilteredWorkouts());
+    return;
+  }
+  const periodButton = event.target.closest("[data-history-period]");
+  if (periodButton) {
+    historyPeriodFilter = periodButton.dataset.historyPeriod || "all";
+    renderHistoryList(historyFilteredWorkouts());
+  }
+});
 
 document.addEventListener("click", async event => {
   const viewButton = event.target.closest("[data-history-view]");
