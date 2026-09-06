@@ -812,12 +812,13 @@
               <div id="aiAnalysisText"></div>
             </section>
 
-            <div class="workout-save-actions" id="workoutSaveActions" hidden>
-              <div class="workout-save-copy">
-                <strong data-i18n="saveWorkoutTitle">Зберегти тренування?</strong>
-                <span data-i18n="saveWorkoutCopy">Збережи його, щоб додати до «Мої тренування» та статистики.</span>
+            <div class="workout-save-panel" id="workoutSavePanel" hidden>
+              <div>
+                <p class="eyebrow" data-i18n="saveWorkoutEyebrow">ЗБЕРЕЖЕННЯ</p>
+                <strong data-i18n="saveWorkoutQuestion">Зберегти це тренування?</strong>
+                <p class="workout-save-status" id="workoutSaveStatus" aria-live="polite"></p>
               </div>
-              <div class="workout-save-buttons">
+              <div class="workout-save-actions">
                 <button class="workout-cancel-button" id="cancelWorkoutButton" type="button" data-i18n="cancelWorkout">Скасувати</button>
                 <button class="workout-save-button" id="saveWorkoutButton" type="button" data-i18n="saveWorkout">Зберегти тренування</button>
               </div>
