@@ -397,6 +397,65 @@ function interpolateTimestampAtDistance(records, targetDistance) {
   return recordTimestamp(last);
 }
 
+function altitudeMeters(record) {
+  if (Number.isFinite(record?.[78])) return record[78] / 5 - 500;
+  if (Number.isFinite(record?.[2])) return record[2] / 5 - 500;
+  return null;
+}
+
+function interpolateDistanceAtTime(records, targetTime) {
+  if (!records.length || !Number.isFinite(targetTime)) return null;
+
+  for (let i = 0; i < records.length; i += 1) {
+    const currentTime = recordTimestamp(records[i]);
+    const currentDistance = recordDistanceMeters(records[i]);
+    if (currentTime == null || currentDistance == null) continue;
+
+    if (currentTime >= targetTime) {
+      if (i === 0) return currentDistance;
+      const previousTime = recordTimestamp(records[i - 1]);
+      const previousDistance = recordDistanceMeters(records[i - 1]);
+      if (
+        previousTime == null ||
+        previousDistance == null ||
+        currentTime <= previousTime
+      ) return currentDistance;
+
+      const ratio = Math.max(0, Math.min(1,
+        (targetTime - previousTime) / (currentTime - previousTime)
+      ));
+      return previousDistance + (currentDistance - previousDistance) * ratio;
+    }
+  }
+
+  return recordDistanceMeters(records.at(-1));
+}
+
+function averageCadence(records) {
+  const values = records.map(record => {
+    if (!Number.isFinite(record?.[4])) return null;
+    const fractional = Number.isFinite(record[53]) ? record[53] / 128 : 0;
+    return (record[4] + fractional) * 2;
+  }).filter(value => Number.isFinite(value) && value > 0 && value < 255);
+  return values.length ? Math.round(values.reduce((a, b) => a + b, 0) / values.length) : null;
+}
+
+function elevationStats(records) {
+  const altitudes = records.map(altitudeMeters).filter(Number.isFinite);
+  let ascent = 0;
+  let descent = 0;
+  for (let i = 1; i < altitudes.length; i += 1) {
+    const delta = altitudes[i] - altitudes[i - 1];
+    if (delta > 2) ascent += delta;
+    if (delta < -2) descent += Math.abs(delta);
+  }
+  return {
+    ascent: Math.round(ascent),
+    descent: Math.round(descent),
+    elevation: Math.round(ascent - descent)
+  };
+}
+
 function statsForDistanceRange(records, startDistance, endDistance) {
   if (!records.length || endDistance <= startDistance) return null;
 
@@ -415,27 +474,9 @@ function statsForDistanceRange(records, startDistance, endDistance) {
     .map(record => record[3])
     .filter(value => Number.isFinite(value) && value > 0 && value < 255);
 
-  const cadence = selected
-    .map(record => {
-      if (!Number.isFinite(record[4])) return null;
-      const fractional = Number.isFinite(record[53]) ? record[53] / 128 : 0;
-      return (record[4] + fractional) * 2;
-    })
-    .filter(value => Number.isFinite(value) && value > 0 && value < 255);
-
-  const altitudes = selected
-    .map(record => Number.isFinite(record[2]) ? record[2] / 5 - 500 : null)
-    .filter(Number.isFinite);
-
-  let ascent = 0;
-  let descent = 0;
-  for (let i = 1; i < altitudes.length; i += 1) {
-    const delta = altitudes[i] - altitudes[i - 1];
-    if (delta > 2) ascent += delta;
-    if (delta < -2) descent += Math.abs(delta);
-  }
-
+  const elevation = elevationStats(selected);
   const distance = endDistance - startDistance;
+
   return {
     duration,
     distance,
@@ -443,180 +484,76 @@ function statsForDistanceRange(records, startDistance, endDistance) {
       ? secondsToPace(duration / (distance / 1000))
       : '—',
     heartRate: averageNumber(heartRates),
-    cadence: cadence.length ? Math.round(cadence.reduce((a, b) => a + b, 0) / cadence.length) : null,
-    ascent: Math.round(ascent),
-    descent: Math.round(descent),
-    elevation: Math.round(ascent - descent)
+    cadence: averageCadence(selected),
+    ascent: elevation.ascent,
+    descent: elevation.descent,
+    elevation: elevation.elevation
   };
 }
 
 function statsForTimeRange(records, startTime, endTime) {
   if (!records.length || endTime <= startTime) return null;
+
   const selected = records.filter(record => {
     const timestamp = recordTimestamp(record);
     return timestamp != null && timestamp >= startTime && timestamp <= endTime;
   });
   if (!selected.length) return null;
 
-  const firstDistance = recordDistanceMeters(selected[0]);
-  const lastDistance = recordDistanceMeters(selected.at(-1));
-  const distance = firstDistance != null && lastDistance != null
-    ? Math.max(0, lastDistance - firstDistance)
+  // Use interpolated boundary distances rather than first/last sampled record.
+  // This prevents a 5:00 or 50:00 FIT step from gaining/losing a GPS sample.
+  const startDistance = interpolateDistanceAtTime(records, startTime);
+  const endDistance = interpolateDistanceAtTime(records, endTime);
+  const distance = Number.isFinite(startDistance) && Number.isFinite(endDistance)
+    ? Math.max(0, endDistance - startDistance)
     : 0;
 
-  const heartRates = selected.map(record => record[3]).filter(value => Number.isFinite(value) && value > 0 && value < 255);
-  const cadence = selected.map(record => {
-    if (!Number.isFinite(record[4])) return null;
-    const fractional = Number.isFinite(record[53]) ? record[53] / 128 : 0;
-    return (record[4] + fractional) * 2;
-  }).filter(value => Number.isFinite(value) && value > 0 && value < 255);
+  const heartRates = selected
+    .map(record => record[3])
+    .filter(value => Number.isFinite(value) && value > 0 && value < 255);
+  const elevation = elevationStats(selected);
 
   return {
     duration: Math.max(1, endTime - startTime),
     distance,
-    pace: distance > 1 ? secondsToPace((endTime - startTime) / (distance / 1000)) : '—',
+    pace: distance > 1
+      ? secondsToPace((endTime - startTime) / (distance / 1000))
+      : '—',
     heartRate: averageNumber(heartRates),
-    cadence: cadence.length ? Math.round(cadence.reduce((a, b) => a + b, 0) / cadence.length) : null,
-    ascent: 0,
-    descent: 0,
-    elevation: 0
+    cadence: averageCadence(selected),
+    ascent: elevation.ascent,
+    descent: elevation.descent,
+    elevation: elevation.elevation
   };
 }
 
 function explicitWorkoutStructure(workoutSteps = [], records = []) {
   const expanded = expandWorkoutSteps(workoutSteps);
-  if (!expanded.length) return null;
+  if (!expanded.length || !records.length) return null;
 
   const totalRecordDistance = recordDistanceMeters(records.at(-1));
-  const totalRecordTime = recordTimestamp(records.at(-1));
   const firstRecordTime = recordTimestamp(records[0]);
-
+  const lastRecordTime = recordTimestamp(records.at(-1));
   if (!Number.isFinite(totalRecordDistance)) return null;
 
-  /*
-   * Garmin WorkoutStep:
-   *   field 1 = duration_type
-   *   field 2 = duration_value
-   *   field 7 = intensity
-   *
-   * duration_type 0 = time
-   * duration_type 1 = distance
-   * duration_type 5 = open
-   * duration_type 6 = repeat
-   *
-   * The important rule here is that the FIT workout definition is the
-   * source of truth. We only fall back to recorded distance/time to obtain
-   * statistics for each step.
-   */
-  const durationType = step => Number(step?.[1]);
-  const intensity = step => Number(step?.[7]);
-  const stepDistance = step => workoutStepDistanceMeters(step);
-
-  const workoutStepTimeSeconds = step => {
-    if (!step || durationType(step) !== 0 || !Number.isFinite(step[2])) return null;
-    return step[2] / 1000;
-  };
-
-  const isDistanceStep = step =>
-    durationType(step) === 1 && Number.isFinite(stepDistance(step));
-
-  const isTimeStep = step =>
-    durationType(step) === 0 && Number.isFinite(workoutStepTimeSeconds(step));
-
-  const isOpenStep = step =>
-    durationType(step) === 5;
-
-  const isRepeatStep = step =>
-    durationType(step) === 6;
-
-  const isWorkIntensity = value => value === 0;
-  const isRecoveryIntensity = value => value === 1;
-  const isWarmupIntensity = value => value === 2;
-  const isCooldownIntensity = value => value === 3;
-
-  const cursorStatsForStep = (cursor, step) => {
-    const d = stepDistance(step);
-    if (Number.isFinite(d)) {
-      const start = Math.max(0, Math.min(totalRecordDistance, cursor.distance));
-      const end = Math.max(start, Math.min(totalRecordDistance, start + d));
-      const stats = statsForDistanceRange(records, start, end);
-      return {
-        stats,
-        nextCursor: { distance: end, time: cursor.time }
-      };
-    }
-
-    const seconds = workoutStepTimeSeconds(step);
-    if (Number.isFinite(seconds) && Number.isFinite(firstRecordTime)) {
-      const startTime = Math.max(firstRecordTime, cursor.time);
-      const endTime = Math.min(
-        Number.isFinite(totalRecordTime) ? totalRecordTime : startTime + seconds,
-        startTime + seconds
-      );
-      const stats = statsForTimeRange(records, startTime, endTime);
-
-      let distanceEnd = cursor.distance;
-      if (stats?.distance > 0) distanceEnd += stats.distance;
-
-      return {
-        stats,
-        nextCursor: { distance: distanceEnd, time: endTime }
-      };
-    }
-
-    return { stats: null, nextCursor: cursor };
-  };
-
-  const remainingStatsFromCursor = cursor => {
-    if (cursor.distance < totalRecordDistance - 1) {
-      return statsForDistanceRange(records, cursor.distance, totalRecordDistance);
-    }
-
-    if (Number.isFinite(totalRecordTime) && cursor.time < totalRecordTime - 1) {
-      return statsForTimeRange(records, cursor.time, totalRecordTime);
-    }
-
-    return null;
-  };
-
   const structures = [];
-  let cursor = {
-    distance: 0,
-    time: Number.isFinite(firstRecordTime) ? firstRecordTime : 0
-  };
-
+  let cursorDistance = 0;
+  let cursorTime = firstRecordTime;
   let currentBlock = null;
-  let seenIntervalWork = false;
 
   const flushBlock = () => {
     if (!currentBlock?.repetitions?.length) return;
-
-    const workDistances = currentBlock.repetitions
-      .map(rep => rep.work?.distance)
-      .filter(Number.isFinite);
-
-    const sameDistance =
-      workDistances.length > 0 &&
-      workDistances.every(value => Math.abs(value - workDistances[0]) <= 50);
-
-    const workTimes = currentBlock.repetitions
-      .map(rep => rep.work?.duration)
-      .filter(Number.isFinite);
-
-    const sameTime =
-      workTimes.length > 0 &&
-      workTimes.every(value => Math.abs(value - workTimes[0]) <= 2);
-
-    let label = `Работа ${currentBlock.repetitions.length} повторов`;
-
-    if (sameDistance) {
-      label = `Работа ${currentBlock.repetitions.length} × ${Math.round(workDistances[0])} м`;
-    } else if (sameTime) {
-      label = `Работа ${currentBlock.repetitions.length} × ${secondsToTime(workTimes[0])}`;
+    const distances = currentBlock.repetitions.map(r => r.targetDistanceMeters).filter(Number.isFinite);
+    const durations = currentBlock.repetitions.map(r => r.targetDurationSeconds).filter(Number.isFinite);
+    const count = currentBlock.repetitions.length;
+    if (distances.length && distances.every(v => Math.abs(v - distances[0]) <= 50)) {
+      currentBlock.label = `Работа ${count} × ${Math.round(distances[0])} м`;
+    } else if (durations.length && durations.every(v => Math.abs(v - durations[0]) <= 2)) {
+      currentBlock.label = `Работа ${count} × ${secondsToTime(durations[0])}`;
+    } else {
+      currentBlock.label = `Работа ${count} повторов`;
     }
-
-    currentBlock.label = label;
-    currentBlock.workCount = currentBlock.repetitions.length;
+    currentBlock.workCount = count;
     structures.push(currentBlock);
     currentBlock = null;
   };
@@ -627,198 +564,211 @@ function explicitWorkoutStructure(workoutSteps = [], records = []) {
     structures.push({ type, label, ...stats });
   };
 
-  /*
-   * A real repeat block can contain time-based or distance-based work.
-   * expandWorkoutSteps() already expands the repeat references, so here
-   * we deliberately do not infer repetition from distance alone.
-   */
-  const repeatedIndices = new Set(
-    expanded
-      .map((step, index) => ({ step, index }))
-      .filter(({ step }) => Boolean(step.__repeated))
-      .map(({ index }) => index)
-  );
+  // FIT workout_step duration_type: 0=time, 1=distance.
+  // Repeat steps are expanded before this function is called.
+  const durationTypeOf = step => Number(step[1]);
+  const intensityOf = step => Number(step[7]);
+  const isDistanceStep = step =>
+    durationTypeOf(step) === 1 && Number.isFinite(workoutStepDistanceMeters(step));
+  const isTimeStep = step =>
+    durationTypeOf(step) === 0 && Number.isFinite(step[2]) && Number(step[2]) > 0;
+  const isWorkIntensity = value => value === 0 || value === 5;
+  const isRecoveryIntensity = value => value === 1 || value === 4;
+  const isRepeatedWork = step =>
+    (isDistanceStep(step) || isTimeStep(step)) && isWorkIntensity(intensityOf(step)) && step.__repeated;
+  const isOpenCooldown = step =>
+    (durationTypeOf(step) === 5 || durationTypeOf(step) === 6) && intensityOf(step) === 3;
 
-  const firstRepeatedIndex =
-    repeatedIndices.size ? Math.min(...repeatedIndices) : -1;
+  const repeatedWorkIndices = expanded
+    .map((step, index) => ({ step, index }))
+    .filter(item => isRepeatedWork(item.step));
+  const firstRepeatedWorkIndex = repeatedWorkIndices.length ? repeatedWorkIndices[0].index : -1;
 
-  const hasRepeatedWork = step =>
-    Boolean(step.__repeated) &&
-    (isDistanceStep(step) || isTimeStep(step)) &&
-    isWorkIntensity(intensity(step));
-
-  /*
-   * Find whether an apparently long post-work recovery is actually followed
-   * by another repeated work step. If yes, it is recovery regardless of
-   * distance (including 1 km). This fixes the "1 km recovery became cooldown"
-   * cases.
-   */
-  const nextRepeatedWorkExists = index => {
-    for (let j = index + 1; j < expanded.length; j += 1) {
-      const candidate = expanded[j];
-      if (hasRepeatedWork(candidate)) return true;
-
-      // An explicit/open cooldown means the interval series has ended.
-      if (isOpenStep(candidate) || isCooldownIntensity(intensity(candidate))) {
-        return false;
-      }
+  // Consume a step according to Garmin's actual duration type. This prevents
+  // a 50-minute tempo step from being reconstructed as a 13 km run merely
+  // because that happened to be the distance covered during the step.
+  const consumeStep = step => {
+    if (isDistanceStep(step)) {
+      const distance = workoutStepDistanceMeters(step);
+      const start = cursorDistance;
+      const end = Math.min(totalRecordDistance, start + distance);
+      const stats = statsForDistanceRange(records, start, end);
+      cursorDistance = end;
+      const exactEndTime = interpolateTimestampAtDistance(records, end);
+      if (Number.isFinite(exactEndTime)) cursorTime = exactEndTime;
+      return stats;
     }
-    return false;
+
+    if (isTimeStep(step) && Number.isFinite(cursorTime)) {
+      const duration = Number(step[2]) / 1000;
+      const start = cursorTime;
+      const end = Math.min(lastRecordTime, start + duration);
+      const stats = statsForTimeRange(records, start, end);
+      cursorTime = end;
+      const exactEndDistance = interpolateDistanceAtTime(records, end);
+      if (Number.isFinite(exactEndDistance)) cursorDistance = exactEndDistance;
+      return stats;
+    }
+    return null;
+  };
+
+  const nextRepeatedWorkExists = index => expanded.slice(index + 1).some(isRepeatedWork);
+  let activeStandaloneSteps = [];
+
+  const flushStandaloneActiveSteps = () => {
+    if (!activeStandaloneSteps.length) return;
+    if (activeStandaloneSteps.length === 1) {
+      const item = activeStandaloneSteps[0];
+      addStandalone('tempo', 'Темповый бег', item.stats);
+      activeStandaloneSteps = [];
+      return;
+    }
+
+    const paces = activeStandaloneSteps.map(x => x.stats?.pace).filter(Boolean).map(v => {
+      const [m, sec] = v.split(':').map(Number);
+      return m * 60 + sec;
+    });
+    const progressive = paces.length >= 2 && paces.at(-1) < paces[0] - 2;
+    const combined = activeStandaloneSteps.reduce((acc, item) => {
+      const st = item.stats;
+      if (!st) return acc;
+      acc.duration += st.duration || 0;
+      acc.distance += st.distance || 0;
+      acc.ascent += st.ascent || 0;
+      acc.descent += st.descent || 0;
+      if (Number.isFinite(st.heartRate)) acc.hr.push(st.heartRate);
+      if (Number.isFinite(st.cadence)) acc.cad.push(st.cadence);
+      return acc;
+    }, { duration: 0, distance: 0, ascent: 0, descent: 0, hr: [], cad: [] });
+
+    const stats = {
+      duration: Math.round(combined.duration),
+      distance: Math.round(combined.distance),
+      pace: combined.distance > 1 ? secondsToPace(combined.duration / (combined.distance / 1000)) : '—',
+      heartRate: combined.hr.length ? Math.round(combined.hr.reduce((a,b) => a+b, 0) / combined.hr.length) : null,
+      cadence: combined.cad.length ? Math.round(combined.cad.reduce((a,b) => a+b, 0) / combined.cad.length) : null,
+      ascent: Math.round(combined.ascent),
+      descent: Math.round(combined.descent),
+      elevation: Math.round(combined.ascent - combined.descent)
+    };
+    addStandalone(progressive ? 'progressive' : 'tempo', progressive ? 'Прогрессивный бег' : 'Темповый бег', stats);
+    activeStandaloneSteps = [];
   };
 
   for (let i = 0; i < expanded.length; i += 1) {
     const step = expanded[i];
-    const level = intensity(step);
+    const intensity = intensityOf(step);
 
-    if (isRepeatStep(step)) continue;
-
-    if (isOpenStep(step)) {
+    if (isOpenCooldown(step)) {
+      flushStandaloneActiveSteps();
       flushBlock();
-
-      /*
-       * Open steps are only cooldown when Garmin explicitly marks them as
-       * cooldown (or when an interval block has already ended). Otherwise
-       * they are simply the remaining continuous run.
-       */
-      if (isCooldownIntensity(level) || seenIntervalWork) {
-        const stats = remainingStatsFromCursor(cursor);
-        if (stats) addStandalone('cooldown', 'Заминка', stats);
-        cursor.distance = totalRecordDistance;
-        if (Number.isFinite(totalRecordTime)) cursor.time = totalRecordTime;
-        break;
-      }
-
-      continue;
+      const stats = statsForDistanceRange(records, cursorDistance, totalRecordDistance);
+      addStandalone('cooldown', 'Заминка', stats);
+      cursorDistance = totalRecordDistance;
+      cursorTime = lastRecordTime;
+      break;
     }
 
-    const supportedStep = isDistanceStep(step) || isTimeStep(step);
-    if (!supportedStep) continue;
+    if (!isDistanceStep(step) && !isTimeStep(step)) continue;
+    const stats = consumeStep(step);
+    if (!stats || stats.distance <= 0) continue;
 
-    const beforeDistance = cursor.distance;
-    const beforeTime = cursor.time;
-    const result = cursorStatsForStep(cursor, step);
-    const stats = result.stats;
-    cursor = result.nextCursor;
-
-    if (!stats) continue;
-
-    if (isWarmupIntensity(level)) {
+    if (intensity === 2) {
+      flushStandaloneActiveSteps();
       addStandalone('warmup', 'Разминка', stats);
       continue;
     }
 
-    if (isCooldownIntensity(level)) {
+    // Cooldown is explicit only. A long ordinary Run is never promoted to
+    // cooldown just because it happens to be the final step.
+    if (intensity === 3) {
+      flushStandaloneActiveSteps();
       addStandalone('cooldown', 'Заминка', stats);
       continue;
     }
 
-    if (isWorkIntensity(level)) {
-      const repeated = hasRepeatedWork(step);
-
-      if (repeated) {
-        seenIntervalWork = true;
-
-        const workKeyDistance = stepDistance(step);
-        const workKeyTime = workoutStepTimeSeconds(step);
-
+    if (isWorkIntensity(intensity)) {
+      if (Boolean(step.__repeated)) {
+        flushStandaloneActiveSteps();
         const previous = currentBlock?.repetitions?.at(-1)?.work;
-        const previousDistance = previous?.distance;
-        const previousDuration = previous?.duration;
-
-        const distanceMismatch =
-          Number.isFinite(workKeyDistance) &&
-          Number.isFinite(previousDistance) &&
-          Math.abs(workKeyDistance - previousDistance) > 50;
-
-        const timeMismatch =
-          Number.isFinite(workKeyTime) &&
-          Number.isFinite(previousDuration) &&
-          Math.abs(workKeyTime - previousDuration) > 2;
-
-        if (currentBlock && (distanceMismatch || timeMismatch)) {
-          flushBlock();
-        }
-
-        if (!currentBlock) {
-          currentBlock = {
-            type: 'intervals',
-            label: '',
-            repetitions: [],
-            workCount: 0
-          };
-        }
-
+        const sameDistance = previous && Number.isFinite(previous.distance) && Math.abs(previous.distance - stats.distance) <= 50;
+        const sameDuration = previous && Number.isFinite(previous.duration) && Math.abs(previous.duration - stats.duration) <= 2;
+        if (currentBlock && previous && !sameDistance && !sameDuration) flushBlock();
+        if (!currentBlock) currentBlock = { type: 'intervals', label: '', repetitions: [], workCount: 0 };
         currentBlock.repetitions.push({
           number: currentBlock.repetitions.length + 1,
           work: stats,
-          recovery: null
+          recovery: null,
+          targetDistanceMeters: isDistanceStep(step) ? workoutStepDistanceMeters(step) : null,
+          targetDurationSeconds: isTimeStep(step) ? Number(step[2]) / 1000 : null
         });
         continue;
       }
 
-      /*
-       * A non-repeated work step is not automatically cooldown.
-       * Before an interval block it is normally warm-up; after a block it
-       * remains ordinary running unless Garmin explicitly marks cooldown.
-       *
-       * This is important for easy runs and progressive runs.
-       */
-      if (firstRepeatedIndex >= 0 && i < firstRepeatedIndex) {
+      // A plain Run before repeated work is warm-up; a plain Run after it is
+      // ordinary active running/tempo, never an inferred cooldown.
+      if (firstRepeatedWorkIndex >= 0 && i < firstRepeatedWorkIndex) {
+        flushStandaloneActiveSteps();
         addStandalone('warmup', 'Разминка', stats);
       } else {
-        addStandalone('easy', 'Біг', stats);
+        activeStandaloneSteps.push({ index: i, stats });
       }
       continue;
     }
 
-    if (isRecoveryIntensity(level)) {
+    if (isRecoveryIntensity(intensity)) {
+      flushStandaloneActiveSteps();
       if (currentBlock?.repetitions?.length) {
-        const hasLaterWork = nextRepeatedWorkExists(i);
-
-        /*
-         * Recovery belongs to the preceding repetition whenever the repeat
-         * series continues. Distance is irrelevant here: 300 m, 500 m,
-         * 1 km, etc. can all be valid recoveries.
-         */
-        if (hasLaterWork) {
+        // Any recovery between repeated work steps belongs to the interval.
+        // This intentionally includes 1 km recoveries.
+        if (nextRepeatedWorkExists(i)) {
           currentBlock.repetitions.at(-1).recovery = stats;
           continue;
         }
-
-        /*
-         * If this is the final recovery, keep it attached to the final
-         * repetition. It should only become cooldown when Garmin gives us an
-         * explicit cooldown step afterwards.
-         */
+        // The final recovery also belongs to the final repetition unless
+        // Garmin explicitly supplied a cooldown step afterwards.
         currentBlock.repetitions.at(-1).recovery = stats;
         continue;
       }
-
       addStandalone('recovery', 'Відновлення', stats);
-      continue;
-    }
-
-    /*
-     * Unknown intensity: preserve the workout data instead of guessing
-     * "cooldown".
-     */
-    if (beforeDistance !== cursor.distance || beforeTime !== cursor.time) {
-      addStandalone('easy', 'Біг', stats);
     }
   }
 
+  flushStandaloneActiveSteps();
   flushBlock();
 
-  /*
-   * Only consume the remaining tail as cooldown when an interval workout
-   * really existed AND the FIT definition did not already account for it.
-   * A plain easy/progressive run therefore cannot accidentally become a
-   * 10–15 km cooldown.
-   */
-  if (seenIntervalWork && cursor.distance < totalRecordDistance - 50) {
-    const remaining = remainingStatsFromCursor(cursor);
-    if (remaining && remaining.distance > 0) {
-      addStandalone('cooldown', 'Заминка', remaining);
+  // If Garmin created several plain Run/Cooldown steps for an otherwise
+  // continuous easy workout, do not present artificial Run + Cooldown pieces.
+  // A true interval workout keeps its explicit warmup/cooldown boundaries.
+  const hasIntervals = structures.some(item => item.type === 'intervals');
+  if (!hasIntervals && structures.length > 1) {
+    const mergeable = structures.every(item =>
+      item.type === 'easy' || item.type === 'warmup' || item.type === 'cooldown'
+    );
+    if (mergeable) {
+      const total = structures.reduce((acc, item) => {
+        acc.duration += Number(item.duration) || 0;
+        acc.distance += Number(item.distance) || 0;
+        acc.ascent += Number(item.ascent) || 0;
+        acc.descent += Number(item.descent) || 0;
+        if (Number.isFinite(item.heartRate)) acc.hr.push(item.heartRate);
+        if (Number.isFinite(item.cadence)) acc.cad.push(item.cadence);
+        return acc;
+      }, { duration: 0, distance: 0, ascent: 0, descent: 0, hr: [], cad: [] });
+      const merged = {
+        type: 'easy',
+        label: 'Непрерывный бег',
+        duration: Math.round(total.duration),
+        distance: Math.round(total.distance),
+        pace: total.distance > 1 ? secondsToPace(total.duration / (total.distance / 1000)) : '—',
+        heartRate: total.hr.length ? Math.round(total.hr.reduce((a,b) => a+b, 0) / total.hr.length) : null,
+        cadence: total.cad.length ? Math.round(total.cad.reduce((a,b) => a+b, 0) / total.cad.length) : null,
+        ascent: Math.round(total.ascent),
+        descent: Math.round(total.descent),
+        elevation: Math.round(total.ascent - total.descent),
+        repetitions: 1
+      };
+      return [merged];
     }
   }
 
@@ -919,10 +869,7 @@ function calculateSummary({ sessions, laps, records, workoutSteps = [] }) {
   // field 2 = altitude
   // raw value / 5 - 500 = метри
   const altitudes = records
-    .map((record) => {
-      if (record[2] == null) return null;
-      return record[2] / 5 - 500;
-    })
+    .map(altitudeMeters)
     .filter((value) => Number.isFinite(value));
 
   // Набір висоти.
