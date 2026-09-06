@@ -545,10 +545,28 @@ function explicitWorkoutStructure(workoutSteps = [], records = []) {
     if (intensity === 1) {
       const next = expanded[i + 1];
       const nextIsActive = next && Number(next[7]) === 0 && Number(next[1]) === 1;
-      if (currentBlock && nextIsActive) {
+      const nextIsCooldown = next && Number(next[7]) === 3;
+
+      // Recovery immediately following an interval belongs to that repetition,
+      // even when it is the final recovery of the block. The old logic only
+      // attached recovery when another active step followed, which turned the
+      // last 400/200 m recoveries into separate blocks.
+      if (currentBlock && currentBlock.repetitions.length) {
+        // A recovery followed by Garmin's open cooldown (or by the end of the
+        // programmed workout) is the transition into cooldown. Merge it with
+        // the remaining recorded distance so the UI shows one final cooldown
+        // instead of a standalone recovery.
+        if (nextIsCooldown || !next) {
+          flushBlock();
+          const cooldownEnd = totalRecordDistance;
+          const cooldownStats = statsForDistanceRange(records, cursor, cooldownEnd);
+          addStandalone('cooldown', 'Заминка', cooldownStats);
+          cursor = cooldownEnd;
+          continue;
+        }
+
         currentBlock.repetitions.at(-1).recovery = stats;
       } else {
-        flushBlock();
         addStandalone('recovery', 'Відновлення', stats);
       }
     }
