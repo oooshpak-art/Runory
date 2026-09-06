@@ -963,7 +963,7 @@
 }
 
 
-/* === Runory mobile v3: stable header + runner icon === */
+/* === Runory mobile v4: balanced header + clearer runner icon === */
 @media (max-width: 680px) {
   .page-shell {
     width: 100%;
@@ -975,11 +975,11 @@
   .topbar {
     position: relative;
     display: grid;
-    grid-template-columns: 42px minmax(0, 1fr) auto auto;
+    grid-template-columns: 42px minmax(0, 1fr) auto;
     grid-template-areas:
-      "toggle brand auth lang"
-      "nav nav nav nav";
-    column-gap: 6px;
+      "toggle brand auth"
+      "nav nav lang";
+    column-gap: 8px;
     row-gap: 10px;
     min-height: 0;
     height: auto;
@@ -1006,8 +1006,8 @@
   }
 
   .sidebar-mobile-toggle svg {
-    width: 22px;
-    height: 22px;
+    width: 23px;
+    height: 23px;
     display: block;
   }
 
@@ -1020,13 +1020,11 @@
   .brand-logo {
     display: block;
     width: 100%;
-    max-width: 150px;
+    max-width: 152px;
     height: auto;
   }
 
-  .topbar-right {
-    display: contents;
-  }
+  .topbar-right { display: contents; }
 
   .app-nav {
     grid-area: nav;
@@ -1051,11 +1049,11 @@
 
   .auth-button {
     grid-area: auth;
-    width: 78px;
-    min-width: 78px;
-    max-width: 78px;
+    width: 84px;
+    min-width: 84px;
+    max-width: 84px;
     height: 38px;
-    padding: 0 7px;
+    padding: 0 8px;
     border-radius: 10px;
     font-size: 10px;
   }
@@ -1069,12 +1067,13 @@
   .language-switcher {
     grid-area: lang;
     justify-self: end;
-    width: 68px;
+    width: 70px;
+    height: 38px;
   }
 
   .language-button {
-    min-width: 34px;
-    width: 34px;
+    min-width: 35px;
+    width: 35px;
     height: 38px;
     padding: 0;
   }
@@ -1106,17 +1105,15 @@
     letter-spacing: -2.5px;
   }
 
-  .hero-copy {
-    max-width: none;
-  }
+  .hero-copy { max-width: none; }
 }
 
 @media (max-width: 390px) {
   .page-shell { padding-left: 13px; padding-right: 13px; }
-  .topbar { grid-template-columns: 40px minmax(0,1fr) auto auto; column-gap: 5px; }
+  .topbar { grid-template-columns: 40px minmax(0,1fr) auto; column-gap: 6px; }
   .sidebar-mobile-toggle { width: 40px; height: 40px; }
-  .brand-logo { max-width: 136px; }
-  .auth-button { width: 74px; min-width: 74px; max-width: 74px; }
+  .brand-logo { max-width: 138px; }
+  .auth-button { width: 78px; min-width: 78px; max-width: 78px; }
   .language-switcher { width: 64px; }
   .language-button { min-width: 32px; width: 32px; }
   .nav-tab { font-size: 11px; padding-left: 4px; padding-right: 4px; }
