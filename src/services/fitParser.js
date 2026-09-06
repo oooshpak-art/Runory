@@ -643,14 +643,11 @@ function explicitWorkoutStructure(workoutSteps = [], records = [], laps = []) {
     const queue = lapQueues.get(sourceIndex);
     if (!queue?.length) return null;
 
-    // A single workout step can be split into several automatic 1 km laps.
-    // Consume enough Garmin laps to cover the step's prescribed distance/time.
-    // This is essential for steps such as 2 km work blocks.
-    if (!step.__repeated) {
-      const all = queue.splice(0, queue.length);
-      return mergeLapStats(all);
-    }
-
+    // Never consume the whole queue blindly. A non-repeated time-based rest
+    // (for example the final 10-minute recovery) must keep its own lap and
+    // must not swallow another lap that Garmin assigned to the same source
+    // step. For distance/time steps, consume only as many laps as are needed
+    // to satisfy that step's prescribed duration.
     const expectedDistance = isDistanceStep(step) ? stepDistance(step) : null;
     const expectedTime = isTimeStep(step) ? stepTime(step) : null;
     const picked = [];
@@ -672,10 +669,10 @@ function explicitWorkoutStructure(workoutSteps = [], records = [], laps = []) {
   };
 
 
-  // A plain easy run is often stored as one OPEN workout step without
-  // workout_step_index on the automatic laps. In that case the structural
-  // interval heuristic must not invent warmup/cooldown/intervals from pace
-  // fluctuations. Aggregate the recorded laps as one continuous run.
+  // A plain easy run is a single OPEN active workout step. Regardless of
+  // whether Garmin also attached workout_step_index to its automatic laps,
+  // do not expose a workout structure for it. Aggregate the whole activity
+  // as one continuous run.
   const hasAnyStepLap = [...lapQueues.values()].some(queue => queue.length > 0);
   const hasRepeatedSteps = expanded.some(step => Boolean(step.__repeated));
   const hasRestSteps = expanded.some(step => isRest(intensity(step)));
@@ -686,7 +683,7 @@ function explicitWorkoutStructure(workoutSteps = [], records = [], laps = []) {
     isOpenStep(expanded[0]) &&
     isActive(intensity(expanded[0]));
 
-  if (isSingleOpenRun && !hasAnyStepLap && !hasRepeatedSteps && !hasRestSteps && !hasExplicitCooldown && !hasExplicitWarmup) {
+  if (isSingleOpenRun && !hasRepeatedSteps && !hasRestSteps && !hasExplicitCooldown && !hasExplicitWarmup) {
     const allLapStats = (laps || []).map(statsFromLap).filter(Boolean);
     const aggregated = mergeLapStats(allLapStats);
     if (aggregated) return [{ type: 'easy', label: 'Біг', ...aggregated, repetitions: 1 }];
