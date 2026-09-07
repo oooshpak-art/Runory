@@ -879,15 +879,47 @@ function getWorkoutPattern(summary) {
     .map(s => paceToSeconds(s.pace))
     .filter(Number.isFinite);
 
-  const hasIntervals = Array.isArray(summary?.structure)
-    && summary.structure.some(block =>
-      block?.type === "intervals"
-      && Array.isArray(block.repetitions)
-      && block.repetitions.length > 0
-    );
+  const structure = Array.isArray(summary?.structure) ? summary.structure : [];
+  const intervalIndex = structure.findIndex(block =>
+    block?.type === "intervals"
+    && Array.isArray(block.repetitions)
+    && block.repetitions.length > 0
+  );
 
-  // Explicit Garmin interval structure always wins over inferred patterns.
-  if (hasIntervals) return { type: "intervals" };
+  const hasIntervals = intervalIndex >= 0;
+
+  /*
+   * A long run with a fast block at the end is still primarily a long run.
+   * Examples: 15–18 km easy + 3×3 km / 4×2 km with 1 km recoveries.
+   *
+   * Do not classify every long interval session this way. We require a
+   * substantial continuous running volume before the interval block: at least
+   * 12 km and at least ~45% of the whole activity. This keeps workouts such as
+   * 2 km warm-up + 5×2 km as interval sessions.
+   */
+  if (hasIntervals) {
+    const beforeInterval = structure.slice(0, intervalIndex);
+    const preWorkDistance = beforeInterval.reduce((sum, block) => {
+      if (!block || block.type === "intervals" || block.type === "recovery") return sum;
+      return sum + (Number(block.distance) || 0);
+    }, 0) / 1000;
+
+    const isLongWithWork =
+      distance >= 18
+      && preWorkDistance >= 12
+      && preWorkDistance / Math.max(distance, 1) >= 0.45;
+
+    if (isLongWithWork) {
+      return {
+        type: "long",
+        variant: "with_work",
+        preWorkDistance,
+        intervalIndex
+      };
+    }
+
+    return { type: "intervals" };
+  }
   if (paces.length < 4) {
     return distance >= 15 ? { type: "long" } : { type: "run" };
   }
@@ -1394,6 +1426,7 @@ function generateLongRunInsight(summary) {
   const pattern = getWorkoutPattern(summary);
   if (pattern.type !== "long") return null;
 
+  const isLongWithWork = pattern.variant === "with_work";
   const splits = Array.isArray(summary?.splits) ? summary.splits : [];
   const valid = splits
     .map(split => ({
@@ -1438,7 +1471,7 @@ function generateLongRunInsight(summary) {
     : `${valid.length} км`;
 
   if (currentLanguage === "uk") {
-    const parts = [`Довгий біг · ${volumeLabel}`];
+    const parts = [isLongWithWork ? `Довгий біг із роботою в кінці · ${volumeLabel}` : `Довгий біг · ${volumeLabel}`];
     if (summary?.pace) parts.push(`середній темп — ${summary.pace}/км`);
 
     if (uneven) parts.push("темп помітно коливався протягом дистанції");
@@ -1636,6 +1669,11 @@ function workHrText(summary, bpm) {
 }
 
 function generateWorkoutInsight(summary) {
+  // Long runs with work at the end are analysed as long runs, not as pure
+  // interval sessions. The interval structure is still shown visually.
+  const longRunInsight = generateLongRunInsight(summary);
+  if (longRunInsight) return longRunInsight;
+
   const intervalInsight = generateIntervalInsight(summary);
   if (intervalInsight) return intervalInsight;
 
@@ -1644,9 +1682,6 @@ function generateWorkoutInsight(summary) {
 
   const tempoInsight = generateTempoInsight(summary);
   if (tempoInsight) return tempoInsight;
-
-  const longRunInsight = generateLongRunInsight(summary);
-  if (longRunInsight) return longRunInsight;
 
   const easyInsight = generateEasyRunInsight(summary);
   if (easyInsight) return easyInsight;
