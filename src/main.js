@@ -113,7 +113,7 @@ const translations = {
     historyWeeklyDistance: "Кілометраж по тижнях",
     historyDynamics: "Динаміка",
     historyEasyDynamics: "Динаміка легких пробіжок",
-    historyEasyDynamicsHint: "Порівнюємо лише схожі тренування, а не всі пробіжки підряд.",
+    historyEasyDynamicsHint: "Порівнюємо тренування зі схожим рівнем легкої інтенсивності, а не всі пробіжки підряд.",
     historyEasyPaceAtHr: "Темп при схожому пульсі",
     historyEasyHrAtPace: "Пульс при схожому темпі",
     historyEasyNoTrend: "Поки недостатньо схожих тренувань для надійного висновку.",
@@ -2136,18 +2136,59 @@ function easyRunComparable(current, candidate) {
   const candidatePace = paceToSeconds(candidate.pace);
   if (![currentDistance, candidateDistance, currentDuration, candidateDuration, currentPace, candidatePace].every(Number.isFinite)) return false;
 
+  // The workout type already tells us that both runs are easy. Here we only
+  // check whether the runs are physically comparable enough for a trend.
+  // Heart-rate intensity is handled separately and is personalized to the
+  // runner's own easy-run distribution — there are no universal HR limits.
   const distanceRatio = candidateDistance / currentDistance;
   const durationRatio = candidateDuration / currentDuration;
-  if (distanceRatio < 0.70 || distanceRatio > 1.30) return false;
-  if (durationRatio < 0.70 || durationRatio > 1.30) return false;
+  if (distanceRatio < 0.65 || distanceRatio > 1.40) return false;
+  if (durationRatio < 0.65 || durationRatio > 1.40) return false;
 
   const currentAscent = Number(current.ascent_m);
   const candidateAscent = Number(candidate.ascent_m);
   if (Number.isFinite(currentAscent) && Number.isFinite(candidateAscent)) {
     const ascentDiff = Math.abs(currentAscent - candidateAscent);
-    if (ascentDiff > Math.max(80, currentAscent * 0.75)) return false;
+    if (ascentDiff > Math.max(100, Math.max(currentAscent, candidateAscent) * 0.80)) return false;
   }
   return true;
+}
+
+function percentileRank(values, value) {
+  const valid = values.filter(Number.isFinite).sort((a, b) => a - b);
+  if (!valid.length || !Number.isFinite(value)) return null;
+  if (valid.length === 1) return 0.5;
+  const below = valid.filter(item => item < value).length;
+  const equal = valid.filter(item => item === value).length;
+  return (below + Math.max(0, equal - 1) / 2) / (valid.length - 1);
+}
+
+function easyIntensityDistance(currentHr, candidateHr, allHrs) {
+  if (!Number.isFinite(currentHr) || !Number.isFinite(candidateHr)) return Infinity;
+  const currentRank = percentileRank(allHrs, currentHr);
+  const candidateRank = percentileRank(allHrs, candidateHr);
+  if (currentRank == null || candidateRank == null) return Math.abs(currentHr - candidateHr) / 10;
+  return Math.abs(currentRank - candidateRank);
+}
+
+function selectEasyIntensityMatches(current, candidates) {
+  const currentHr = Number(current?.heart_rate);
+  const allHrs = candidates.map(item => Number(item.heart_rate)).filter(Number.isFinite);
+  if (!Number.isFinite(currentHr) || !allHrs.length) return [];
+
+  // Personalize intensity matching. A runner whose easy runs are 110 bpm and
+  // another whose easy runs are 150 bpm get the same relative treatment.
+  const ranked = candidates
+    .map(item => ({
+      item,
+      intensityDistance: easyIntensityDistance(currentHr, Number(item.heart_rate), allHrs),
+      hrDistance: Math.abs(Number(item.heart_rate) - currentHr)
+    }))
+    .sort((a, b) => a.intensityDistance - b.intensityDistance || a.hrDistance - b.hrDistance);
+
+  let matches = ranked.filter(item => item.intensityDistance <= 0.18);
+  if (matches.length < 2) matches = ranked.filter(item => item.intensityDistance <= 0.28);
+  return matches.map(item => item.item);
 }
 
 function buildEasyRunDynamics(workouts) {
@@ -2158,47 +2199,55 @@ function buildEasyRunDynamics(workouts) {
   if (easy.length < 2) return null;
 
   const current = easy.at(-1);
-  const previous = easy.slice(0, -1).filter(w => easyRunComparable(current, w));
-  if (!previous.length) return null;
+  const candidates = easy.slice(0, -1).filter(w => easyRunComparable(current, w));
+  if (!candidates.length) return null;
 
   const currentHr = Number(current.heart_rate);
   const currentPace = paceToSeconds(current.pace);
-  const sameHr = previous.filter(w => Math.abs(Number(w.heart_rate) - currentHr) <= 7);
-  const samePace = previous.filter(w => Math.abs(paceToSeconds(w.pace) - currentPace) <= 25);
+  const intensityMatches = selectEasyIntensityMatches(current, candidates);
+  const samePace = candidates
+    .filter(w => Math.abs(paceToSeconds(w.pace) - currentPace) <= 25)
+    .sort((a, b) => Math.abs(paceToSeconds(a.pace) - currentPace) - Math.abs(paceToSeconds(b.pace) - currentPace));
 
-  const paceBaseline = median(sameHr.map(w => paceToSeconds(w.pace)));
-  const hrBaseline = median(samePace.map(w => Number(w.heart_rate)));
+  const paceBaseline = median(intensityMatches.map(w => paceToSeconds(w.pace)));
+  const hrBaseline = median(samePace.slice(0, Math.max(3, Math.min(5, samePace.length))).map(w => Number(w.heart_rate)));
   const paceDelta = paceBaseline != null ? paceBaseline - currentPace : null;
   const hrDelta = hrBaseline != null ? currentHr - hrBaseline : null;
 
-  // A trend is stronger when several comparable runs exist. With only one or two,
-  // report the current comparison but avoid calling it a durable progression.
-  const splitIndex = Math.floor(previous.length / 2);
-  const older = previous.slice(0, splitIndex);
-  const recent = previous.slice(splitIndex);
-  const recentPace = median(recent.filter(w => Math.abs(Number(w.heart_rate) - currentHr) <= 7).map(w => paceToSeconds(w.pace)));
-  const olderPace = median(older.filter(w => Math.abs(Number(w.heart_rate) - currentHr) <= 7).map(w => paceToSeconds(w.pace)));
-  const recentHr = median(recent.filter(w => Math.abs(paceToSeconds(w.pace) - currentPace) <= 25).map(w => Number(w.heart_rate)));
-  const olderHr = median(older.filter(w => Math.abs(paceToSeconds(w.pace) - currentPace) <= 25).map(w => Number(w.heart_rate)));
+  // Trend is calculated from several historical matches, split into older and
+  // newer halves. We do not call a single workout "progress".
+  const matches = intensityMatches.slice().sort((a, b) => new Date(a.workout_date) - new Date(b.workout_date));
+  const splitIndex = Math.floor(matches.length / 2);
+  const older = matches.slice(0, splitIndex);
+  const recent = matches.slice(splitIndex);
+  const olderPace = median(older.map(w => paceToSeconds(w.pace)));
+  const recentPace = median(recent.map(w => paceToSeconds(w.pace)));
+
+  const paceMatches = samePace.slice(0, Math.max(3, Math.min(5, samePace.length)));
+  const paceMatchesSorted = paceMatches.slice().sort((a, b) => new Date(a.workout_date) - new Date(b.workout_date));
+  const paceSplit = Math.floor(paceMatchesSorted.length / 2);
+  const olderHr = median(paceMatchesSorted.slice(0, paceSplit).map(w => Number(w.heart_rate)));
+  const recentHr = median(paceMatchesSorted.slice(paceSplit).map(w => Number(w.heart_rate)));
 
   let trend = "stable";
-  if (previous.length >= 4) {
-    if (recentPace != null && olderPace != null && olderPace - recentPace >= 6) trend = "improved";
-    else if (recentPace != null && olderPace != null && olderPace - recentPace <= -6) trend = "declined";
-    else if (recentHr != null && olderHr != null && recentHr - olderHr <= -3) trend = "improved";
-    else if (recentHr != null && olderHr != null && recentHr - olderHr >= 3) trend = "declined";
+  if (matches.length >= 4) {
+    if (olderPace != null && recentPace != null && olderPace - recentPace >= 6) trend = "improved";
+    else if (olderPace != null && recentPace != null && olderPace - recentPace <= -6) trend = "declined";
+    else if (olderHr != null && recentHr != null && recentHr - olderHr <= -3) trend = "improved";
+    else if (olderHr != null && recentHr != null && recentHr - olderHr >= 3) trend = "declined";
   }
 
   return {
     current,
-    count: previous.length,
+    count: matches.length,
     paceBaseline,
     hrBaseline,
     paceDelta,
     hrDelta,
     trend,
-    sameHrCount: sameHr.length,
-    samePaceCount: samePace.length
+    sameHrCount: intensityMatches.length,
+    samePaceCount: paceMatches.length,
+    confidence: matches.length >= 4 ? "good" : matches.length >= 3 ? "moderate" : "low"
   };
 }
 
