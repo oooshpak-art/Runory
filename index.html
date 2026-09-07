@@ -597,6 +597,12 @@
             </span>
             <span data-i18n="historyNav">Мої тренування</span>
           </button>
+          <button class="account-sidebar-link" type="button" data-view-target="dynamics">
+            <span class="account-sidebar-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M4 17 9 12l3 3 7-8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 7h3v3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+            <span data-i18n="dynamicsNav">Динаміка</span>
+          </button>
         </nav>
       </aside>
       <button class="sidebar-mobile-backdrop" id="sidebarMobileBackdrop" type="button" aria-label="Закрити меню"></button>
@@ -914,6 +920,18 @@
         <div id="historyList" class="history-list">
           <div class="history-empty" data-i18n="historyLoading">Завантажуємо тренування…</div>
         </div>
+      </section>
+    </div>
+
+    <div class="view" id="dynamics" data-view-panel>
+      <section class="dynamics-page">
+        <div class="dynamics-heading">
+          <div>
+            <h1 data-i18n="dynamicsTitle">Динаміка бігової форми</h1>
+            <p data-i18n="dynamicsCopy">Порівнюємо схожі тренування, щоб бачити зміни форми з часом.</p>
+          </div>
+        </div>
+        <div id="dynamicsContent" class="dynamics-content"></div>
       </section>
     </div>
 
