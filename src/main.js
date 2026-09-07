@@ -123,6 +123,7 @@ const translations = {
     historyEasyCurrentBetter: "Останній результат кращий за типовий рівень",
     historyEasyCurrentWorse: "Останній результат слабший за типовий рівень",
     historyEasyMixed: "Показники різноспрямовані",
+    historyEasyNearTypical: "Результат близький до типового рівня",
     historyEasyTrendHint: "Для впевненого висновку про тренд потрібно більше схожих тренувань.",
     historyEasyCompared: "На основі {count} схожих тренувань",
     historyAvgPace: "Середній темп",
@@ -310,6 +311,7 @@ const translations = {
     historyEasyCurrentBetter: "The latest result is better than the typical level",
     historyEasyCurrentWorse: "The latest result is below the typical level",
     historyEasyMixed: "The indicators are mixed",
+    historyEasyNearTypical: "The result is close to the typical level",
     historyEasyTrendHint: "More similar workouts are needed for a confident trend conclusion.",
     historyEasyCompared: "Based on {count} similar workouts",
     historyAvgPace: "Average pace",
@@ -2307,9 +2309,10 @@ function renderHistoryAnalytics(workouts) {
     let trendLabel;
     if (dynamics.trend === "improved") trendLabel = t("historyEasyImproved");
     else if (dynamics.trend === "declined") trendLabel = t("historyEasyDeclined");
-    else if (currentPaceSignal === "better" && currentHrSignal !== "worse") trendLabel = t("historyEasyCurrentBetter");
-    else if (currentPaceSignal === "worse" && currentHrSignal !== "better") trendLabel = t("historyEasyCurrentWorse");
     else if ((currentPaceSignal === "better" && currentHrSignal === "worse") || (currentPaceSignal === "worse" && currentHrSignal === "better")) trendLabel = t("historyEasyMixed");
+    else if (currentPaceSignal === "better" && currentHrSignal === "better") trendLabel = t("historyEasyCurrentBetter");
+    else if (currentPaceSignal === "worse" && currentHrSignal === "worse") trendLabel = t("historyEasyCurrentWorse");
+    else if (currentPaceSignal !== "neutral" || currentHrSignal !== "neutral") trendLabel = t("historyEasyNearTypical");
     else trendLabel = t("historyEasyStable");
     const trendText = dynamics.paceDelta != null || dynamics.hrDelta != null ? trendLabel : t("historyEasyStable");
     const compared = t("historyEasyCompared").replace("{count}", String(dynamics.count));
