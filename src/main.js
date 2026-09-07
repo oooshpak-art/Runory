@@ -112,21 +112,22 @@ const translations = {
     historyOverview: "Огляд",
     historyWeeklyDistance: "Кілометраж по тижнях",
     historyDynamics: "Динаміка",
+    historyEasyDynamics: "Динаміка легких пробіжок",
+    historyEasyDynamicsHint: "Порівнюємо лише схожі тренування, а не всі пробіжки підряд.",
+    historyEasyPaceAtHr: "Темп при схожому пульсі",
+    historyEasyHrAtPace: "Пульс при схожому темпі",
+    historyEasyNoTrend: "Поки недостатньо схожих тренувань для надійного висновку.",
+    historyEasyImproved: "Показники покращуються",
+    historyEasyStable: "Стабільний рівень",
+    historyEasyDeclined: "Є ознаки погіршення",
+    historyEasyCurrentBetter: "Останній результат кращий за типовий рівень",
+    historyEasyCurrentWorse: "Останній результат слабший за типовий рівень",
+    historyEasyTrendHint: "Для впевненого висновку про тренд потрібно більше схожих тренувань.",
+    historyEasyCompared: "На основі {count} схожих тренувань",
     historyAvgPace: "Середній темп",
     historyAvgHr: "Середній пульс",
     historyNoData: "Недостатньо даних для графіка",
     historyWeek: "Тиждень",
-    historyEasyComparison: "Порівняння легких пробіжок",
-    historyEasyComparisonHint: "Порівнюємо лише схожі тренування, а не всі пробіжки підряд.",
-    historySimilarHr: "Темп при схожому пульсі",
-    historySimilarPace: "Пульс при схожому темпі",
-    historyNoComparable: "Поки недостатньо схожих тренувань для надійного порівняння.",
-    historyFasterAtHr: "На схожому пульсі темп став швидшим на {delta} с/км.",
-    historySlowerAtHr: "На схожому пульсі темп став повільнішим на {delta} с/км.",
-    historyLowerHrAtPace: "На схожому темпі пульс став нижчим на {delta} уд/хв.",
-    historyHigherHrAtPace: "На схожому темпі пульс став вищим на {delta} уд/хв.",
-    historyNoClearChange: "Помітної зміни між схожими тренуваннями не виявлено.",
-    historyComparedWith: "Порівняно з",
     futureGarmin: "Garmin Connect",
     futureAi: "AI-аналіз тренера",
     aiScoreExcellent: "Відмінна робота",
@@ -297,21 +298,22 @@ const translations = {
     historyOverview: "Overview",
     historyWeeklyDistance: "Weekly mileage",
     historyDynamics: "Dynamics",
+    historyEasyDynamics: "Easy run dynamics",
+    historyEasyDynamicsHint: "We compare only similar workouts, not every run in a row.",
+    historyEasyPaceAtHr: "Pace at a similar heart rate",
+    historyEasyHrAtPace: "Heart rate at a similar pace",
+    historyEasyNoTrend: "Not enough similar workouts for a reliable conclusion yet.",
+    historyEasyImproved: "Indicators are improving",
+    historyEasyStable: "Stable level",
+    historyEasyDeclined: "Signs of decline",
+    historyEasyCurrentBetter: "The latest result is better than the typical level",
+    historyEasyCurrentWorse: "The latest result is below the typical level",
+    historyEasyTrendHint: "More similar workouts are needed for a confident trend conclusion.",
+    historyEasyCompared: "Based on {count} similar workouts",
     historyAvgPace: "Average pace",
     historyAvgHr: "Average heart rate",
     historyNoData: "Not enough data for a chart",
     historyWeek: "Week",
-    historyEasyComparison: "Easy run comparison",
-    historyEasyComparisonHint: "Only comparable workouts are matched, not every run in the history.",
-    historySimilarHr: "Pace at a similar heart rate",
-    historySimilarPace: "Heart rate at a similar pace",
-    historyNoComparable: "Not enough comparable workouts for a reliable comparison yet.",
-    historyFasterAtHr: "At a similar heart rate, pace improved by {delta} sec/km.",
-    historySlowerAtHr: "At a similar heart rate, pace slowed by {delta} sec/km.",
-    historyLowerHrAtPace: "At a similar pace, heart rate was lower by {delta} bpm.",
-    historyHigherHrAtPace: "At a similar pace, heart rate was higher by {delta} bpm.",
-    historyNoClearChange: "No clear change was found between comparable workouts.",
-    historyComparedWith: "Compared with",
     futureGarmin: "Garmin Connect",
     futureAi: "AI coach analysis",
     aiScoreExcellent: "Excellent work",
@@ -2117,94 +2119,87 @@ function formatWeekLabel(date) {
   return date.toLocaleDateString(translations[currentLanguage].locale, { day: "2-digit", month: "2-digit" });
 }
 
-function comparableEasyWorkout(a, b) {
-  if (!a || !b || historyTypeClass(a.workout_type) !== "run" || historyTypeClass(b.workout_type) !== "run") return false;
-  const distanceA = Number(a.distance_km), distanceB = Number(b.distance_km);
-  const durationA = Number(a.duration_sec), durationB = Number(b.duration_sec);
-  if (!(distanceA > 0 && distanceB > 0 && durationA > 0 && durationB > 0)) return false;
+function median(values) {
+  const sorted = values.filter(Number.isFinite).sort((a, b) => a - b);
+  if (!sorted.length) return null;
+  const middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
+}
 
-  const distanceRatio = Math.max(distanceA, distanceB) / Math.min(distanceA, distanceB);
-  const durationRatio = Math.max(durationA, durationB) / Math.min(durationA, durationB);
-  if (distanceRatio > 1.35 || durationRatio > 1.35) return false;
+function easyRunComparable(current, candidate) {
+  if (!current || !candidate || historyTypeClass(candidate.workout_type) !== "run") return false;
+  const currentDistance = Number(current.distance_km);
+  const candidateDistance = Number(candidate.distance_km);
+  const currentDuration = Number(current.duration_sec);
+  const candidateDuration = Number(candidate.duration_sec);
+  const currentPace = paceToSeconds(current.pace);
+  const candidatePace = paceToSeconds(candidate.pace);
+  if (![currentDistance, candidateDistance, currentDuration, candidateDuration, currentPace, candidatePace].every(Number.isFinite)) return false;
 
-  const ascentA = Number(a.ascent_m), ascentB = Number(b.ascent_m);
-  if (Number.isFinite(ascentA) && Number.isFinite(ascentB) && Math.max(ascentA, ascentB) > 0) {
-    const ascentRatio = Math.max(ascentA, ascentB) / Math.max(1, Math.min(ascentA, ascentB));
-    if (ascentRatio > 3.5 && Math.abs(ascentA - ascentB) > 60) return false;
+  const distanceRatio = candidateDistance / currentDistance;
+  const durationRatio = candidateDuration / currentDuration;
+  if (distanceRatio < 0.70 || distanceRatio > 1.30) return false;
+  if (durationRatio < 0.70 || durationRatio > 1.30) return false;
+
+  const currentAscent = Number(current.ascent_m);
+  const candidateAscent = Number(candidate.ascent_m);
+  if (Number.isFinite(currentAscent) && Number.isFinite(candidateAscent)) {
+    const ascentDiff = Math.abs(currentAscent - candidateAscent);
+    if (ascentDiff > Math.max(80, currentAscent * 0.75)) return false;
   }
   return true;
 }
 
-function easyComparisonCandidates(latest, workouts) {
-  return workouts
-    .filter(workout => workout !== latest && new Date(workout.workout_date || 0) < new Date(latest.workout_date || 0))
-    .filter(workout => comparableEasyWorkout(latest, workout))
-    .map(workout => {
-      const pace = paceToSeconds(workout.pace);
-      const hr = Number(workout.heart_rate);
-      const latestPace = paceToSeconds(latest.pace);
-      const latestHr = Number(latest.heart_rate);
-      const hrDiff = Number.isFinite(latestHr) && Number.isFinite(hr) ? Math.abs(latestHr - hr) : Infinity;
-      const paceDiff = Number.isFinite(latestPace) && Number.isFinite(pace) ? Math.abs(latestPace - pace) : Infinity;
-      const distanceDiff = Math.abs(Number(latest.distance_km) - Number(workout.distance_km));
-      return { workout, pace, hr, hrDiff, paceDiff, distanceDiff };
-    });
-}
+function buildEasyRunDynamics(workouts) {
+  const easy = workouts
+    .filter(w => historyTypeClass(w.workout_type) === "run")
+    .filter(w => Number.isFinite(Number(w.heart_rate)) && paceToSeconds(w.pace) != null)
+    .sort((a, b) => new Date(a.workout_date) - new Date(b.workout_date));
+  if (easy.length < 2) return null;
 
-function chooseEasyComparison(latest, workouts) {
-  const candidates = easyComparisonCandidates(latest, workouts);
-  const latestPace = paceToSeconds(latest?.pace);
-  const latestHr = Number(latest?.heart_rate);
+  const current = easy.at(-1);
+  const previous = easy.slice(0, -1).filter(w => easyRunComparable(current, w));
+  if (!previous.length) return null;
 
-  const byHr = candidates
-    .filter(item => Number.isFinite(item.hr) && Number.isFinite(latestHr) && item.hrDiff <= 5 && Number.isFinite(item.pace))
-    .sort((a, b) => a.hrDiff - b.hrDiff || a.distanceDiff - b.distanceDiff || new Date(b.workout.workout_date) - new Date(a.workout.workout_date))[0] || null;
+  const currentHr = Number(current.heart_rate);
+  const currentPace = paceToSeconds(current.pace);
+  const sameHr = previous.filter(w => Math.abs(Number(w.heart_rate) - currentHr) <= 7);
+  const samePace = previous.filter(w => Math.abs(paceToSeconds(w.pace) - currentPace) <= 25);
 
-  const byPace = candidates
-    .filter(item => Number.isFinite(item.pace) && Number.isFinite(latestPace) && item.paceDiff <= 10 && Number.isFinite(item.hr))
-    .sort((a, b) => a.paceDiff - b.paceDiff || a.distanceDiff - b.distanceDiff || new Date(b.workout.workout_date) - new Date(a.workout.workout_date))[0] || null;
+  const paceBaseline = median(sameHr.map(w => paceToSeconds(w.pace)));
+  const hrBaseline = median(samePace.map(w => Number(w.heart_rate)));
+  const paceDelta = paceBaseline != null ? paceBaseline - currentPace : null;
+  const hrDelta = hrBaseline != null ? currentHr - hrBaseline : null;
 
-  return { byHr, byPace, candidates };
-}
+  // A trend is stronger when several comparable runs exist. With only one or two,
+  // report the current comparison but avoid calling it a durable progression.
+  const splitIndex = Math.floor(previous.length / 2);
+  const older = previous.slice(0, splitIndex);
+  const recent = previous.slice(splitIndex);
+  const recentPace = median(recent.filter(w => Math.abs(Number(w.heart_rate) - currentHr) <= 7).map(w => paceToSeconds(w.pace)));
+  const olderPace = median(older.filter(w => Math.abs(Number(w.heart_rate) - currentHr) <= 7).map(w => paceToSeconds(w.pace)));
+  const recentHr = median(recent.filter(w => Math.abs(paceToSeconds(w.pace) - currentPace) <= 25).map(w => Number(w.heart_rate)));
+  const olderHr = median(older.filter(w => Math.abs(paceToSeconds(w.pace) - currentPace) <= 25).map(w => Number(w.heart_rate)));
 
-function renderEasyComparison(latest, workouts) {
-  if (!latest) return `<article class="history-dynamics-card"><div class="history-card-heading"><h3>${escapeHtml(t("historyEasyComparison"))}</h3></div><p>${escapeHtml(t("historyNoComparable"))}</p></article>`;
-
-  const { byHr, byPace, candidates } = chooseEasyComparison(latest, workouts);
-  const latestDate = formatHistoryDate(latest.workout_date);
-  const latestPace = paceToSeconds(latest.pace);
-  const latestHr = Number(latest.heart_rate);
-  const lines = [];
-
-  if (byHr) {
-    const paceDelta = byHr.pace - latestPace;
-    if (Math.abs(paceDelta) >= 3) {
-      const amount = Math.abs(Math.round(paceDelta));
-      const key = paceDelta > 0 ? "historyFasterAtHr" : "historySlowerAtHr";
-      lines.push(`<div class="history-dynamic-row"><span>${escapeHtml(t("historySimilarHr"))}</span><strong>${escapeHtml(formatPaceSeconds(latestPace))}/км</strong></div><p>${escapeHtml(t(key).replace("{delta}", String(amount)))} ${escapeHtml(t("historyComparedWith"))} ${escapeHtml(formatHistoryDate(byHr.workout.workout_date))}.</p>`);
-    }
+  let trend = "stable";
+  if (previous.length >= 4) {
+    if (recentPace != null && olderPace != null && olderPace - recentPace >= 6) trend = "improved";
+    else if (recentPace != null && olderPace != null && olderPace - recentPace <= -6) trend = "declined";
+    else if (recentHr != null && olderHr != null && recentHr - olderHr <= -3) trend = "improved";
+    else if (recentHr != null && olderHr != null && recentHr - olderHr >= 3) trend = "declined";
   }
 
-  if (byPace) {
-    const hrDelta = latestHr - byPace.hr;
-    if (Math.abs(hrDelta) >= 2) {
-      const amount = Math.abs(Math.round(hrDelta));
-      const key = hrDelta < 0 ? "historyLowerHrAtPace" : "historyHigherHrAtPace";
-      lines.push(`<div class="history-dynamic-row"><span>${escapeHtml(t("historySimilarPace"))}</span><strong>${Number.isFinite(latestHr) ? `${Math.round(latestHr)} уд/хв` : "—"}</strong></div><p>${escapeHtml(t(key).replace("{delta}", String(amount)))} ${escapeHtml(t("historyComparedWith"))} ${escapeHtml(formatHistoryDate(byPace.workout.workout_date))}.</p>`);
-    }
-  }
-
-  if (!lines.length) {
-    const text = candidates.length ? t("historyNoClearChange") : t("historyNoComparable");
-    lines.push(`<p>${escapeHtml(text)}</p>`);
-  }
-
-  return `
-    <article class="history-dynamics-card">
-      <div class="history-card-heading"><h3>${escapeHtml(t("historyEasyComparison"))}</h3><span>${escapeHtml(latestDate)}</span></div>
-      <p class="history-comparison-hint">${escapeHtml(t("historyEasyComparisonHint"))}</p>
-      ${lines.join("")}
-    </article>`;
+  return {
+    current,
+    count: previous.length,
+    paceBaseline,
+    hrBaseline,
+    paceDelta,
+    hrDelta,
+    trend,
+    sameHrCount: sameHr.length,
+    samePaceCount: samePace.length
+  };
 }
 
 function renderHistoryAnalytics(workouts) {
@@ -2218,7 +2213,8 @@ function renderHistoryAnalytics(workouts) {
     if (!date || Number.isNaN(date.getTime())) return;
     const key = getWeekStart(date).toISOString().slice(0, 10);
     if (!byWeek.has(key)) byWeek.set(key, { date: getWeekStart(date), distance: 0 });
-    byWeek.get(key).distance += Number(workout.distance_km) || 0;
+    const row = byWeek.get(key);
+    row.distance += Number(workout.distance_km) || 0;
   });
 
   const weeks = [...byWeek.values()].sort((a, b) => a.date - b.date).slice(-8);
@@ -2230,11 +2226,36 @@ function renderHistoryAnalytics(workouts) {
       <strong>${escapeHtml(w.distance.toFixed(1))}</strong>
     </div>`).join("") : `<div class="history-chart-empty">${escapeHtml(t("historyNoData"))}</div>`;
 
-  const easy = workouts
-    .filter(workout => historyTypeClass(workout.workout_type) === "run")
-    .filter(workout => Number(workout.distance_km) > 0 && Number(workout.duration_sec) > 0)
-    .sort((a, b) => new Date(b.workout_date || 0) - new Date(a.workout_date || 0));
-  const latestEasy = easy[0] || null;
+  const dynamics = buildEasyRunDynamics(workouts);
+  let dynamicsHtml = "";
+  if (!dynamics) {
+    dynamicsHtml = `<p>${escapeHtml(t("historyEasyNoTrend"))}</p>`;
+  } else {
+    const paceDeltaText = Number.isFinite(dynamics.paceDelta) && Math.abs(dynamics.paceDelta) >= 3
+      ? `${dynamics.paceDelta > 0 ? "↗" : "↘"} ${Math.abs(Math.round(dynamics.paceDelta))} с/км`
+      : "→";
+    const hrDeltaText = Number.isFinite(dynamics.hrDelta) && Math.abs(dynamics.hrDelta) >= 1
+      ? `${dynamics.hrDelta < 0 ? "↘" : "↗"} ${Math.abs(Math.round(dynamics.hrDelta))} уд/хв`
+      : "→";
+    const trendLabel = dynamics.trend === "improved"
+      ? t("historyEasyImproved")
+      : dynamics.trend === "declined"
+        ? t("historyEasyDeclined")
+        : dynamics.paceDelta != null && dynamics.paceDelta >= 6
+          ? t("historyEasyCurrentBetter")
+          : dynamics.paceDelta != null && dynamics.paceDelta <= -6
+            ? t("historyEasyCurrentWorse")
+            : t("historyEasyStable");
+    const trendText = dynamics.paceDelta != null || dynamics.hrDelta != null ? trendLabel : t("historyEasyStable");
+    const compared = t("historyEasyCompared").replace("{count}", String(dynamics.count));
+    const trendHint = dynamics.count < 4 ? t("historyEasyTrendHint") : t("historyEasyDynamicsHint");
+
+    dynamicsHtml = `
+      <div class="history-dynamic-status"><strong>${escapeHtml(trendText)}</strong><span>${escapeHtml(compared)}</span></div>
+      <div class="history-dynamic-row"><span>${escapeHtml(t("historyEasyPaceAtHr"))}</span><strong>${escapeHtml(dynamics.paceBaseline != null ? formatPaceSeconds(dynamics.paceBaseline) : "—")} <small>${escapeHtml(paceDeltaText)}</small></strong></div>
+      <div class="history-dynamic-row"><span>${escapeHtml(t("historyEasyHrAtPace"))}</span><strong>${dynamics.hrBaseline != null ? `${Math.round(dynamics.hrBaseline)} уд/хв` : "—"} <small>${escapeHtml(hrDeltaText)}</small></strong></div>
+      <p>${escapeHtml(trendHint)}</p>`;
+  }
 
   analytics.innerHTML = `
     <div class="history-analytics-heading"><span class="eyebrow">${escapeHtml(t("historyOverview"))}</span></div>
@@ -2243,7 +2264,10 @@ function renderHistoryAnalytics(workouts) {
         <div class="history-card-heading"><h3>${escapeHtml(t("historyWeeklyDistance"))}</h3><span>${escapeHtml(t("historyWeek"))}</span></div>
         <div class="history-bars">${chart}</div>
       </article>
-      ${renderEasyComparison(latestEasy, easy)}
+      <article class="history-dynamics-card">
+        <div class="history-card-heading"><h3>${escapeHtml(t("historyEasyDynamics"))}</h3></div>
+        ${dynamicsHtml}
+      </article>
     </div>`;
 }
 
