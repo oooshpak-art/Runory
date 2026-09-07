@@ -2228,7 +2228,7 @@ function historyPeriodStart() {
 function historyFilteredWorkouts() {
   const start = historyPeriodStart();
   return historyWorkouts.filter(workout => {
-    const typeOk = historyTypeFilter === "all" || historyTypeClass(workout.workout_type) === historyTypeFilter;
+    const typeOk = historyTypeFilter === "all" || derivedWorkoutType(workout) === historyTypeFilter;
     const date = workout.workout_date ? new Date(workout.workout_date) : null;
     const dateOk = !start || (date && !Number.isNaN(date.getTime()) && date >= start);
     return typeOk && dateOk;
@@ -2269,7 +2269,7 @@ function median(values) {
 }
 
 function easyRunComparable(current, candidate) {
-  if (!current || !candidate || historyTypeClass(candidate.workout_type) !== "run") return false;
+  if (!current || !candidate || derivedWorkoutType(candidate) !== "run") return false;
   const currentDistance = Number(current.distance_km);
   const candidateDistance = Number(candidate.distance_km);
   const currentDuration = Number(current.duration_sec);
@@ -2335,7 +2335,7 @@ function selectEasyIntensityMatches(current, candidates) {
 
 function buildEasyRunDynamics(workouts) {
   const easy = workouts
-    .filter(w => historyTypeClass(w.workout_type) === "run")
+    .filter(w => derivedWorkoutType(w) === "run")
     .filter(w => Number.isFinite(Number(w.heart_rate)) && paceToSeconds(w.pace) != null)
     .sort((a, b) => new Date(a.workout_date) - new Date(b.workout_date));
   if (easy.length < 2) return null;
@@ -2408,8 +2408,23 @@ function formatHomeHours(seconds) {
   return (seconds / 3600).toFixed(1).replace(".", currentLanguage === "uk" ? "," : ".");
 }
 
+function derivedWorkoutType(record) {
+  if (!record) return "run";
+  const structure = Array.isArray(record.structure) ? record.structure : [];
+  const hasUsableStructure = structure.length > 0;
+  if (!hasUsableStructure) return historyTypeClass(record.workout_type);
+
+  const summary = {
+    distance: Number(record.distance_km) || 0,
+    splits: Array.isArray(record.splits) ? record.splits : [],
+    structure
+  };
+
+  return getWorkoutTypeKey(summary);
+}
+
 function homeWorkoutLabel(workout) {
-  return workoutTypeLabel(workout?.workout_type || "run");
+  return workoutTypeLabel(derivedWorkoutType(workout));
 }
 
 function homeTrendState(workouts) {
@@ -2624,9 +2639,9 @@ function renderHistoryList(workouts = historyFilteredWorkouts()) {
 
   container.innerHTML = workouts.map(workout => `
     <article class="history-item" data-history-id="${escapeHtml(workout.id)}">
-      <div class="history-type-icon ${historyTypeClass(workout.workout_type)}" aria-hidden="true">${historyTypeIcon(workout.workout_type)}</div>
+      <div class="history-type-icon ${derivedWorkoutType(workout)}" aria-hidden="true">${historyTypeIcon(workout.workout_type)}</div>
       <div class="history-item-main">
-        <div class="history-item-heading"><div><p class="eyebrow">${escapeHtml(formatHistoryDate(workout.workout_date))}</p><h3>${escapeHtml(workoutTypeLabel(workout.workout_type))}</h3></div><strong class="history-distance">${escapeHtml(formatHistoryDistance(workout.distance_km))}</strong></div>
+        <div class="history-item-heading"><div><p class="eyebrow">${escapeHtml(formatHistoryDate(workout.workout_date))}</p><h3>${escapeHtml(workoutTypeLabel(derivedWorkoutType(workout)))}</h3></div><strong class="history-distance">${escapeHtml(formatHistoryDistance(workout.distance_km))}</strong></div>
         <div class="history-metrics"><span><b>${escapeHtml(t("pace"))}</b> ${escapeHtml(workout.pace || "—")}</span><span><b>${escapeHtml(t("time"))}</b> ${escapeHtml(formatHistoryDuration(workout.duration_sec))}</span><span><b>${escapeHtml(t("heartRate"))}</b> ${workout.heart_rate != null ? `${Math.round(workout.heart_rate)} ${currentLanguage === "uk" ? "уд/хв" : "bpm"}` : "—"}</span><span><b>${escapeHtml(t("ascent"))}</b> ${workout.ascent_m != null ? `+${Math.round(workout.ascent_m)} ${currentLanguage === "uk" ? "м" : "m"}` : "—"}</span></div>
       </div>
       <div class="history-item-actions"><button type="button" class="history-view-button" data-history-view="${escapeHtml(workout.id)}">${escapeHtml(t("historyOpen"))}</button><button type="button" class="history-delete-button" data-history-delete="${escapeHtml(workout.id)}" aria-label="${escapeHtml(t("historyDelete"))}">×</button></div>
