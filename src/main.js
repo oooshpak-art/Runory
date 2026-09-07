@@ -85,6 +85,14 @@ const translations = {
     historyNav: "Мої тренування",
     historyTitle: "Мої тренування",
     historyCopy: "Усі тренування, які ти зберіг у Runory.",
+    dynamicsNav: "Динаміка",
+    dynamicsTitle: "Динаміка бігової форми",
+    dynamicsCopy: "Порівнюємо схожі тренування, щоб бачити зміни форми з часом.",
+    dynamicsEasy: "Легкі",
+    dynamicsTempo: "Темпові",
+    dynamicsIntervals: "Інтервали",
+    dynamicsLong: "Довгі",
+    dynamicsComingSoon: "Незабаром",
     historyEmpty: "Тут поки немає збережених тренувань.",
     historyLoading: "Завантажуємо тренування…",
     historyView: "Відкрити",
@@ -273,6 +281,14 @@ const translations = {
     historyNav: "My workouts",
     historyTitle: "My workouts",
     historyCopy: "All workouts you have saved in Runory.",
+    dynamicsNav: "Dynamics",
+    dynamicsTitle: "Running form dynamics",
+    dynamicsCopy: "Compare similar workouts to see how your form changes over time.",
+    dynamicsEasy: "Easy",
+    dynamicsTempo: "Tempo",
+    dynamicsIntervals: "Intervals",
+    dynamicsLong: "Long",
+    dynamicsComingSoon: "Coming soon",
     historyEmpty: "There are no saved workouts yet.",
     historyLoading: "Loading workouts…",
     historyView: "Open",
@@ -463,7 +479,7 @@ function applyLanguage() {
   });
 
   if (currentWorkout) renderSummary(currentWorkout);
-  if (document.querySelector("#history")?.classList.contains("is-active")) {
+  if (document.querySelector("#history")?.classList.contains("is-active") || document.querySelector("#dynamics")?.classList.contains("is-active")) {
     historyLoaded = false;
     loadWorkoutHistory(true);
   }
@@ -491,7 +507,7 @@ function setActiveView(viewName) {
     button.setAttribute("aria-current", active ? "page" : "false");
   });
 
-  if (viewName === "history") {
+  if (viewName === "history" || viewName === "dynamics") {
     loadWorkoutHistory();
   }
 
@@ -2289,10 +2305,22 @@ function renderHistoryAnalytics(workouts) {
       <strong>${escapeHtml(w.distance.toFixed(1))}</strong>
     </div>`).join("") : `<div class="history-chart-empty">${escapeHtml(t("historyNoData"))}</div>`;
 
+  analytics.innerHTML = `
+    <div class="history-analytics-heading"><span class="eyebrow">${escapeHtml(t("historyOverview"))}</span></div>
+    <article class="history-chart-card">
+      <div class="history-card-heading"><h3>${escapeHtml(t("historyWeeklyDistance"))}</h3><span>${escapeHtml(t("historyWeek"))}</span></div>
+      <div class="history-bars">${chart}</div>
+    </article>`;
+}
+
+function renderDynamics(workouts) {
+  const container = document.querySelector("#dynamicsContent");
+  if (!container) return;
   const dynamics = buildEasyRunDynamics(workouts);
-  let dynamicsHtml = "";
+
+  let easyHtml;
   if (!dynamics) {
-    dynamicsHtml = `<p>${escapeHtml(t("historyEasyNoTrend"))}</p>`;
+    easyHtml = `<div class="dynamics-empty"><strong>${escapeHtml(t("historyEasyNoTrend"))}</strong><p>${escapeHtml(t("historyEasyDynamicsHint"))}</p></div>`;
   } else {
     const paceDeltaText = Number.isFinite(dynamics.paceDelta) && Math.abs(dynamics.paceDelta) >= 3
       ? `${dynamics.paceDelta > 0 ? "повільніше" : "швидше"} на ${Math.abs(Math.round(dynamics.paceDelta))} с/км`
@@ -2300,12 +2328,8 @@ function renderHistoryAnalytics(workouts) {
     const hrDeltaText = Number.isFinite(dynamics.hrDelta) && Math.abs(dynamics.hrDelta) >= 1
       ? `${dynamics.hrDelta < 0 ? "нижче" : "вище"} на ${Math.abs(Math.round(dynamics.hrDelta))} уд/хв`
       : "без суттєвої зміни";
-    const currentPaceSignal = Number.isFinite(dynamics.paceDelta) && Math.abs(dynamics.paceDelta) >= 6
-      ? (dynamics.paceDelta > 0 ? "better" : "worse")
-      : "neutral";
-    const currentHrSignal = Number.isFinite(dynamics.hrDelta) && Math.abs(dynamics.hrDelta) >= 3
-      ? (dynamics.hrDelta < 0 ? "better" : "worse")
-      : "neutral";
+    const currentPaceSignal = Number.isFinite(dynamics.paceDelta) && Math.abs(dynamics.paceDelta) >= 6 ? (dynamics.paceDelta > 0 ? "better" : "worse") : "neutral";
+    const currentHrSignal = Number.isFinite(dynamics.hrDelta) && Math.abs(dynamics.hrDelta) >= 3 ? (dynamics.hrDelta < 0 ? "better" : "worse") : "neutral";
     let trendLabel;
     if (dynamics.trend === "improved") trendLabel = t("historyEasyImproved");
     else if (dynamics.trend === "declined") trendLabel = t("historyEasyDeclined");
@@ -2314,29 +2338,27 @@ function renderHistoryAnalytics(workouts) {
     else if (currentPaceSignal === "worse" && currentHrSignal === "worse") trendLabel = t("historyEasyCurrentWorse");
     else if (currentPaceSignal !== "neutral" || currentHrSignal !== "neutral") trendLabel = t("historyEasyNearTypical");
     else trendLabel = t("historyEasyStable");
-    const trendText = dynamics.paceDelta != null || dynamics.hrDelta != null ? trendLabel : t("historyEasyStable");
     const compared = t("historyEasyCompared").replace("{count}", String(dynamics.count));
     const trendHint = dynamics.count < 4 ? t("historyEasyTrendHint") : t("historyEasyDynamicsHint");
 
-    dynamicsHtml = `
-      <div class="history-dynamic-status"><strong>${escapeHtml(trendText)}</strong><span>${escapeHtml(compared)}</span></div>
+    easyHtml = `
+      <div class="history-dynamic-status"><strong>${escapeHtml(trendLabel)}</strong><span>${escapeHtml(compared)}</span></div>
       <div class="history-dynamic-row"><span>${escapeHtml(t("historyEasyPaceAtHr"))}</span><strong>${escapeHtml(dynamics.paceBaseline != null ? formatPaceSeconds(dynamics.paceBaseline) : "—")} <small>${escapeHtml(paceDeltaText)}</small></strong></div>
       <div class="history-dynamic-row"><span>${escapeHtml(t("historyEasyHrAtPace"))}</span><strong>${dynamics.hrBaseline != null ? `${Math.round(dynamics.hrBaseline)} уд/хв` : "—"} <small>${escapeHtml(hrDeltaText)}</small></strong></div>
       <p>${escapeHtml(trendHint)}</p>`;
   }
 
-  analytics.innerHTML = `
-    <div class="history-analytics-heading"><span class="eyebrow">${escapeHtml(t("historyOverview"))}</span></div>
-    <div class="history-analytics-grid">
-      <article class="history-chart-card">
-        <div class="history-card-heading"><h3>${escapeHtml(t("historyWeeklyDistance"))}</h3><span>${escapeHtml(t("historyWeek"))}</span></div>
-        <div class="history-bars">${chart}</div>
-      </article>
-      <article class="history-dynamics-card">
-        <div class="history-card-heading"><h3>${escapeHtml(t("historyEasyDynamics"))}</h3></div>
-        ${dynamicsHtml}
-      </article>
-    </div>`;
+  container.innerHTML = `
+    <div class="dynamics-tabs" role="tablist" aria-label="${escapeHtml(t("dynamicsTitle"))}">
+      <button class="dynamics-tab is-active" type="button">${escapeHtml(t("dynamicsEasy"))}</button>
+      <button class="dynamics-tab is-disabled" type="button" disabled>${escapeHtml(t("dynamicsTempo"))}<span>${escapeHtml(t("dynamicsComingSoon"))}</span></button>
+      <button class="dynamics-tab is-disabled" type="button" disabled>${escapeHtml(t("dynamicsIntervals"))}<span>${escapeHtml(t("dynamicsComingSoon"))}</span></button>
+      <button class="dynamics-tab is-disabled" type="button" disabled>${escapeHtml(t("dynamicsLong"))}<span>${escapeHtml(t("dynamicsComingSoon"))}</span></button>
+    </div>
+    <article class="dynamics-module">
+      <div class="dynamics-module-heading"><div><span class="eyebrow">${escapeHtml(t("dynamicsEasy"))}</span><h2>${escapeHtml(t("historyEasyDynamics"))}</h2></div></div>
+      ${easyHtml}
+    </article>`;
 }
 
 function renderHistoryControls() {
@@ -2402,6 +2424,7 @@ async function loadWorkoutHistory(force = false) {
     historyWorkouts = [];
     renderHistoryControls();
     renderHistoryAnalytics([]);
+    renderDynamics([]);
     if (document.querySelector("#historyStats")) document.querySelector("#historyStats").innerHTML = "";
     container.innerHTML = `<div class="history-empty"><strong>${escapeHtml(t("historyLoginHint"))}</strong></div>`;
     if (status) status.textContent = "";
@@ -2428,6 +2451,7 @@ async function loadWorkoutHistory(force = false) {
 
   historyWorkouts = data || [];
   renderHistoryList(historyFilteredWorkouts());
+  renderDynamics(historyWorkouts);
   historyLoaded = true;
 }
 
@@ -3058,7 +3082,7 @@ async function initAuth() {
       updateAuthUI(session);
       historyLoaded = false;
       if (session?.user) await ensureUserProfile(session.user);
-      if (document.querySelector("#history")?.classList.contains("is-active")) loadWorkoutHistory(true);
+      if (document.querySelector("#history")?.classList.contains("is-active") || document.querySelector("#dynamics")?.classList.contains("is-active")) loadWorkoutHistory(true);
     }, 0);
   });
 }
