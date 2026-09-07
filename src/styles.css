@@ -1318,6 +1318,9 @@
 .history-bar-col > span { color:#89938d; font:700 8px 'DM Mono',monospace; }
 .history-bar-col > strong { font-size:9px; line-height:1; }
 .history-chart-empty { width:100%; align-self:center; text-align:center; color:#8a948e; font-size:12px; }
+.history-dynamic-status { display:flex; flex-direction:column; align-items:flex-start; gap:5px; margin:2px 0 10px; }
+.history-dynamic-status strong { font-size:18px; line-height:1.15; letter-spacing:-.45px; }
+.history-dynamic-status span { color:#89938d; font-size:10px; line-height:1.35; }
 .history-dynamic-row { display:flex; justify-content:space-between; align-items:center; gap:15px; padding:14px 0; border-bottom:1px solid #edf0ed; }
 .history-dynamic-row:last-of-type { border-bottom:0; }
 .history-dynamic-row span { color:#737e77; font-size:11px; font-weight:700; }
@@ -1335,24 +1338,6 @@
   .history-bars { height:125px; gap:5px; }
   .history-bar-track { width:min(28px,80%); }
 }
-
-
-.history-comparison-card { border:1px solid var(--line); border-radius:14px; background:#fff; padding:18px 20px; box-shadow:0 8px 25px rgba(31,40,31,.025); }
-.history-comparison-pair { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; }
-.history-comparison-date { display:flex; flex-direction:column; gap:3px; padding:10px 12px; border-radius:10px; background:#f7f9f6; }
-.history-comparison-date span { color:#89938d; font:700 8px 'DM Mono',monospace; letter-spacing:.8px; text-transform:uppercase; }
-.history-comparison-date strong { font-size:11px; }
-.history-comparison-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-.history-comparison-metric { min-width:0; padding:13px 14px; border:1px solid #edf0ed; border-radius:11px; }
-.history-comparison-metric > span { display:block; margin-bottom:9px; color:#737e77; font-size:10px; font-weight:700; }
-.history-comparison-metric > div { display:flex; align-items:center; gap:8px; min-width:0; }
-.history-comparison-metric strong { font-size:17px; letter-spacing:-.4px; white-space:nowrap; }
-.history-comparison-metric b { color:#9aa39e; }
-.history-comparison-metric small { display:block; margin-top:5px; color:#68746d; font:700 9px 'DM Mono',monospace; }
-.history-comparison-muted, .history-comparison-empty { margin:0; color:#8a948e; font-size:11px; line-height:1.5; }
-.history-comparison-conclusion { margin:14px 0 0; color:var(--ink); font-size:12px; font-weight:800; line-height:1.5; }
-.history-comparison-note { margin:8px 0 0; color:#8a948e; font-size:9px; line-height:1.45; }
-@media (max-width:680px) { .history-comparison-card { padding:15px; border-radius:12px; } .history-comparison-grid { grid-template-columns:1fr; } }
 
 /* === Workout save confirmation === */
 .workout-save-panel{margin-top:14px;padding:20px 22px;border:1px solid var(--line);border-radius:14px;background:#fff;display:flex;justify-content:space-between;align-items:center;gap:20px}.workout-save-panel[hidden]{display:none}.workout-save-panel strong{display:block;font-size:16px;margin-top:2px}.workout-save-status{margin:6px 0 0;color:#68746d;font-size:12px;min-height:16px}.workout-save-actions{display:flex;gap:9px;align-items:center;flex-shrink:0}.workout-save-button,.workout-cancel-button{border:0;border-radius:10px;padding:11px 15px;font:700 12px Manrope,sans-serif;cursor:pointer}.workout-save-button{background:var(--ink);color:#fff}.workout-cancel-button{background:#f1f3f0;color:var(--ink)}.workout-save-button:disabled,.workout-cancel-button:disabled{opacity:.55;cursor:wait}@media(max-width:680px){.workout-save-panel{display:block;padding:18px}.workout-save-actions{margin-top:14px;display:grid;grid-template-columns:1fr 1.35fr}.workout-save-button,.workout-cancel-button{width:100%;min-height:44px}}
