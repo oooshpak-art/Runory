@@ -115,6 +115,20 @@ const translations = {
     historyAvgPace: "Середній темп",
     historyAvgHr: "Середній пульс",
     historyNoData: "Недостатньо даних для графіка",
+    easyComparisonTitle: "Прогрес легкого бігу",
+    easyComparisonInsufficient: "Поки недостатньо схожих легких тренувань для надійного порівняння.",
+    easyComparisonPaceAtHr: "Темп при схожому пульсі",
+    easyComparisonHrAtPace: "Пульс при схожому темпі",
+    easyComparisonLatest: "Останнє",
+    easyComparisonPrevious: "Попереднє",
+    easyComparisonBetterPace: "Швидше при схожому пульсі",
+    easyComparisonLowerHr: "Нижчий пульс при схожому темпі",
+    easyComparisonNoChange: "Показники залишилися близькими",
+    easyComparisonWorsePace: "Повільніше при схожому пульсі",
+    easyComparisonHigherHr: "Вищий пульс при схожому темпі",
+    easyComparisonNote: "Порівнюємо лише схожі легкі пробіжки за дистанцією, тривалістю та навантаженням.",
+    easyComparisonNotComparableHr: "Пульс відрізняється — пряме порівняння темпу некоректне.",
+    easyComparisonNotComparablePace: "Темп відрізняється — пряме порівняння пульсу некоректне.",
     historyWeek: "Тиждень",
     futureGarmin: "Garmin Connect",
     futureAi: "AI-аналіз тренера",
@@ -2095,6 +2109,127 @@ function formatWeekLabel(date) {
   return date.toLocaleDateString(translations[currentLanguage].locale, { day: "2-digit", month: "2-digit" });
 }
 
+function easyRunComparable(a, b) {
+  if (!a || !b) return false;
+  if (historyTypeClass(a.workout_type) !== "run" || historyTypeClass(b.workout_type) !== "run") return false;
+
+  const distanceA = Number(a.distance_km);
+  const distanceB = Number(b.distance_km);
+  const durationA = Number(a.duration_sec);
+  const durationB = Number(b.duration_sec);
+  const paceA = paceToSeconds(a.pace);
+  const paceB = paceToSeconds(b.pace);
+
+  if (![distanceA, distanceB, durationA, durationB, paceA, paceB].every(Number.isFinite)) return false;
+  if (distanceA < 4 || distanceB < 4) return false;
+
+  const distanceRatio = Math.max(distanceA, distanceB) / Math.max(Math.min(distanceA, distanceB), 0.1);
+  const durationRatio = Math.max(durationA, durationB) / Math.max(Math.min(durationA, durationB), 1);
+  const paceRatio = Math.max(paceA, paceB) / Math.max(Math.min(paceA, paceB), 1);
+
+  if (distanceRatio > 1.35 || durationRatio > 1.35 || paceRatio > 1.12) return false;
+
+  const ascentA = Number(a.ascent_m);
+  const ascentB = Number(b.ascent_m);
+  if (Number.isFinite(ascentA) && Number.isFinite(ascentB)) {
+    const maxAscent = Math.max(ascentA, ascentB);
+    const minAscent = Math.min(ascentA, ascentB);
+    if (maxAscent > 80 && maxAscent > minAscent * 2.5 && maxAscent - minAscent > 100) return false;
+  }
+
+  return true;
+}
+
+function easyRunComparisonScore(candidate, latest) {
+  const distance = Math.abs(Number(candidate.distance_km) - Number(latest.distance_km)) / Math.max(Number(latest.distance_km), 1);
+  const duration = Math.abs(Number(candidate.duration_sec) - Number(latest.duration_sec)) / Math.max(Number(latest.duration_sec), 1);
+  const pace = Math.abs((paceToSeconds(candidate.pace) || 0) - (paceToSeconds(latest.pace) || 0)) / Math.max(paceToSeconds(latest.pace) || 1, 1);
+  const hrA = Number(candidate.heart_rate);
+  const hrB = Number(latest.heart_rate);
+  const hr = Number.isFinite(hrA) && Number.isFinite(hrB) ? Math.abs(hrA - hrB) / 100 : 0.25;
+  return distance * 0.35 + duration * 0.2 + pace * 0.25 + hr * 0.2;
+}
+
+function findComparableEasyRun(workouts) {
+  const easyRuns = workouts
+    .filter(workout => historyTypeClass(workout.workout_type) === "run")
+    .filter(workout => workout.workout_date && !Number.isNaN(new Date(workout.workout_date).getTime()))
+    .sort((a, b) => new Date(b.workout_date) - new Date(a.workout_date));
+
+  if (easyRuns.length < 2) return null;
+
+  const latest = easyRuns[0];
+  const candidates = easyRuns.slice(1).filter(candidate => easyRunComparable(latest, candidate));
+  if (!candidates.length) return null;
+
+  candidates.sort((a, b) => easyRunComparisonScore(a, latest) - easyRunComparisonScore(b, latest));
+  return { latest, previous: candidates[0] };
+}
+
+function buildEasyRunComparison(workouts) {
+  const pair = findComparableEasyRun(workouts);
+  if (!pair) {
+    return `<div class="history-comparison-card">
+      <div class="history-card-heading"><h3>${escapeHtml(t("easyComparisonTitle"))}</h3></div>
+      <p class="history-comparison-empty">${escapeHtml(t("easyComparisonInsufficient"))}</p>
+      <p class="history-comparison-note">${escapeHtml(t("easyComparisonNote"))}</p>
+    </div>`;
+  }
+
+  const latestPace = paceToSeconds(pair.latest.pace);
+  const previousPace = paceToSeconds(pair.previous.pace);
+  const latestHr = Number(pair.latest.heart_rate);
+  const previousHr = Number(pair.previous.heart_rate);
+  const paceDelta = Number.isFinite(latestPace) && Number.isFinite(previousPace) ? previousPace - latestPace : null;
+  const hrDelta = Number.isFinite(latestHr) && Number.isFinite(previousHr) ? latestHr - previousHr : null;
+
+  const similarHr = Number.isFinite(latestHr) && Number.isFinite(previousHr) && Math.abs(hrDelta) <= 5;
+  const similarPace = Number.isFinite(latestPace) && Number.isFinite(previousPace) && Math.abs(latestPace - previousPace) <= 5;
+  const paceImproved = similarHr && Number.isFinite(paceDelta) && paceDelta >= 3;
+  const paceWorsened = similarHr && Number.isFinite(paceDelta) && paceDelta <= -3;
+  const hrImproved = similarPace && Number.isFinite(hrDelta) && hrDelta <= -3;
+  const hrWorsened = similarPace && Number.isFinite(hrDelta) && hrDelta >= 3;
+
+  let conclusion = t("easyComparisonNoChange");
+  if (paceImproved && hrImproved) conclusion = `${t("easyComparisonBetterPace")}. ${t("easyComparisonLowerHr")}.`;
+  else if (paceImproved) conclusion = t("easyComparisonBetterPace");
+  else if (hrImproved) conclusion = t("easyComparisonLowerHr");
+  else if (paceWorsened && hrWorsened) conclusion = `${t("easyComparisonWorsePace")}. ${t("easyComparisonHigherHr")}.`;
+  else if (paceWorsened) conclusion = t("easyComparisonWorsePace");
+  else if (hrWorsened) conclusion = t("easyComparisonHigherHr");
+
+  const paceDeltaText = Number.isFinite(paceDelta)
+    ? `${paceDelta > 0 ? "−" : "+"}${formatPaceSeconds(Math.abs(paceDelta))} /${currentLanguage === "uk" ? "км" : "km"}`
+    : "—";
+  const hrDeltaText = Number.isFinite(hrDelta)
+    ? `${hrDelta > 0 ? "+" : ""}${Math.round(hrDelta)} ${currentLanguage === "uk" ? "уд/хв" : "bpm"}`
+    : "—";
+
+  return `<div class="history-comparison-card">
+    <div class="history-card-heading"><h3>${escapeHtml(t("easyComparisonTitle"))}</h3></div>
+    <div class="history-comparison-pair">
+      <div class="history-comparison-date"><span>${escapeHtml(t("easyComparisonPrevious"))}</span><strong>${escapeHtml(formatHistoryDate(pair.previous.workout_date))}</strong></div>
+      <div class="history-comparison-date"><span>${escapeHtml(t("easyComparisonLatest"))}</span><strong>${escapeHtml(formatHistoryDate(pair.latest.workout_date))}</strong></div>
+    </div>
+    <div class="history-comparison-grid">
+      <div class="history-comparison-metric">
+        <span>${escapeHtml(t("easyComparisonPaceAtHr"))}</span>
+        ${similarHr
+          ? `<div><strong>${escapeHtml(pair.previous.pace || "—")}</strong><b>→</b><strong>${escapeHtml(pair.latest.pace || "—")}</strong></div><small>${escapeHtml(paceDeltaText)}</small>`
+          : `<p class="history-comparison-muted">${escapeHtml(t("easyComparisonNotComparableHr"))}</p>`}
+      </div>
+      <div class="history-comparison-metric">
+        <span>${escapeHtml(t("easyComparisonHrAtPace"))}</span>
+        ${similarPace
+          ? `<div><strong>${Number.isFinite(previousHr) ? `${Math.round(previousHr)} ${currentLanguage === "uk" ? "уд/хв" : "bpm"}` : "—"}</strong><b>→</b><strong>${Number.isFinite(latestHr) ? `${Math.round(latestHr)} ${currentLanguage === "uk" ? "уд/хв" : "bpm"}` : "—"}</strong></div><small>${escapeHtml(hrDeltaText)}</small>`
+          : `<p class="history-comparison-muted">${escapeHtml(t("easyComparisonNotComparablePace"))}</p>`}
+      </div>
+    </div>
+    <p class="history-comparison-conclusion">${escapeHtml(conclusion)}</p>
+    <p class="history-comparison-note">${escapeHtml(t("easyComparisonNote"))}</p>
+  </div>`;
+}
+
 function renderHistoryAnalytics(workouts) {
   const analytics = document.querySelector("#historyAnalytics");
   if (!analytics) return;
@@ -2105,38 +2240,19 @@ function renderHistoryAnalytics(workouts) {
     const date = workout.workout_date ? new Date(workout.workout_date) : null;
     if (!date || Number.isNaN(date.getTime())) return;
     const key = getWeekStart(date).toISOString().slice(0, 10);
-    if (!byWeek.has(key)) byWeek.set(key, { date: getWeekStart(date), distance: 0, paceWeighted: 0, paceDistance: 0, hrWeighted: 0, hrDistance: 0 });
+    if (!byWeek.has(key)) byWeek.set(key, { date: getWeekStart(date), distance: 0 });
     const row = byWeek.get(key);
-    const distance = Number(workout.distance_km) || 0;
-    row.distance += distance;
-    const pace = paceToSeconds(workout.pace);
-    if (pace && distance) { row.paceWeighted += pace * distance; row.paceDistance += distance; }
-    const hr = Number(workout.heart_rate);
-    if (Number.isFinite(hr) && distance) { row.hrWeighted += hr * distance; row.hrDistance += distance; }
+    row.distance += Number(workout.distance_km) || 0;
   });
 
   const weeks = [...byWeek.values()].sort((a, b) => a.date - b.date).slice(-8);
   const maxDistance = Math.max(...weeks.map(w => w.distance), 1);
-  const hasChartData = weeks.length > 0;
-  const chart = hasChartData ? weeks.map(w => `
+  const chart = weeks.length ? weeks.map(w => `
     <div class="history-bar-col" title="${escapeHtml(formatWeekLabel(w.date))}: ${escapeHtml(w.distance.toFixed(1))} km">
       <div class="history-bar-track"><div class="history-bar" style="height:${Math.max(5, (w.distance / maxDistance) * 100)}%"></div></div>
       <span>${escapeHtml(formatWeekLabel(w.date))}</span>
       <strong>${escapeHtml(w.distance.toFixed(1))}</strong>
     </div>`).join("") : `<div class="history-chart-empty">${escapeHtml(t("historyNoData"))}</div>`;
-
-  const paceRows = weeks.filter(w => w.paceDistance > 0);
-  const hrRows = weeks.filter(w => w.hrDistance > 0);
-  const lastPace = paceRows.length ? paceRows[paceRows.length - 1].paceWeighted / paceRows[paceRows.length - 1].paceDistance : null;
-  const prevPace = paceRows.length > 1 ? paceRows[paceRows.length - 2].paceWeighted / paceRows[paceRows.length - 2].paceDistance : null;
-  const lastHr = hrRows.length ? hrRows[hrRows.length - 1].hrWeighted / hrRows[hrRows.length - 1].hrDistance : null;
-  const prevHr = hrRows.length > 1 ? hrRows[hrRows.length - 2].hrWeighted / hrRows[hrRows.length - 2].hrDistance : null;
-  const delta = (a, b, invert = false) => {
-    if (!Number.isFinite(a) || !Number.isFinite(b)) return "";
-    const diff = a - b;
-    if (Math.abs(diff) < 0.5) return "→";
-    return (invert ? diff < 0 : diff > 0) ? "↗" : "↘";
-  };
 
   analytics.innerHTML = `
     <div class="history-analytics-heading"><span class="eyebrow">${escapeHtml(t("historyOverview"))}</span></div>
@@ -2145,12 +2261,7 @@ function renderHistoryAnalytics(workouts) {
         <div class="history-card-heading"><h3>${escapeHtml(t("historyWeeklyDistance"))}</h3><span>${escapeHtml(t("historyWeek"))}</span></div>
         <div class="history-bars">${chart}</div>
       </article>
-      <article class="history-dynamics-card">
-        <div class="history-card-heading"><h3>${escapeHtml(t("historyDynamics"))}</h3></div>
-        <div class="history-dynamic-row"><span>${escapeHtml(t("historyAvgPace"))}</span><strong>${escapeHtml(formatPaceSeconds(lastPace))} <small>${lastPace ? ` ${delta(lastPace, prevPace, true)}` : ""}</small></strong></div>
-        <div class="history-dynamic-row"><span>${escapeHtml(t("historyAvgHr"))}</span><strong>${Number.isFinite(lastHr) ? `${Math.round(lastHr)} ${currentLanguage === "uk" ? "уд/хв" : "bpm"}` : "—"} <small>${Number.isFinite(lastHr) ? delta(lastHr, prevHr, true) : ""}</small></strong></div>
-        <p>${escapeHtml(currentLanguage === "uk" ? "Порівнюємо останній тиждень із попереднім." : "Comparing the latest week with the previous one.")}</p>
-      </article>
+      ${buildEasyRunComparison(workouts)}
     </div>`;
 }
 
