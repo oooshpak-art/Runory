@@ -1,56 +1,65 @@
-<!doctype html>
-<html lang="uk">
-
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <meta
-    name="description"
-    content="Runory — калькулятор бігу: час, дистанція та темп." data-i18n-content="metaDescription"
-  />
-
-  <title data-i18n-title="pageTitle">Runory — калькулятор бігу</title>
-<link rel="icon" href="src/assets/favicon.svg" type="image/svg+xml" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-
-  <link
-    href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap"
-    rel="stylesheet"
-  />
-
-  <link rel="stylesheet" href="src/styles.css" />
-</head>
-
-<body>
-
 <main class="page-shell">
 
   <header class="topbar">
-      <a class="brand" href="index.html" aria-label="Runory — головна" data-i18n-aria="ariaHome">
-        <img class="brand-logo" src="src/assets/runory-logo.svg" alt="Runory" />
+    <button class="sidebar-mobile-toggle" id="sidebarMobileToggle" type="button" aria-label="Відкрити меню" aria-expanded="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg>
+    </button>
+
+    <a class="brand" href="/" aria-label="Runory — головна" data-i18n-aria="ariaHome">
+      <img class="brand-logo" src="/src/assets/runory-logo.svg" alt="Runory" />
+    </a>
+
+    <div class="topbar-right">
+      <button class="add-workout-button" id="addWorkoutButton" type="button" aria-label="Додати тренування" title="Додати тренування">
+        <span aria-hidden="true">+</span>
+      </button>
+
+      <a class="auth-button" href="/account" aria-label="Акаунт">
+        <span class="auth-button-dot" aria-hidden="true"></span>
+        <span data-i18n="authSignIn">Увійти</span>
       </a>
 
-      <div class="topbar-right">
-        <nav class="app-nav" aria-label="Розділи Runory" data-i18n-aria="ariaNav">
-          <a class="nav-tab" href="index.html" style="text-decoration:none;">
-            <span data-i18n="navAnalysis">Аналіз тренування</span>
-          </a>
-          <a class="nav-tab is-active" href="calculator.html" style="text-decoration:none;">
-            <span data-i18n="navCalculator">Калькулятор бігу</span>
-          </a>
-        </nav>
-
-        <div class="language-switcher" role="group" aria-label="Мова" data-i18n-aria="language">
-          <button type="button" class="language-button is-active" data-lang="uk" aria-pressed="true">UA</button>
-          <button type="button" class="language-button" data-lang="en" aria-pressed="false">EN</button>
-        </div>
+      <div class="language-switcher" role="group" aria-label="Мова" data-i18n-aria="language">
+        <button type="button" class="language-button is-active" data-lang="uk" aria-pressed="true">UA</button>
+        <button type="button" class="language-button" data-lang="en" aria-pressed="false">EN</button>
       </div>
-    </header>
+    </div>
+  </header>
 
+  <div class="app-layout">
+    <aside class="account-sidebar" id="accountSidebar" aria-label="Навігація Runory">
+      <div class="account-sidebar-top">
+        <p class="account-sidebar-label">RUNORY</p>
+        <button class="account-sidebar-toggle" id="accountSidebarToggle" type="button" aria-label="Згорнути меню" aria-expanded="true">
+          <span aria-hidden="true">‹</span>
+        </button>
+      </div>
+      <nav class="account-sidebar-nav" aria-label="Навігація Runory">
+        <a class="account-sidebar-link" href="/">
+          <span class="account-sidebar-icon" aria-hidden="true">⌂</span>
+          <span data-i18n="homeNav">Головна</span>
+        </a>
+        <a class="account-sidebar-link" href="/workouts">
+          <span class="account-sidebar-icon runner-icon" aria-hidden="true">🏃</span>
+          <span data-i18n="historyNavShort">Тренування</span>
+        </a>
+        <a class="account-sidebar-link" href="/progress">
+          <span class="account-sidebar-icon" aria-hidden="true">↗</span>
+          <span data-i18n="dynamicsNav">Динаміка</span>
+        </a>
+        <div class="account-sidebar-divider" aria-hidden="true"></div>
+        <p class="account-sidebar-section-label" data-i18n="toolsNav">ІНСТРУМЕНТИ</p>
+        <a class="account-sidebar-link account-sidebar-link-secondary is-active" href="/calculator.html">
+          <span class="account-sidebar-icon" aria-hidden="true">◌</span>
+          <span data-i18n="navCalculator">Калькулятор бігу</span>
+        </a>
+      </nav>
+    </aside>
+    <button class="sidebar-mobile-backdrop" id="sidebarMobileBackdrop" type="button" aria-label="Закрити меню"></button>
 
-  <section class="calculator-view">
+    <div class="app-content">
+      <section class="calculator-view">
+
 
     <div class="calculator-intro">
 
@@ -132,10 +141,42 @@
 
   </section>
 
+      </section>
+    </div>
+  </div>
 </main>
 
-
 <script>
+
+// Shared Runory shell behavior for the standalone calculator page.
+document.getElementById("addWorkoutButton")?.addEventListener("click", () => {
+  window.location.href = "/";
+});
+
+const calculatorSidebar = document.getElementById("accountSidebar");
+const calculatorSidebarToggle = document.getElementById("accountSidebarToggle");
+const calculatorMobileToggle = document.getElementById("sidebarMobileToggle");
+const calculatorMobileBackdrop = document.getElementById("sidebarMobileBackdrop");
+
+calculatorSidebarToggle?.addEventListener("click", () => {
+  const collapsed = calculatorSidebar.classList.toggle("is-collapsed");
+  calculatorSidebarToggle.setAttribute("aria-expanded", String(!collapsed));
+  calculatorSidebarToggle.querySelector("span")?.replaceChildren(document.createTextNode(collapsed ? "›" : "‹"));
+});
+
+calculatorMobileToggle?.addEventListener("click", () => {
+  calculatorSidebar.classList.add("is-open");
+  calculatorMobileToggle.setAttribute("aria-expanded", "true");
+  calculatorMobileBackdrop.classList.add("is-visible");
+});
+
+calculatorMobileBackdrop?.addEventListener("click", () => {
+  calculatorSidebar.classList.remove("is-open");
+  calculatorMobileToggle.setAttribute("aria-expanded", "false");
+  calculatorMobileBackdrop.classList.remove("is-visible");
+});
+
+
 const calculatorTranslations = {
   uk: {
     pageTitle: "Runory — калькулятор бігу",
@@ -144,6 +185,11 @@ const calculatorTranslations = {
     ariaNav: "Розділи Runory",
     language: "Мова",
     navAnalysis: "Аналіз тренування",
+    homeNav: "Головна",
+    historyNavShort: "Тренування",
+    dynamicsNav: "Динаміка",
+    toolsNav: "ІНСТРУМЕНТИ",
+    authSignIn: "Увійти",
     navCalculator: "Калькулятор бігу",
     calculatorEyebrow: "ІНСТРУМЕНТ БІГУНА",
     heroTitle: "Плануй забіг<br />у цифрах.",
@@ -185,6 +231,11 @@ const calculatorTranslations = {
     ariaNav: "Runory sections",
     language: "Language",
     navAnalysis: "Workout analysis",
+    homeNav: "Home",
+    historyNavShort: "Workouts",
+    dynamicsNav: "Progress",
+    toolsNav: "TOOLS",
+    authSignIn: "Sign in",
     navCalculator: "Running calculator",
     calculatorEyebrow: "RUNNER'S TOOL",
     heroTitle: "Plan your run<br />with numbers.",
