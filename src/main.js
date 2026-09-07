@@ -2295,11 +2295,11 @@ function renderHistoryAnalytics(workouts) {
     dynamicsHtml = `<p>${escapeHtml(t("historyEasyNoTrend"))}</p>`;
   } else {
     const paceDeltaText = Number.isFinite(dynamics.paceDelta) && Math.abs(dynamics.paceDelta) >= 3
-      ? `${dynamics.paceDelta > 0 ? "↗" : "↘"} ${Math.abs(Math.round(dynamics.paceDelta))} с/км`
-      : "→";
+      ? `${dynamics.paceDelta > 0 ? "повільніше" : "швидше"} на ${Math.abs(Math.round(dynamics.paceDelta))} с/км`
+      : "без суттєвої зміни";
     const hrDeltaText = Number.isFinite(dynamics.hrDelta) && Math.abs(dynamics.hrDelta) >= 1
-      ? `${dynamics.hrDelta < 0 ? "↘" : "↗"} ${Math.abs(Math.round(dynamics.hrDelta))} уд/хв`
-      : "→";
+      ? `${dynamics.hrDelta < 0 ? "нижче" : "вище"} на ${Math.abs(Math.round(dynamics.hrDelta))} уд/хв`
+      : "без суттєвої зміни";
     const currentPaceSignal = Number.isFinite(dynamics.paceDelta) && Math.abs(dynamics.paceDelta) >= 6
       ? (dynamics.paceDelta > 0 ? "better" : "worse")
       : "neutral";
