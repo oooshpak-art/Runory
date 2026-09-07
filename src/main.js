@@ -122,6 +122,7 @@ const translations = {
     historyEasyDeclined: "Є ознаки погіршення",
     historyEasyCurrentBetter: "Останній результат кращий за типовий рівень",
     historyEasyCurrentWorse: "Останній результат слабший за типовий рівень",
+    historyEasyMixed: "Показники різноспрямовані",
     historyEasyTrendHint: "Для впевненого висновку про тренд потрібно більше схожих тренувань.",
     historyEasyCompared: "На основі {count} схожих тренувань",
     historyAvgPace: "Середній темп",
@@ -308,6 +309,7 @@ const translations = {
     historyEasyDeclined: "Signs of decline",
     historyEasyCurrentBetter: "The latest result is better than the typical level",
     historyEasyCurrentWorse: "The latest result is below the typical level",
+    historyEasyMixed: "The indicators are mixed",
     historyEasyTrendHint: "More similar workouts are needed for a confident trend conclusion.",
     historyEasyCompared: "Based on {count} similar workouts",
     historyAvgPace: "Average pace",
@@ -2231,10 +2233,20 @@ function buildEasyRunDynamics(workouts) {
 
   let trend = "stable";
   if (matches.length >= 4) {
-    if (olderPace != null && recentPace != null && olderPace - recentPace >= 6) trend = "improved";
-    else if (olderPace != null && recentPace != null && olderPace - recentPace <= -6) trend = "declined";
-    else if (olderHr != null && recentHr != null && recentHr - olderHr <= -3) trend = "improved";
-    else if (olderHr != null && recentHr != null && recentHr - olderHr >= 3) trend = "declined";
+    const paceTrend = olderPace != null && recentPace != null
+      ? (olderPace - recentPace >= 6 ? "improved" : olderPace - recentPace <= -6 ? "declined" : "stable")
+      : null;
+    const hrTrend = olderHr != null && recentHr != null
+      ? (recentHr - olderHr <= -3 ? "improved" : recentHr - olderHr >= 3 ? "declined" : "stable")
+      : null;
+
+    // Only call a long-term trend when the available signals agree. If pace
+    // and HR point in opposite directions, keep the result neutral rather
+    // than turning one good metric into a false progress/decline claim.
+    if (paceTrend === "improved" && (hrTrend === "improved" || hrTrend === "stable" || hrTrend == null)) trend = "improved";
+    else if (paceTrend === "declined" && (hrTrend === "declined" || hrTrend === "stable" || hrTrend == null)) trend = "declined";
+    else if (hrTrend === "improved" && paceTrend === "stable") trend = "improved";
+    else if (hrTrend === "declined" && paceTrend === "stable") trend = "declined";
   }
 
   return {
@@ -2286,15 +2298,19 @@ function renderHistoryAnalytics(workouts) {
     const hrDeltaText = Number.isFinite(dynamics.hrDelta) && Math.abs(dynamics.hrDelta) >= 1
       ? `${dynamics.hrDelta < 0 ? "↘" : "↗"} ${Math.abs(Math.round(dynamics.hrDelta))} уд/хв`
       : "→";
-    const trendLabel = dynamics.trend === "improved"
-      ? t("historyEasyImproved")
-      : dynamics.trend === "declined"
-        ? t("historyEasyDeclined")
-        : dynamics.paceDelta != null && dynamics.paceDelta >= 6
-          ? t("historyEasyCurrentBetter")
-          : dynamics.paceDelta != null && dynamics.paceDelta <= -6
-            ? t("historyEasyCurrentWorse")
-            : t("historyEasyStable");
+    const currentPaceSignal = Number.isFinite(dynamics.paceDelta) && Math.abs(dynamics.paceDelta) >= 6
+      ? (dynamics.paceDelta > 0 ? "better" : "worse")
+      : "neutral";
+    const currentHrSignal = Number.isFinite(dynamics.hrDelta) && Math.abs(dynamics.hrDelta) >= 3
+      ? (dynamics.hrDelta < 0 ? "better" : "worse")
+      : "neutral";
+    let trendLabel;
+    if (dynamics.trend === "improved") trendLabel = t("historyEasyImproved");
+    else if (dynamics.trend === "declined") trendLabel = t("historyEasyDeclined");
+    else if (currentPaceSignal === "better" && currentHrSignal !== "worse") trendLabel = t("historyEasyCurrentBetter");
+    else if (currentPaceSignal === "worse" && currentHrSignal !== "better") trendLabel = t("historyEasyCurrentWorse");
+    else if ((currentPaceSignal === "better" && currentHrSignal === "worse") || (currentPaceSignal === "worse" && currentHrSignal === "better")) trendLabel = t("historyEasyMixed");
+    else trendLabel = t("historyEasyStable");
     const trendText = dynamics.paceDelta != null || dynamics.hrDelta != null ? trendLabel : t("historyEasyStable");
     const compared = t("historyEasyCompared").replace("{count}", String(dynamics.count));
     const trendHint = dynamics.count < 4 ? t("historyEasyTrendHint") : t("historyEasyDynamicsHint");
