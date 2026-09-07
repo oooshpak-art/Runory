@@ -538,40 +538,9 @@
       </a>
 
       <div class="topbar-right">
-        <nav class="app-nav" aria-label="Розділи Runory">
-        <button
-          class="nav-tab is-active"
-          type="button"
-          data-view-target="analysis"
-          aria-current="page"
-        >
-          <span data-i18n="navAnalysis">Аналіз тренування</span>
+        <button class="add-workout-button" id="addWorkoutButton" type="button" aria-label="Додати тренування" title="Додати тренування">
+          <span aria-hidden="true">+</span>
         </button>
-
-        <button
-          class="nav-tab"
-          type="button"
-          data-view-target="history"
-        >
-          <span data-i18n="historyNav">Мої тренування</span>
-        </button>
-
-        <button
-          class="nav-tab"
-          type="button"
-          data-view-target="dynamics"
-        >
-          <span data-i18n="dynamicsNav">Динаміка</span>
-        </button>
-
-        <a
-          class="nav-tab"
-          href="calculator.html"
-          style="text-decoration:none;"
-        >
-          <span data-i18n="navCalculator">Калькулятор бігу</span>
-        </a>
-        </nav>
 
         <button class="auth-button" id="authButton" type="button" aria-label="Акаунт">
           <span class="auth-button-dot" aria-hidden="true"></span>
@@ -586,46 +555,50 @@
     </header>
 
     <div class="app-layout">
-      <aside class="account-sidebar" id="accountSidebar" aria-label="Особистий кабінет">
+      <aside class="account-sidebar" id="accountSidebar" aria-label="Навігація Runory">
         <div class="account-sidebar-top">
-          <p class="account-sidebar-label">МІЙ RUNORY</p>
+          <p class="account-sidebar-label">RUNORY</p>
           <button class="account-sidebar-toggle" id="accountSidebarToggle" type="button" aria-label="Згорнути меню" aria-expanded="true">
             <span aria-hidden="true">‹</span>
           </button>
         </div>
-        <nav class="account-sidebar-nav" aria-label="Особистий кабінет">
-          <button class="account-sidebar-link" id="sidebarProfileButton" type="button" data-view-target="profile">
-            <span class="account-sidebar-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.2"></circle><path d="M5.5 19c.8-3.1 3.1-4.8 6.5-4.8s5.7 1.7 6.5 4.8"></path></svg>
-            </span>
-            <span data-i18n="authProfile">Мій профіль</span>
+        <nav class="account-sidebar-nav" aria-label="Навігація Runory">
+          <button class="account-sidebar-link" type="button" data-view-target="home">
+            <span class="account-sidebar-icon" aria-hidden="true">⌂</span>
+            <span data-i18n="homeNav">Головна</span>
           </button>
           <button class="account-sidebar-link" type="button" data-view-target="history">
-            <span class="account-sidebar-icon runner-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" aria-hidden="true" fill="none">
-                <circle cx="16.4" cy="4.6" r="2.05" fill="currentColor"></circle>
-                <path d="M13.9 8.2 11.1 11.1" stroke="currentColor" stroke-width="2.05" stroke-linecap="round"></path>
-                <path d="M13.7 8.5 10.3 7.4 7.8 9.2" stroke="currentColor" stroke-width="2.05" stroke-linecap="round" stroke-linejoin="round"></path>
-                <path d="M13.9 8.5 16.7 10.5 19.2 8.8" stroke="currentColor" stroke-width="2.05" stroke-linecap="round" stroke-linejoin="round"></path>
-                <path d="M11.1 11.1 13.8 13.5 10.1 18.3" stroke="currentColor" stroke-width="2.05" stroke-linecap="round" stroke-linejoin="round"></path>
-                <path d="M13.8 13.5 18.6 17.7" stroke="currentColor" stroke-width="2.05" stroke-linecap="round" stroke-linejoin="round"></path>
-              </svg>
-            </span>
-            <span data-i18n="historyNav">Мої тренування</span>
+            <span class="account-sidebar-icon runner-icon" aria-hidden="true">🏃</span>
+            <span data-i18n="historyNavShort">Тренування</span>
           </button>
           <button class="account-sidebar-link" type="button" data-view-target="dynamics">
-            <span class="account-sidebar-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none"><path d="M4 17 9 12l3 3 7-8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 7h3v3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </span>
+            <span class="account-sidebar-icon" aria-hidden="true">↗</span>
             <span data-i18n="dynamicsNav">Динаміка</span>
           </button>
+          <div class="account-sidebar-divider" aria-hidden="true"></div>
+          <p class="account-sidebar-section-label" data-i18n="toolsNav">ІНСТРУМЕНТИ</p>
+          <a class="account-sidebar-link account-sidebar-link-secondary" href="calculator.html">
+            <span class="account-sidebar-icon" aria-hidden="true">◌</span>
+            <span data-i18n="navCalculator">Калькулятор бігу</span>
+          </a>
         </nav>
       </aside>
       <button class="sidebar-mobile-backdrop" id="sidebarMobileBackdrop" type="button" aria-label="Закрити меню"></button>
 
       <div class="app-content">
 
-    <div class="view is-active" id="analysis" data-view-panel>
+    <div class="view is-active" id="home" data-view-panel>
+      <section class="home-page">
+        <div class="home-heading">
+          <p class="eyebrow" data-i18n="homeEyebrow">ТВІЙ RUNORY</p>
+          <h1 data-i18n="homeTitle">Твій біг — коротко й по суті.</h1>
+          <p data-i18n="homeCopy">Останнє тренування, зміни форми та те, що відбувається цього тижня.</p>
+        </div>
+        <div id="homeContent" class="home-content"></div>
+      </section>
+    </div>
+
+    <div class="view" id="analysis" data-view-panel>
 
       <section class="hero" id="top">
         <p class="eyebrow" data-i18n="heroEyebrow">
@@ -993,7 +966,8 @@
           <p class="eyebrow" data-i18n="authAccountEyebrow">ТВОЄМУ RUNORY</p>
           <h2 data-i18n="authAccountTitle">Мій акаунт</h2>
           <p class="auth-copy" id="authAccountEmail"></p>
-          <div class="account-modal-note" data-i18n="authAccountCopy">Тут керування входом в акаунт. Профіль спортсмена відкривається окремо в меню зліва.</div>
+          <div class="account-modal-note" data-i18n="authAccountCopy">Тут керування акаунтом і твоїми даними спортсмена.</div>
+          <button class="auth-submit" id="openProfileFromAccount" type="button" data-i18n="authProfile">Профіль спортсмена</button>
           <button class="auth-submit auth-logout" id="authLogoutButton" type="button" data-i18n="authLogout">Вийти</button>
         </div>
       </section>
