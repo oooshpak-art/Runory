@@ -37,6 +37,30 @@ let historyPeriodFilter = "all";
 const translations = {
   uk: {
     navAnalysis: "Аналіз тренування",
+    homeNav: "Головна",
+    historyNavShort: "Тренування",
+    toolsNav: "ІНСТРУМЕНТИ",
+    homeEyebrow: "ТВІЙ RUNORY",
+    homeTitle: "Твій біг — коротко й по суті.",
+    homeCopy: "Останнє тренування, зміни форми та те, що відбувається цього тижня.",
+    homeLatest: "ОСТАННЄ ТРЕНУВАННЯ",
+    homeLatestEmpty: "Поки немає збережених тренувань.",
+    homeLatestEmptyCopy: "Додай перше тренування через плюс у верхній панелі.",
+    homeViewWorkout: "Переглянути тренування",
+    homeInsightSaved: "Аналіз тренування збережено в історії.",
+    homeInsightWorkout: "Тренування збережено в Runory.",
+    homeForm: "ЩО ВІДБУВАЄТЬСЯ З ФОРМОЮ",
+    homeViewDynamics: "Переглянути динаміку",
+    homeWeek: "ЦЬОГО ТИЖНЯ",
+    homeWeekWorkouts: "тренувань",
+    homeWeekDistance: "км",
+    homeWeekTime: "год",
+    homeWeekEmpty: "Цього тижня тренувань ще немає.",
+    homeNoTrend: "Недостатньо даних",
+    homeEasy: "Легкі",
+    homeTempo: "Темпові",
+    homeIntervals: "Інтервали",
+    homeLong: "Довгі",
     navCalculator: "Калькулятор бігу",
     heroEyebrow: "РОЗУМНИЙ ПІДХІД ДО ТВОЇХ ТРЕНУВАНЬ",
     heroTitle: "Кожен кілометр<br />має значення.",
@@ -233,6 +257,30 @@ const translations = {
   },
   en: {
     navAnalysis: "Workout analysis",
+    homeNav: "Home",
+    historyNavShort: "Workouts",
+    toolsNav: "TOOLS",
+    homeEyebrow: "YOUR RUNORY",
+    homeTitle: "Your running — short and clear.",
+    homeCopy: "Your latest workout, form changes, and what is happening this week.",
+    homeLatest: "LATEST WORKOUT",
+    homeLatestEmpty: "No saved workouts yet.",
+    homeLatestEmptyCopy: "Add your first workout using the plus button above.",
+    homeViewWorkout: "View workout",
+    homeInsightSaved: "Workout analysis is saved in your history.",
+    homeInsightWorkout: "Workout saved in Runory.",
+    homeForm: "WHAT IS HAPPENING WITH YOUR FORM",
+    homeViewDynamics: "View dynamics",
+    homeWeek: "THIS WEEK",
+    homeWeekWorkouts: "workouts",
+    homeWeekDistance: "km",
+    homeWeekTime: "h",
+    homeWeekEmpty: "No workouts this week yet.",
+    homeNoTrend: "Not enough data",
+    homeEasy: "Easy",
+    homeTempo: "Tempo",
+    homeIntervals: "Intervals",
+    homeLong: "Long",
     navCalculator: "Running calculator",
     heroEyebrow: "A SMARTER APPROACH TO YOUR TRAINING",
     heroTitle: "Every kilometer<br />matters.",
@@ -479,7 +527,7 @@ function applyLanguage() {
   });
 
   if (currentWorkout) renderSummary(currentWorkout);
-  if (document.querySelector("#history")?.classList.contains("is-active") || document.querySelector("#dynamics")?.classList.contains("is-active")) {
+  if (document.querySelector("#home")?.classList.contains("is-active") || document.querySelector("#history")?.classList.contains("is-active") || document.querySelector("#dynamics")?.classList.contains("is-active")) {
     historyLoaded = false;
     loadWorkoutHistory(true);
   }
@@ -496,7 +544,25 @@ function setLanguage(language) {
 }
 
 
-function setActiveView(viewName) {
+function routeForView(viewName) {
+  const map = { home: "/", history: "/workouts", dynamics: "/progress", profile: "/account" };
+  return map[viewName] || "/";
+}
+
+function currentRouteWorkoutId() {
+  const match = window.location.pathname.match(/^\/workouts\/([^/]+)$/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+function navigateToView(viewName, { push = true } = {}) {
+  if (push) {
+    const target = routeForView(viewName);
+    if (window.location.pathname !== target) window.history.pushState({ view: viewName }, "", target);
+  }
+  setActiveView(viewName, { updateRoute: false });
+}
+
+function setActiveView(viewName, { updateRoute = true } = {}) {
   document.querySelectorAll("[data-view-panel]").forEach(panel => {
     panel.classList.toggle("is-active", panel.id === viewName);
   });
@@ -507,7 +573,12 @@ function setActiveView(viewName) {
     button.setAttribute("aria-current", active ? "page" : "false");
   });
 
-  if (viewName === "history" || viewName === "dynamics") {
+  if (updateRoute) {
+    const target = routeForView(viewName);
+    if (window.location.pathname !== target) window.history.pushState({ view: viewName }, "", target);
+  }
+
+  if (viewName === "home" || viewName === "history" || viewName === "dynamics") {
     loadWorkoutHistory();
   }
 
@@ -519,11 +590,27 @@ function setActiveView(viewName) {
       return;
     }
   }
+
+  setMobileSidebar(false);
 }
 
 document.querySelectorAll("[data-view-target]").forEach(button => {
-  button.addEventListener("click", () => setActiveView(button.dataset.viewTarget));
+  button.addEventListener("click", () => navigateToView(button.dataset.viewTarget));
 });
+
+function initializeRoute() {
+  const workoutId = currentRouteWorkoutId();
+  if (workoutId) {
+    setActiveView("analysis", { updateRoute: false });
+    window.__runoryPendingWorkoutId = workoutId;
+    return;
+  }
+  const path = window.location.pathname.replace(/\/$/, "") || "/";
+  const view = path === "/workouts" ? "history" : path === "/progress" ? "dynamics" : path === "/account" ? "profile" : "home";
+  setActiveView(view, { updateRoute: false });
+}
+
+window.addEventListener("popstate", () => initializeRoute());
 
 const sidebarProfileButton = document.querySelector("#sidebarProfileButton");
 const accountSidebar = document.querySelector("#accountSidebar");
@@ -2281,6 +2368,102 @@ function buildEasyRunDynamics(workouts) {
   };
 }
 
+function formatHomeHours(seconds) {
+  if (!Number.isFinite(seconds) || seconds <= 0) return "0";
+  return (seconds / 3600).toFixed(1).replace(".", currentLanguage === "uk" ? "," : ".");
+}
+
+function homeWorkoutLabel(workout) {
+  return workoutTypeLabel(workout?.workout_type || "run");
+}
+
+function homeTrendState(workouts) {
+  const dynamics = buildEasyRunDynamics(workouts);
+  if (!dynamics) return { label: t("homeNoTrend"), tone: "neutral" };
+  if (dynamics.trend === "improved") return { label: t("historyEasyImproved"), tone: "positive" };
+  if (dynamics.trend === "declined") return { label: t("historyEasyDeclined"), tone: "negative" };
+  return { label: t("historyEasyStable"), tone: "neutral" };
+}
+
+function renderHome(workouts = historyWorkouts) {
+  const container = document.querySelector("#homeContent");
+  if (!container) return;
+  const sorted = [...workouts].sort((a, b) => new Date(b.workout_date || b.created_at || 0) - new Date(a.workout_date || a.created_at || 0));
+  const latest = sorted[0] || null;
+  const now = new Date();
+  const weekStart = getWeekStart(now);
+  const weekWorkouts = sorted.filter(workout => {
+    const date = new Date(workout.workout_date || workout.created_at || 0);
+    return !Number.isNaN(date.getTime()) && date >= weekStart;
+  });
+  const weekDistance = weekWorkouts.reduce((sum, workout) => sum + (Number(workout.distance_km) || 0), 0);
+  const weekTime = weekWorkouts.reduce((sum, workout) => sum + (Number(workout.duration_sec) || 0), 0);
+  const trend = homeTrendState(workouts);
+
+  if (!currentSession?.user) {
+    container.innerHTML = `
+      <article class="home-empty-card">
+        <div class="home-empty-icon">＋</div>
+        <div><strong>${escapeHtml(t("homeLatestEmpty"))}</strong><p>${escapeHtml(t("homeLatestEmptyCopy"))}</p></div>
+        <button class="home-primary-button" type="button" id="homeSignInButton">${escapeHtml(t("authSignIn"))}</button>
+      </article>`;
+    document.querySelector("#homeSignInButton")?.addEventListener("click", openAuthModal);
+    return;
+  }
+
+  const latestHtml = latest ? `
+    <article class="home-card home-latest-card">
+      <div class="home-card-top"><span class="eyebrow">${escapeHtml(t("homeLatest"))}</span><span class="home-card-date">${escapeHtml(formatHistoryDate(latest.workout_date))}</span></div>
+      <div class="home-latest-main">
+        <div><h2>${escapeHtml(homeWorkoutLabel(latest))}</h2><p>${escapeHtml(latest.structure?.[0]?.label || "")}</p></div>
+        <strong>${escapeHtml(formatHistoryDistance(latest.distance_km))}</strong>
+      </div>
+      <div class="home-metrics">
+        <div><span>${escapeHtml(t("pace"))}</span><strong>${escapeHtml(latest.pace || "—")}</strong></div>
+        <div><span>${escapeHtml(t("time"))}</span><strong>${escapeHtml(formatHistoryDuration(latest.duration_sec))}</strong></div>
+        <div><span>${escapeHtml(t("heartRate"))}</span><strong>${latest.heart_rate != null ? `${Math.round(latest.heart_rate)} ${currentLanguage === "uk" ? "уд/хв" : "bpm"}` : "—"}</strong></div>
+      </div>
+      <div class="home-latest-footer"><span class="home-insight">${escapeHtml(latest.ai_analysis ? t("homeInsightSaved") : t("homeInsightWorkout"))}</span><button class="home-link-button" type="button" data-home-workout="${escapeHtml(latest.id)}">${escapeHtml(t("homeViewWorkout"))} →</button></div>
+    </article>` : `
+    <article class="home-card home-empty-card"><div><strong>${escapeHtml(t("homeLatestEmpty"))}</strong><p>${escapeHtml(t("homeLatestEmptyCopy"))}</p></div><button class="home-primary-button" type="button" id="homeAddWorkoutButton">＋</button></article>`;
+
+  const trendRows = [
+    [t("homeEasy"), historyTypeClass("run") === "run" ? trend.label : t("homeNoTrend"), trend.tone],
+    [t("homeTempo"), t("homeNoTrend"), "neutral"],
+    [t("homeIntervals"), t("homeNoTrend"), "neutral"],
+    [t("homeLong"), t("homeNoTrend"), "neutral"]
+  ];
+
+  container.innerHTML = `
+    <div class="home-grid">
+      <div class="home-main-column">${latestHtml}</div>
+      <div class="home-side-column">
+        <article class="home-card home-form-card">
+          <div class="home-card-top"><span class="eyebrow">${escapeHtml(t("homeForm"))}</span><button class="home-text-button" type="button" id="homeDynamicsButton">${escapeHtml(t("homeViewDynamics"))} →</button></div>
+          <div class="home-form-list">${trendRows.map(([label, value, tone]) => `<div class="home-form-row"><span>${escapeHtml(label)}</span><strong class="${tone}">${escapeHtml(value)}</strong></div>`).join("")}</div>
+        </article>
+        <article class="home-card home-week-card">
+          <div class="home-card-top"><span class="eyebrow">${escapeHtml(t("homeWeek"))}</span><span class="home-card-date">${escapeHtml(formatWeekLabel(weekStart))} — ${escapeHtml(formatWeekLabel(now))}</span></div>
+          ${weekWorkouts.length ? `<div class="home-week-stats"><div><strong>${weekWorkouts.length}</strong><span>${escapeHtml(t("homeWeekWorkouts"))}</span></div><div><strong>${weekDistance.toFixed(1).replace(".", currentLanguage === "uk" ? "," : ".")}</strong><span>${escapeHtml(t("homeWeekDistance"))}</span></div><div><strong>${escapeHtml(formatHomeHours(weekTime))}</strong><span>${escapeHtml(t("homeWeekTime"))}</span></div></div><div class="home-week-days">${[1,2,3,4,5,6,0].map(day => { const d = new Date(weekStart); d.setDate(weekStart.getDate() + (day === 0 ? 6 : day - 1)); const has = weekWorkouts.some(w => { const wd = new Date(w.workout_date || w.created_at || 0); return wd.toDateString() === d.toDateString(); }); return `<span class="${has ? "has-workout" : ""}" title="${escapeHtml(d.toLocaleDateString(translations[currentLanguage].locale, { weekday: "short" }))}"></span>`; }).join("")}</div>` : `<div class="home-week-empty">${escapeHtml(t("homeWeekEmpty"))}</div>`}
+        </article>
+      </div>
+    </div>`;
+
+  document.querySelector("#homeDynamicsButton")?.addEventListener("click", () => navigateToView("dynamics"));
+  document.querySelector("#homeAddWorkoutButton")?.addEventListener("click", () => document.querySelector("#addWorkoutButton")?.click());
+  document.querySelectorAll("[data-home-workout]").forEach(button => button.addEventListener("click", () => {
+    const id = button.dataset.homeWorkout;
+    window.history.pushState({ view: "analysis", workoutId: id }, "", `/workouts/${encodeURIComponent(id)}`);
+    openWorkoutFromHistoryId(id);
+  }));
+}
+
+function openWorkoutFromHistoryId(id) {
+  const record = historyWorkouts.find(item => String(item.id) === String(id));
+  if (!record) return;
+  openWorkoutFromHistory(record);
+}
+
 function renderHistoryAnalytics(workouts) {
   const analytics = document.querySelector("#historyAnalytics");
   if (!analytics) return;
@@ -2425,6 +2608,7 @@ async function loadWorkoutHistory(force = false) {
     renderHistoryControls();
     renderHistoryAnalytics([]);
     renderDynamics([]);
+    renderHome([]);
     if (document.querySelector("#historyStats")) document.querySelector("#historyStats").innerHTML = "";
     container.innerHTML = `<div class="history-empty"><strong>${escapeHtml(t("historyLoginHint"))}</strong></div>`;
     if (status) status.textContent = "";
@@ -2452,7 +2636,13 @@ async function loadWorkoutHistory(force = false) {
   historyWorkouts = data || [];
   renderHistoryList(historyFilteredWorkouts());
   renderDynamics(historyWorkouts);
+  renderHome(historyWorkouts);
   historyLoaded = true;
+  if (window.__runoryPendingWorkoutId) {
+    const pendingId = window.__runoryPendingWorkoutId;
+    window.__runoryPendingWorkoutId = null;
+    openWorkoutFromHistoryId(pendingId);
+  }
 }
 
 function historyRecordToWorkout(record) {
@@ -2483,7 +2673,9 @@ function openWorkoutFromHistory(record) {
       aiAnalysis?.classList.remove("is-loading");
     }
   }
-  setActiveView("analysis");
+  setActiveView("analysis", { updateRoute: false });
+  const target = `/workouts/${encodeURIComponent(record.id)}`;
+  if (window.location.pathname !== target) window.history.pushState({ view: "analysis", workoutId: record.id }, "", target);
   if (results) results.hidden = false;
   window.setTimeout(() => results?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
 }
@@ -2765,6 +2957,11 @@ document.querySelectorAll(".language-button").forEach(button => {
   button.addEventListener("click", () => setLanguage(button.dataset.lang));
 });
 
+document.querySelector("#addWorkoutButton")?.addEventListener("click", () => {
+  navigateToView("analysis");
+  window.setTimeout(() => document.querySelector("#fileInput")?.click(), 0);
+});
+
 applyLanguage();
 
 
@@ -2795,6 +2992,7 @@ const emailAuthSubmitText = document.querySelector("#emailAuthSubmitText");
 const authSwitchQuestion = document.querySelector("#authSwitchQuestion");
 const authSwitchButton = document.querySelector("#authSwitchButton");
 const authLogoutButton = document.querySelector("#authLogoutButton");
+const openProfileFromAccount = document.querySelector("#openProfileFromAccount");
 const profileForm = document.querySelector("#profileForm");
 const profileBirthDate = document.querySelector("#profileBirthDate");
 const profileBirthDatePicker = document.querySelector("#profileBirthDatePicker");
@@ -3075,6 +3273,9 @@ async function initAuth() {
   historyLoaded = false;
   if (data?.session?.user) {
     await ensureUserProfile(data.session.user);
+    if (window.__runoryPendingWorkoutId) await loadWorkoutHistory(true);
+  } else if (window.__runoryPendingWorkoutId) {
+    openAuthModal();
   }
 
   supabaseClient.auth.onAuthStateChange((event, session) => {
@@ -3082,7 +3283,7 @@ async function initAuth() {
       updateAuthUI(session);
       historyLoaded = false;
       if (session?.user) await ensureUserProfile(session.user);
-      if (document.querySelector("#history")?.classList.contains("is-active") || document.querySelector("#dynamics")?.classList.contains("is-active")) loadWorkoutHistory(true);
+      if (window.__runoryPendingWorkoutId || document.querySelector("#home")?.classList.contains("is-active") || document.querySelector("#history")?.classList.contains("is-active") || document.querySelector("#dynamics")?.classList.contains("is-active")) loadWorkoutHistory(true);
     }, 0);
   });
 }
@@ -3094,6 +3295,7 @@ googleSignInButton?.addEventListener("click", signInWithGoogle);
 emailAuthForm?.addEventListener("submit", submitEmailAuth);
 authSwitchButton?.addEventListener("click", () => setAuthMode(authMode === "signin" ? "signup" : "signin"));
 authLogoutButton?.addEventListener("click", signOut);
+openProfileFromAccount?.addEventListener("click", () => { closeAuthModal(); navigateToView("profile"); });
 profileBirthDatePickerButton?.addEventListener("click", () => {
   // iOS Safari may not support showPicker() and may ignore click() on a
   // fully hidden date input. Keep the native input as a transparent overlay
@@ -3148,4 +3350,5 @@ document.addEventListener("keydown", event => {
   if (event.key === "Escape" && authModal && !authModal.hidden) closeAuthModal();
 });
 
+initializeRoute();
 initAuth();
