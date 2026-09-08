@@ -2514,3 +2514,108 @@
     box-sizing: border-box !important;
   }
 }
+
+
+/* === Runory header v4 — smaller controls only === */
+@media (min-width: 681px) {
+  .add-workout-button {
+    width: 36px !important;
+    height: 36px !important;
+    flex-basis: 36px !important;
+    font-size: 22px !important;
+    border-radius: 10px !important;
+  }
+
+  .auth-button {
+    min-width: 84px !important;
+    height: 36px !important;
+    min-height: 36px !important;
+    padding: 0 10px !important;
+    border-radius: 10px !important;
+    font-size: 10px !important;
+  }
+
+  .language-switcher {
+    height: 36px !important;
+    min-height: 36px !important;
+    padding: 3px !important;
+    border-radius: 10px !important;
+  }
+
+  .language-button {
+    min-width: 29px !important;
+    height: 30px !important;
+    font-size: 9px !important;
+    border-radius: 7px !important;
+  }
+}
+
+@media (max-width: 680px) {
+  .topbar {
+    grid-template-columns: 34px 134px minmax(0,1fr) !important;
+    gap: 4px !important;
+  }
+
+  .sidebar-mobile-toggle {
+    width: 34px !important;
+    min-width: 34px !important;
+    height: 34px !important;
+    border-radius: 9px !important;
+  }
+
+  .sidebar-mobile-toggle svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+
+  .brand-logo {
+    width: 134px !important;
+    max-width: 134px !important;
+  }
+
+  .add-workout-button {
+    width: 34px !important;
+    min-width: 34px !important;
+    height: 34px !important;
+    flex-basis: 34px !important;
+    border-radius: 9px !important;
+    font-size: 21px !important;
+  }
+
+  .auth-button {
+    width: 62px !important;
+    min-width: 62px !important;
+    max-width: 62px !important;
+    height: 34px !important;
+    min-height: 34px !important;
+    padding: 0 6px !important;
+    border-radius: 9px !important;
+    gap: 4px !important;
+    font-size: 9px !important;
+  }
+
+  .auth-button-dot {
+    width: 4px !important;
+    height: 4px !important;
+    flex-basis: 4px !important;
+  }
+
+  .language-switcher {
+    width: 56px !important;
+    min-width: 56px !important;
+    max-width: 56px !important;
+    height: 34px !important;
+    min-height: 34px !important;
+    padding: 3px !important;
+    border-radius: 9px !important;
+  }
+
+  .language-button {
+    width: 24px !important;
+    min-width: 24px !important;
+    max-width: 24px !important;
+    height: 28px !important;
+    border-radius: 7px !important;
+    font-size: 8px !important;
+  }
+}
