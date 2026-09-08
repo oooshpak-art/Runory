@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" data-i18n-content="metaDescription" content="Runory — калькулятор бігу: час, дистанція та темп." />
   <title>Runory — калькулятор бігу</title>
-<link rel="stylesheet" href="/src/styles.css?v=13" />
+<link rel="stylesheet" href="/src/styles.css?v=17" />
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <main class="page-shell">
 
@@ -40,7 +40,7 @@
       <div class="account-sidebar-top">
         <p class="account-sidebar-label">RUNORY</p>
         <button class="account-sidebar-toggle" id="accountSidebarToggle" type="button" aria-label="Згорнути меню" aria-expanded="true">
-          <span aria-hidden="true">‹</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 5-7 7 7 7"></path></svg>
         </button>
       </div>
       <nav class="account-sidebar-nav" aria-label="Навігація Runory">
@@ -59,8 +59,8 @@
         <div class="account-sidebar-divider" aria-hidden="true"></div>
         <p class="account-sidebar-section-label" data-i18n="toolsNav">ІНСТРУМЕНТИ</p>
         <a class="account-sidebar-link account-sidebar-link-secondary is-active" href="/calculator">
-          <span class="account-sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3.8h10a1.8 1.8 0 0 1 1.8 1.8v12.8a1.8 1.8 0 0 1-1.8 1.8H7a1.8 1.8 0 0 1-1.8-1.8V5.6A1.8 1.8 0 0 1 7 3.8Z"/><path d="M8.5 8h7M8.5 11.5h2M13.5 11.5h2M8.5 15h2M13.5 15h2"/></svg></span>
-          <span data-i18n="navCalculator">Калькулятор бігу</span>
+          <span class="account-sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="6" y="4" width="12" height="16" rx="2"></rect><path d="M9 8h6"></path><path d="M9 12h1M12 12h1M15 12h0M9 15.5h1M12 15.5h1M15 15.5h0"></path></svg></span>
+            <span data-i18n="navCalculator">Калькулятор бігу</span>
         </a>
       </nav>
     </aside>
@@ -170,7 +170,8 @@ const calculatorMobileBackdrop = document.getElementById("sidebarMobileBackdrop"
 calculatorSidebarToggle?.addEventListener("click", () => {
   const collapsed = calculatorSidebar.classList.toggle("is-collapsed");
   calculatorSidebarToggle.setAttribute("aria-expanded", String(!collapsed));
-  calculatorSidebarToggle.querySelector("span")?.replaceChildren(document.createTextNode(collapsed ? "›" : "‹"));
+  calculatorSidebarToggle.setAttribute("aria-label", collapsed ? "Розгорнути меню" : "Згорнути меню");
+  calculatorSidebarToggle.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 5-7 7 7 7"></path></svg>';
 });
 
 calculatorMobileToggle?.addEventListener("click", () => {
