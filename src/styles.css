@@ -2279,3 +2279,65 @@
     height: 19px !important;
   }
 }
+
+
+/* =========================================================
+   CALCULATOR NAV — FINAL HOVER OVERRIDE
+   The calculator is an <a>, and older rules were forcing its
+   inner label to white on hover. Keep it identical to nav.
+   ========================================================= */
+
+.account-sidebar-link.account-sidebar-link-secondary:hover {
+  background: #eef2ed !important;
+  color: var(--ink) !important;
+  border-color: transparent !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.account-sidebar-link.account-sidebar-link-secondary:hover > span:last-child {
+  color: var(--ink) !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.account-sidebar-link.account-sidebar-link-secondary:hover .account-sidebar-icon {
+  background: transparent !important;
+  color: var(--ink) !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.account-sidebar-link.account-sidebar-link-secondary:hover .account-sidebar-icon svg {
+  stroke: var(--ink) !important;
+  color: var(--ink) !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Active calculator = exactly the same active surface as the main tabs. */
+.account-sidebar-link.account-sidebar-link-secondary.is-active,
+.account-sidebar-link.account-sidebar-link-secondary.is-active:hover {
+  background: var(--ink) !important;
+  color: #fff !important;
+  border-color: var(--ink) !important;
+}
+
+.account-sidebar-link.account-sidebar-link-secondary.is-active > span:last-child,
+.account-sidebar-link.account-sidebar-link-secondary.is-active:hover > span:last-child {
+  color: #fff !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.account-sidebar-link.account-sidebar-link-secondary.is-active .account-sidebar-icon,
+.account-sidebar-link.account-sidebar-link-secondary.is-active:hover .account-sidebar-icon {
+  background: transparent !important;
+  color: var(--lime) !important;
+}
+
+.account-sidebar-link.account-sidebar-link-secondary.is-active .account-sidebar-icon svg,
+.account-sidebar-link.account-sidebar-link-secondary.is-active:hover .account-sidebar-icon svg {
+  stroke: var(--lime) !important;
+  color: var(--lime) !important;
+}
