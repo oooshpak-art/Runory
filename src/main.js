@@ -628,21 +628,20 @@ function openProfileView() {
 
 sidebarProfileButton?.addEventListener("click", openProfileView);
 
-const savedSidebarState = localStorage.getItem("runory-sidebar-collapsed") === "1";
-if (savedSidebarState) accountSidebar?.classList.add("is-collapsed");
+// Sidebar starts collapsed by default. It opens only when the user clicks the arrow.
+accountSidebar?.classList.add("is-collapsed");
 
 function updateSidebarToggle() {
   const collapsed = accountSidebar?.classList.contains("is-collapsed");
   if (accountSidebarToggle) {
     accountSidebarToggle.setAttribute("aria-expanded", String(!collapsed));
     accountSidebarToggle.setAttribute("aria-label", collapsed ? "Розгорнути меню" : "Згорнути меню");
-    accountSidebarToggle.innerHTML = `<span aria-hidden="true">${collapsed ? "›" : "‹"}</span>`;
+    accountSidebarToggle.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 5-7 7 7 7"></path></svg>`;
   }
 }
 
 accountSidebarToggle?.addEventListener("click", () => {
   accountSidebar?.classList.toggle("is-collapsed");
-  localStorage.setItem("runory-sidebar-collapsed", accountSidebar?.classList.contains("is-collapsed") ? "1" : "0");
   updateSidebarToggle();
 });
 updateSidebarToggle();
@@ -2110,6 +2109,24 @@ function workoutFingerprint(summary) {
 
 function getWorkoutTypeKey(summary) {
   const pattern = getWorkoutPattern(summary);
+  const structure = Array.isArray(summary?.structure) ? summary.structure : [];
+
+  // A long run with a quality block at the end is still a long run as a
+  // workout type. Keep the interval block inside the structure, but classify
+  // the whole session by its dominant purpose.
+  if (pattern?.type === "intervals" && structure.length) {
+    const intervalIndex = structure.findIndex(block =>
+      block?.type === "intervals" && Array.isArray(block.repetitions) && block.repetitions.length > 0
+    );
+    if (intervalIndex > 0) {
+      const preWorkDistance = structure
+        .slice(0, intervalIndex)
+        .filter(block => ["easy", "warmup"].includes(block?.type))
+        .reduce((sum, block) => sum + (Number(block?.distance) || 0), 0);
+      if (preWorkDistance >= 12000) return "long";
+    }
+  }
+
   if (pattern?.type === "intervals") return "intervals";
   if (pattern?.type === "tempo") return "tempo";
   if (pattern?.type === "fartlek") return "fartlek";
@@ -2484,6 +2501,14 @@ function renderHome(workouts = historyWorkouts) {
     [t("homeLong"), t("homeNoTrend"), "neutral"]
   ];
 
+  const recentWorkouts = sorted.slice(0, 3);
+  const recentHtml = recentWorkouts.length ? recentWorkouts.map(workout => `
+    <button class="home-recent-item" type="button" data-home-workout="${escapeHtml(workout.id)}">
+      <span class="home-recent-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3.5h7l3 3V20.5H7z"></path><path d="M14 3.5v4h4M10 12h4M10 15h4"></path></svg></span>
+      <span class="home-recent-copy"><strong>${escapeHtml(homeWorkoutLabel(workout))}</strong><span>${escapeHtml(formatHistoryDate(workout.workout_date))} · ${escapeHtml(workout.pace || "—")}/км · ${escapeHtml(formatHistoryDistance(workout.distance_km))}</span></span>
+      <span class="home-recent-arrow" aria-hidden="true">→</span>
+    </button>`).join("") : `<div class="home-recent-empty">Після збереження тренувань вони з'являться тут.</div>`;
+
   container.innerHTML = `
     <div class="home-grid">
       <div class="home-main-column">${latestHtml}</div>
@@ -2497,9 +2522,24 @@ function renderHome(workouts = historyWorkouts) {
           ${weekWorkouts.length ? `<div class="home-week-stats"><div><strong>${weekWorkouts.length}</strong><span>${escapeHtml(t("homeWeekWorkouts"))}</span></div><div><strong>${weekDistance.toFixed(1).replace(".", currentLanguage === "uk" ? "," : ".")}</strong><span>${escapeHtml(t("homeWeekDistance"))}</span></div><div><strong>${escapeHtml(formatHomeHours(weekTime))}</strong><span>${escapeHtml(t("homeWeekTime"))}</span></div></div><div class="home-week-days">${[1,2,3,4,5,6,0].map(day => { const d = new Date(weekStart); d.setDate(weekStart.getDate() + (day === 0 ? 6 : day - 1)); const has = weekWorkouts.some(w => { const wd = new Date(w.workout_date || w.created_at || 0); return wd.toDateString() === d.toDateString(); }); return `<span class="${has ? "has-workout" : ""}" title="${escapeHtml(d.toLocaleDateString(translations[currentLanguage].locale, { weekday: "short" }))}"></span>`; }).join("")}</div>` : `<div class="home-week-empty">${escapeHtml(t("homeWeekEmpty"))}</div>`}
         </article>
       </div>
-    </div>`;
+    </div>
+
+    <section class="home-tools" aria-label="Інструменти бігу">
+      <button class="home-tool-card" type="button" data-home-tool="time"><span class="home-tool-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"></circle><path d="M12 7v5l3 2"></path></svg></span><span><strong>Знайти час</strong><small>Розрахуй свій фінішний час на будь-яку дистанцію.</small></span><b>→</b></button>
+      <button class="home-tool-card" type="button" data-home-tool="distance"><span class="home-tool-icon"><svg viewBox="0 0 24 24"><path d="M5 18c2.2-3.4 3.9-6.5 6.6-8.2C14.2 8.1 16.6 7.8 19 5.5"></path><circle cx="5" cy="18" r="2"></circle><path d="M19 5.5v5M19 5.5h-4"></path></svg></span><span><strong>Знайти дистанцію</strong><small>Дізнайся, яку відстань ти подолаєш за свій час.</small></span><b>→</b></button>
+      <button class="home-tool-card" type="button" data-home-tool="pace"><span class="home-tool-icon"><svg viewBox="0 0 24 24"><path d="M4 15h4l2-6 3 10 2-6h5"></path></svg></span><span><strong>Знайти темп</strong><small>Підбери оптимальний темп для своїх цілей.</small></span><b>→</b></button>
+    </section>
+
+    <section class="home-recent-section">
+      <div class="home-section-heading"><h2>Останні тренування</h2><button class="home-outline-button" type="button" id="homeHistoryButton">Всі тренування&nbsp; →</button></div>
+      <div class="home-recent-list">${recentHtml}</div>
+    </section>`;
 
   document.querySelector("#homeDynamicsButton")?.addEventListener("click", () => navigateToView("dynamics"));
+  document.querySelector("#homeHistoryButton")?.addEventListener("click", () => navigateToView("history"));
+  document.querySelectorAll("[data-home-tool]").forEach(button => button.addEventListener("click", () => {
+    window.location.href = "/calculator";
+  }));
   document.querySelector("#homeAddWorkoutButton")?.addEventListener("click", () => document.querySelector("#addWorkoutButton")?.click());
   document.querySelectorAll("[data-home-workout]").forEach(button => button.addEventListener("click", () => {
     const id = button.dataset.homeWorkout;
@@ -2619,7 +2659,7 @@ function renderHistoryList(workouts = historyFilteredWorkouts()) {
     if (stats) stats.innerHTML = "";
     container.innerHTML = `
       <div class="history-empty">
-        <div class="history-empty-icon">🏃</div>
+        <div class="history-empty-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 18.2c2.2 0 4-1.3 5-3.3l1.4-2.8c.7-1.5 2.2-2.5 3.9-2.5 1.2 0 2.3.4 3.2 1.1"></path><path d="M8.3 10.2 6.8 7.5a1.5 1.5 0 0 1 2.6-1.5l1.4 2.4"></path><path d="M15.8 8.7 17 6.3a1.5 1.5 0 0 1 2.8 1.1l-.8 2.3"></path></svg></div>
         <strong>${escapeHtml(historyWorkouts.length ? (currentLanguage === "uk" ? "За цими фільтрами тренувань немає." : "No workouts match these filters.") : t("historyEmpty"))}</strong>
         <p>${escapeHtml(historyWorkouts.length ? (currentLanguage === "uk" ? "Спробуй змінити тип або період." : "Try another type or period.") : t("historyCopy"))}</p>
         ${historyWorkouts.length ? "" : `<button type="button" class="history-empty-button" data-view-target="analysis">${escapeHtml(t("historyEmptyAction"))}</button>`}
@@ -2639,7 +2679,7 @@ function renderHistoryList(workouts = historyFilteredWorkouts()) {
 
   container.innerHTML = workouts.map(workout => `
     <article class="history-item" data-history-id="${escapeHtml(workout.id)}">
-      <div class="history-type-icon ${derivedWorkoutType(workout)}" aria-hidden="true">${historyTypeIcon(workout.workout_type)}</div>
+      <div class="history-workout-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 4h7l3 3v13H7z"></path><path d="M14 4v4h4"></path><path d="M9.5 12h5M9.5 15h5"></path></svg></div>
       <div class="history-item-main">
         <div class="history-item-heading"><div><p class="eyebrow">${escapeHtml(formatHistoryDate(workout.workout_date))}</p><h3>${escapeHtml(workoutTypeLabel(derivedWorkoutType(workout)))}</h3></div><strong class="history-distance">${escapeHtml(formatHistoryDistance(workout.distance_km))}</strong></div>
         <div class="history-metrics"><span><b>${escapeHtml(t("pace"))}</b> ${escapeHtml(workout.pace || "—")}</span><span><b>${escapeHtml(t("time"))}</b> ${escapeHtml(formatHistoryDuration(workout.duration_sec))}</span><span><b>${escapeHtml(t("heartRate"))}</b> ${workout.heart_rate != null ? `${Math.round(workout.heart_rate)} ${currentLanguage === "uk" ? "уд/хв" : "bpm"}` : "—"}</span><span><b>${escapeHtml(t("ascent"))}</b> ${workout.ascent_m != null ? `+${Math.round(workout.ascent_m)} ${currentLanguage === "uk" ? "м" : "m"}` : "—"}</span></div>
