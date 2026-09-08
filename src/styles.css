@@ -2054,3 +2054,228 @@
   .home-tools { grid-template-columns:1fr; }
   #profile .profile-page { padding:46px 0 30px !important; }
 }
+
+
+/* =========================================================
+   RUNORY SIDEBAR — FINAL CLEAN NAVIGATION FIX
+   ========================================================= */
+
+/* Clean line icons: no nested gray tiles */
+.account-sidebar-link .account-sidebar-icon {
+  width: 22px !important;
+  height: 22px !important;
+  flex: 0 0 22px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: #69746e !important;
+  font-size: 0 !important;
+  display: grid !important;
+  place-items: center !important;
+}
+
+.account-sidebar-link .account-sidebar-icon svg {
+  width: 19px !important;
+  height: 19px !important;
+  display: block !important;
+  fill: none !important;
+  stroke: currentColor !important;
+  stroke-width: 1.8 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+}
+
+.account-sidebar-link:hover .account-sidebar-icon {
+  background: transparent !important;
+  color: var(--ink) !important;
+}
+
+.account-sidebar-link.is-active .account-sidebar-icon {
+  background: transparent !important;
+  color: var(--lime) !important;
+}
+
+.account-sidebar-link.is-active .account-sidebar-icon svg {
+  stroke: var(--lime) !important;
+}
+
+/* All navigation rows, including Calculator, use one system */
+.account-sidebar-link,
+.account-sidebar-link.account-sidebar-link-secondary {
+  width: 100% !important;
+  min-height: 52px !important;
+  height: 52px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 13px !important;
+  padding: 0 14px !important;
+  margin: 0 !important;
+  border: 1px solid transparent !important;
+  border-radius: 12px !important;
+  background: transparent !important;
+  color: #69746e !important;
+  text-align: left !important;
+  font: 700 13px Manrope, sans-serif !important;
+  cursor: pointer !important;
+  text-decoration: none !important;
+  opacity: 1 !important;
+  transition: background-color .18s ease, color .18s ease, border-color .18s ease !important;
+}
+
+.account-sidebar-link:hover,
+.account-sidebar-link.account-sidebar-link-secondary:hover {
+  background: #eef2ed !important;
+  color: var(--ink) !important;
+  border-color: transparent !important;
+}
+
+.account-sidebar-link.is-active,
+.account-sidebar-link.account-sidebar-link-secondary.is-active {
+  background: var(--ink) !important;
+  color: #fff !important;
+  border-color: var(--ink) !important;
+}
+
+.account-sidebar-link.is-active:hover,
+.account-sidebar-link.account-sidebar-link-secondary.is-active:hover {
+  background: var(--ink) !important;
+  color: #fff !important;
+}
+
+.account-sidebar-nav {
+  display: grid !important;
+  gap: 6px !important;
+}
+
+.account-sidebar-divider {
+  margin: 14px 6px 10px !important;
+}
+
+/* Clean collapse button */
+.account-sidebar-top {
+  min-height: 34px !important;
+  margin-bottom: 18px !important;
+}
+
+.account-sidebar-toggle {
+  width: 34px !important;
+  height: 34px !important;
+  flex: 0 0 34px !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: 0 !important;
+  border: 1px solid #dce2dd !important;
+  border-radius: 10px !important;
+  background: #fff !important;
+  color: #68736d !important;
+  box-shadow: 0 3px 12px rgba(16,24,18,.035) !important;
+  font: 700 20px/1 Manrope, sans-serif !important;
+  cursor: pointer !important;
+  transition: background-color .18s ease, border-color .18s ease, color .18s ease !important;
+}
+
+.account-sidebar-toggle:hover {
+  background: #eef2ed !important;
+  border-color: #cbd4cd !important;
+  color: var(--ink) !important;
+}
+
+.account-sidebar-toggle > span {
+  display: block !important;
+  width: 100% !important;
+  text-align: center !important;
+  line-height: 1 !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Collapsed sidebar */
+.account-sidebar.is-collapsed {
+  padding-right: 8px !important;
+}
+
+.account-sidebar.is-collapsed .account-sidebar-top {
+  justify-content: center !important;
+  margin-bottom: 18px !important;
+}
+
+.account-sidebar.is-collapsed .account-sidebar-toggle {
+  width: 34px !important;
+  height: 34px !important;
+}
+
+.account-sidebar.is-collapsed .account-sidebar-link,
+.account-sidebar.is-collapsed .account-sidebar-link.account-sidebar-link-secondary {
+  width: 100% !important;
+  min-height: 52px !important;
+  height: 52px !important;
+  justify-content: center !important;
+  gap: 0 !important;
+  padding: 0 !important;
+}
+
+.account-sidebar.is-collapsed .account-sidebar-icon {
+  width: 22px !important;
+  height: 22px !important;
+  flex-basis: 22px !important;
+}
+
+.account-sidebar.is-collapsed .account-sidebar-link > span:last-child {
+  display: none !important;
+}
+
+.account-sidebar.is-collapsed .account-sidebar-link:hover {
+  background: #eef2ed !important;
+}
+
+.account-sidebar.is-collapsed .account-sidebar-link.is-active {
+  background: var(--ink) !important;
+}
+
+/* Calculator hover/active is identical to the other navigation items */
+.account-sidebar-link-secondary:hover .account-sidebar-icon {
+  color: var(--ink) !important;
+  background: transparent !important;
+}
+
+.account-sidebar-link-secondary.is-active .account-sidebar-icon {
+  color: var(--lime) !important;
+  background: transparent !important;
+}
+
+/* Desktop */
+@media (min-width: 681px) {
+  .account-sidebar {
+    padding-top: 30px !important;
+  }
+
+  .app-layout {
+    grid-template-columns: 220px minmax(0, 1fr) !important;
+  }
+
+  .app-layout:has(.account-sidebar.is-collapsed) {
+    grid-template-columns: 72px minmax(0, 1fr) !important;
+    gap: 28px !important;
+  }
+}
+
+/* Mobile */
+@media (max-width: 680px) {
+  .account-sidebar-link,
+  .account-sidebar-link.account-sidebar-link-secondary {
+    min-height: 48px !important;
+    height: 48px !important;
+    padding: 0 12px !important;
+  }
+
+  .account-sidebar-icon {
+    width: 24px !important;
+    height: 24px !important;
+    flex-basis: 24px !important;
+  }
+
+  .account-sidebar-icon svg {
+    width: 19px !important;
+    height: 19px !important;
+  }
+}
