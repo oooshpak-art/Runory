@@ -1361,3 +1361,173 @@
   .add-workout-button{width:38px;height:38px;border-radius:10px;font-size:25px}
   .language-switcher{display:inline-flex}
 }
+/* === Runory final sidebar design === */
+
+/* Иконки меню — без серых квадратов */
+.account-sidebar-icon {
+  width: 28px !important;
+  height: 28px !important;
+  flex: 0 0 28px !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: #68736d !important;
+  box-shadow: none !important;
+}
+
+.account-sidebar-icon svg {
+  width: 20px !important;
+  height: 20px !important;
+  display: block !important;
+  fill: none !important;
+  stroke: currentColor !important;
+  stroke-width: 1.7 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+}
+
+/* Активный пункт */
+.account-sidebar-link.is-active {
+  background: var(--ink) !important;
+  color: #fff !important;
+}
+
+.account-sidebar-link.is-active .account-sidebar-icon {
+  background: transparent !important;
+  color: var(--lime) !important;
+}
+
+.account-sidebar-link.is-active .account-sidebar-icon svg {
+  stroke: var(--lime) !important;
+}
+
+/* Обычный hover */
+.account-sidebar-link:hover {
+  background: #eef2ed !important;
+  color: var(--ink) !important;
+}
+
+.account-sidebar-link:hover .account-sidebar-icon {
+  background: transparent !important;
+  color: var(--ink) !important;
+}
+
+/* КАЛЬКУЛЯТОР — при наведении видны и иконка, и текст */
+.account-sidebar-link-secondary:hover {
+  background: var(--ink) !important;
+  color: #fff !important;
+}
+
+.account-sidebar-link-secondary:hover .account-sidebar-icon {
+  background: transparent !important;
+  color: var(--lime) !important;
+}
+
+.account-sidebar-link-secondary:hover > span:last-child {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Свернутое меню */
+.account-sidebar.is-collapsed .account-sidebar-link {
+  width: 44px !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  margin: 0 auto !important;
+  padding: 0 !important;
+  justify-content: center !important;
+  gap: 0 !important;
+}
+
+.account-sidebar.is-collapsed .account-sidebar-icon {
+  width: 28px !important;
+  height: 28px !important;
+  flex-basis: 28px !important;
+}
+
+.account-sidebar.is-collapsed .account-sidebar-icon svg {
+  width: 20px !important;
+  height: 20px !important;
+}
+
+/* В свернутом меню никаких серых фонов */
+.account-sidebar.is-collapsed .account-sidebar-link:hover,
+.account-sidebar.is-collapsed .account-sidebar-link.is-active {
+  background: var(--ink) !important;
+}
+
+.account-sidebar.is-collapsed .account-sidebar-link > span:last-child {
+  display: none !important;
+}
+
+/* Кнопка сворачивания */
+.account-sidebar-toggle {
+  width: 34px !important;
+  height: 34px !important;
+  padding: 0 !important;
+  display: grid !important;
+  place-items: center !important;
+}
+
+/* JS вставляет сюда ‹ / › — превращаем символ в аккуратную стрелку */
+.account-sidebar-toggle span {
+  display: block !important;
+  width: 8px !important;
+  height: 8px !important;
+  border-right: 1.8px solid currentColor !important;
+  border-bottom: 1.8px solid currentColor !important;
+  font-size: 0 !important;
+  transform: rotate(135deg);
+}
+
+.account-sidebar.is-collapsed .account-sidebar-toggle span {
+  transform: rotate(-45deg);
+}
+
+/* Профиль — реально по центру контентной области */
+.profile-page {
+  width: 100% !important;
+  max-width: 980px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+.profile-page-heading {
+  max-width: 760px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  text-align: center !important;
+}
+
+.profile-card {
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+/* История — если старые иконки типов ещё присутствуют */
+.history-type-icon {
+  width: 36px !important;
+  height: 36px !important;
+  display: grid !important;
+  place-items: center !important;
+  border: 0 !important;
+  border-radius: 9px !important;
+  background: #f1f4ef !important;
+  color: #526058 !important;
+  font-size: 0 !important;
+}
+
+.history-type-icon::before {
+  content: "↗";
+  font-size: 17px;
+  line-height: 1;
+  color: currentColor;
+}
+
+.history-type-icon svg {
+  display: none !important;
+}
