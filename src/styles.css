@@ -2341,3 +2341,94 @@
   stroke: var(--lime) !important;
   color: var(--lime) !important;
 }
+
+
+/* =========================================================
+   RUNORY — RESTORE NORMAL SIDEBAR ICONS
+   Based on the previously approved v14 icon treatment.
+   ========================================================= */
+
+/* Normal expanded state: simple, crisp line icons */
+.account-sidebar-link .account-sidebar-icon,
+.account-sidebar-link.account-sidebar-link-secondary .account-sidebar-icon {
+  width: 30px !important;
+  height: 30px !important;
+  flex: 0 0 30px !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  color: #66716b !important;
+  box-shadow: none !important;
+}
+
+.account-sidebar-link .account-sidebar-icon svg,
+.account-sidebar-link.account-sidebar-link-secondary .account-sidebar-icon svg {
+  width: 19px !important;
+  height: 19px !important;
+  display: block !important;
+  fill: none !important;
+  stroke: currentColor !important;
+  stroke-width: 1.65 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.account-sidebar-link:hover .account-sidebar-icon,
+.account-sidebar-link.account-sidebar-link-secondary:hover .account-sidebar-icon {
+  background: transparent !important;
+  color: var(--ink) !important;
+}
+
+.account-sidebar-link.is-active .account-sidebar-icon,
+.account-sidebar-link.is-active:hover .account-sidebar-icon,
+.account-sidebar-link.account-sidebar-link-secondary.is-active .account-sidebar-icon,
+.account-sidebar-link.account-sidebar-link-secondary.is-active:hover .account-sidebar-icon {
+  background: transparent !important;
+  color: var(--lime) !important;
+}
+
+.account-sidebar-link.is-active .account-sidebar-icon svg,
+.account-sidebar-link.is-active:hover .account-sidebar-icon svg,
+.account-sidebar-link.account-sidebar-link-secondary.is-active .account-sidebar-icon svg,
+.account-sidebar-link.account-sidebar-link-secondary.is-active:hover .account-sidebar-icon svg {
+  stroke: var(--lime) !important;
+  stroke-width: 1.85 !important;
+}
+
+/* Collapsed state: same icon, simply centered — no extra tile inside it */
+.account-sidebar.is-collapsed .account-sidebar-link .account-sidebar-icon,
+.account-sidebar.is-collapsed .account-sidebar-link-secondary .account-sidebar-icon {
+  width: 30px !important;
+  height: 30px !important;
+  flex: 0 0 30px !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+.account-sidebar.is-collapsed .account-sidebar-link .account-sidebar-icon svg,
+.account-sidebar.is-collapsed .account-sidebar-link-secondary .account-sidebar-icon svg {
+  width: 20px !important;
+  height: 20px !important;
+  stroke-width: 1.7 !important;
+}
+
+/* Collapsed active state keeps the black item surface, not an icon square */
+.account-sidebar.is-collapsed .account-sidebar-link.is-active .account-sidebar-icon,
+.account-sidebar.is-collapsed .account-sidebar-link-secondary.is-active .account-sidebar-icon,
+.account-sidebar.is-collapsed .account-sidebar-link.is-active:hover .account-sidebar-icon,
+.account-sidebar.is-collapsed .account-sidebar-link-secondary.is-active:hover .account-sidebar-icon {
+  background: transparent !important;
+  color: var(--lime) !important;
+}
+
+.account-sidebar.is-collapsed .account-sidebar-link:hover .account-sidebar-icon,
+.account-sidebar.is-collapsed .account-sidebar-link-secondary:hover .account-sidebar-icon {
+  background: transparent !important;
+  color: var(--ink) !important;
+}
