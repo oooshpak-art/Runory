@@ -2341,3 +2341,61 @@
   .calculator-intro h1 { font-size:40px !important; line-height:1.04 !important; letter-spacing:-2.4px !important; }
   .calculator-card { width:100%; box-sizing:border-box; border-radius:15px !important; padding:18px !important; }
 }
+
+
+/* Mobile header v2 — only top panel sizing */
+@media (max-width: 680px) {
+  .topbar .topbar-lang {
+    width: 64px;
+    min-width: 64px;
+    max-width: 64px;
+    height: 42px;
+    padding: 4px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    overflow: hidden;
+  }
+
+  .topbar .topbar-lang > * {
+    box-sizing: border-box;
+  }
+
+  .topbar .topbar-lang .active,
+  .topbar .topbar-lang button.active,
+  .topbar .topbar-lang a.active {
+    min-width: 34px;
+    height: 34px;
+    padding: 0 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .topbar .topbar-account {
+    min-width: 76px;
+    max-width: 76px;
+    height: 42px;
+    padding: 0 10px;
+    white-space: nowrap;
+    box-sizing: border-box;
+  }
+
+  .topbar .topbar-add {
+    width: 42px;
+    min-width: 42px;
+    height: 42px;
+  }
+
+  .topbar .sidebar-mobile-toggle {
+    width: 42px;
+    min-width: 42px;
+    height: 42px;
+  }
+
+  .topbar .brand-logo {
+    width: 118px;
+    max-width: 118px;
+  }
+}
