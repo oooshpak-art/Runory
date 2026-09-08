@@ -2719,3 +2719,33 @@
     font-size: 8px !important;
   }
 }
+
+
+/* === Runory sidebar fix v1 === */
+/* Restore a clearly visible collapse arrow and keep calculator hover identical to other tools. */
+.account-sidebar-toggle {
+  color: #657069 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  position: relative !important;
+  z-index: 2 !important;
+}
+.account-sidebar-toggle svg {
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  stroke: currentColor !important;
+  stroke-width: 2 !important;
+}
+.account-sidebar-link-secondary:hover,
+.account-sidebar-link-secondary:hover .account-sidebar-icon,
+.account-sidebar-link-secondary:focus-visible,
+.account-sidebar-link-secondary:focus-visible .account-sidebar-icon {
+  background: transparent !important;
+  color: var(--ink) !important;
+}
+.account-sidebar-link-secondary.is-active:hover,
+.account-sidebar-link-secondary.is-active:hover .account-sidebar-icon {
+  background: var(--ink) !important;
+  color: var(--lime) !important;
+}
