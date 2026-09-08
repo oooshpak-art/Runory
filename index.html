@@ -16,7 +16,7 @@
     rel="stylesheet"
   />
 
-  <link rel="stylesheet" href="/src/styles-v11.css" />
+  <link rel="stylesheet" href="/src/styles.css" />
 
   <style>
     .splits-card {
@@ -564,21 +564,21 @@
         </div>
         <nav class="account-sidebar-nav" aria-label="Навігація Runory">
           <button class="account-sidebar-link" type="button" data-view-target="home">
-            <span class="account-sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4.5 10.5 12 4l7.5 6.5v8a1 1 0 0 1-1 1h-4.5v-6h-4v6H6a1 1 0 0 1-1-1z"/></svg></span>
+            <span class="account-sidebar-icon" aria-hidden="true">⌂</span>
             <span data-i18n="homeNav">Головна</span>
           </button>
           <button class="account-sidebar-link" type="button" data-view-target="history">
-            <span class="account-sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 17.5c2.2-4.8 5-7.2 8.2-7.2 2.5 0 4.1 1.3 5.8 3.2"/><path d="M5 19.5h3M16 19.5h3"/><path d="M7.5 7.5h.01"/></svg></span>
+            <span class="account-sidebar-icon runner-icon" aria-hidden="true">🏃</span>
             <span data-i18n="historyNavShort">Тренування</span>
           </button>
           <button class="account-sidebar-link" type="button" data-view-target="dynamics">
-            <span class="account-sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 18V9M10 18v-5M15 18V7M20 18V4"/><path d="M4 20h17"/></svg></span>
+            <span class="account-sidebar-icon" aria-hidden="true">↗</span>
             <span data-i18n="dynamicsNav">Динаміка</span>
           </button>
           <div class="account-sidebar-divider" aria-hidden="true"></div>
           <p class="account-sidebar-section-label" data-i18n="toolsNav">ІНСТРУМЕНТИ</p>
-          <a class="account-sidebar-link account-sidebar-link-secondary" href="/calculator">
-            <span class="account-sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="3.5" width="14" height="17" rx="2.5"/><rect x="8" y="6.5" width="8" height="3" rx=".7"/><path d="M8.5 13h1M12 13h1M15.5 13h0M8.5 16.5h1M12 16.5h1M15.5 16.5h0"/></svg></span>
+          <a class="account-sidebar-link account-sidebar-link-secondary" href="calculator.html">
+            <span class="account-sidebar-icon" aria-hidden="true">◌</span>
             <span data-i18n="navCalculator">Калькулятор бігу</span>
           </a>
         </nav>
@@ -590,6 +590,7 @@
     <div class="view is-active" id="home" data-view-panel>
       <section class="home-page">
         <div class="home-heading">
+          <p class="eyebrow" data-i18n="homeEyebrow">ТВІЙ RUNORY</p>
           <h1 data-i18n="homeTitle">Твій біг — коротко й по суті.</h1>
           <p data-i18n="homeCopy">Останнє тренування, зміни форми та те, що відбувається цього тижня.</p>
         </div>
@@ -839,6 +840,7 @@
     <div class="view" id="profile" data-view-panel>
       <section class="profile-page">
         <div class="profile-page-heading">
+          <p class="eyebrow" data-i18n="profilePageEyebrow">ПРОФІЛЬ СПОРТСМЕНА</p>
           <h1 data-i18n="profilePageTitle">Мій профіль</h1>
           <p data-i18n="profilePageCopy">Дані, які допомагають Runory точніше аналізувати твої тренування та прогрес.</p>
         </div>
@@ -976,6 +978,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="/src/services/fitParser.js"></script>
-  <script src="/src/main.js?v=11"></script>
+  <script src="/src/main.js"></script>
 </body>
 </html>

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" data-i18n-content="metaDescription" content="Runory — калькулятор бігу: час, дистанція та темп." />
   <title>Runory — калькулятор бігу</title>
-<link rel="stylesheet" href="/src/styles-v11.css" />
+<link rel="stylesheet" href="/src/styles.css" />
 <main class="page-shell">
 
   <header class="topbar">
@@ -22,9 +22,9 @@
         <span aria-hidden="true">+</span>
       </button>
 
-      <a class="auth-button calculator-auth-button" id="calculatorAuthButton" href="/account" aria-label="Акаунт">
+      <a class="auth-button" href="/account" aria-label="Акаунт">
         <span class="auth-button-dot" aria-hidden="true"></span>
-        <span id="calculatorAuthText">Акаунт</span>
+        <span data-i18n="authSignIn">Увійти</span>
       </a>
 
       <div class="language-switcher" role="group" aria-label="Мова" data-i18n-aria="language">
@@ -44,21 +44,21 @@
       </div>
       <nav class="account-sidebar-nav" aria-label="Навігація Runory">
         <a class="account-sidebar-link" href="/">
-          <span class="account-sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4.5 10.5 12 4l7.5 6.5v8a1 1 0 0 1-1 1h-4.5v-6h-4v6H6a1 1 0 0 1-1-1z"/></svg></span>
+          <span class="account-sidebar-icon" aria-hidden="true">⌂</span>
           <span data-i18n="homeNav">Головна</span>
         </a>
         <a class="account-sidebar-link" href="/workouts">
-          <span class="account-sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 17.5c2.2-4.8 5-7.2 8.2-7.2 2.5 0 4.1 1.3 5.8 3.2"/><path d="M5 19.5h3M16 19.5h3"/><path d="M7.5 7.5h.01"/></svg></span>
+          <span class="account-sidebar-icon runner-icon" aria-hidden="true">🏃</span>
           <span data-i18n="historyNavShort">Тренування</span>
         </a>
         <a class="account-sidebar-link" href="/progress">
-          <span class="account-sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 18V9M10 18v-5M15 18V7M20 18V4"/><path d="M4 20h17"/></svg></span>
+          <span class="account-sidebar-icon" aria-hidden="true">↗</span>
           <span data-i18n="dynamicsNav">Динаміка</span>
         </a>
         <div class="account-sidebar-divider" aria-hidden="true"></div>
         <p class="account-sidebar-section-label" data-i18n="toolsNav">ІНСТРУМЕНТИ</p>
         <a class="account-sidebar-link account-sidebar-link-secondary is-active" href="/calculator">
-          <span class="account-sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="3.5" width="14" height="17" rx="2.5"/><rect x="8" y="6.5" width="8" height="3" rx=".7"/><path d="M8.5 13h1M12 13h1M15.5 13h0M8.5 16.5h1M12 16.5h1M15.5 16.5h0"/></svg></span>
+          <span class="account-sidebar-icon" aria-hidden="true">◌</span>
           <span data-i18n="navCalculator">Калькулятор бігу</span>
         </a>
       </nav>
@@ -154,31 +154,9 @@
   </div>
 </main>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
 
 // Shared Runory shell behavior for the standalone calculator page.
-// Keep the standalone calculator visually consistent with the main app.
-// It does not need the full auth modal, but it can read the same Supabase session.
-const RUNORY_SUPABASE_URL = "https://vabzqqptpzcoguvuujaz.supabase.co";
-const RUNORY_SUPABASE_KEY = "sb_publishable_Jm_w-bNZJ8bnrGIbkzc5yw_IGZjneHN";
-const calculatorSupabase = window.supabase?.createClient(RUNORY_SUPABASE_URL, RUNORY_SUPABASE_KEY);
-const calculatorAuthButton = document.getElementById("calculatorAuthButton");
-const calculatorAuthText = document.getElementById("calculatorAuthText");
-
-async function syncCalculatorAuth() {
-  try {
-    const { data } = await calculatorSupabase?.auth.getSession();
-    const signedIn = Boolean(data?.session?.user);
-    calculatorAuthText.textContent = signedIn ? "Акаунт" : "Увійти";
-    calculatorAuthButton.classList.toggle("is-signed-in", signedIn);
-  } catch (_) {
-    calculatorAuthText.textContent = "Увійти";
-  }
-}
-syncCalculatorAuth();
-calculatorSupabase?.auth.onAuthStateChange(() => syncCalculatorAuth());
-
 document.getElementById("addWorkoutButton")?.addEventListener("click", () => {
   window.location.href = "/";
 });
@@ -738,4 +716,6 @@ applyLanguage();
 </script>
 
 </body>
+</html>
+
 </html>
