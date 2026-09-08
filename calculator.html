@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" data-i18n-content="metaDescription" content="Runory — калькулятор бігу: час, дистанція та темп." />
   <title>Runory — калькулятор бігу</title>
-<link rel="stylesheet" href="/src/styles.css" />
+<link rel="stylesheet" href="/src/styles-v12.css" />
 <main class="page-shell">
 
   <header class="topbar">
@@ -22,9 +22,9 @@
         <span aria-hidden="true">+</span>
       </button>
 
-      <a class="auth-button" href="/account" aria-label="Акаунт">
+      <a class="auth-button" id="calculatorAuthButton" href="/account" aria-label="Акаунт">
         <span class="auth-button-dot" aria-hidden="true"></span>
-        <span data-i18n="authSignIn">Увійти</span>
+        <span id="calculatorAuthButtonText" data-i18n="authSignIn">Увійти</span>
       </a>
 
       <div class="language-switcher" role="group" aria-label="Мова" data-i18n-aria="language">
@@ -39,26 +39,26 @@
       <div class="account-sidebar-top">
         <p class="account-sidebar-label">RUNORY</p>
         <button class="account-sidebar-toggle" id="accountSidebarToggle" type="button" aria-label="Згорнути меню" aria-expanded="true">
-          <span aria-hidden="true">‹</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 6-6 6 6 6"/></svg>
         </button>
       </div>
       <nav class="account-sidebar-nav" aria-label="Навігація Runory">
         <a class="account-sidebar-link" href="/">
-          <span class="account-sidebar-icon" aria-hidden="true">⌂</span>
+          <span class="account-sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5v8.5a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1z"/><path d="M9 20v-6h6v6"/></svg></span>
           <span data-i18n="homeNav">Головна</span>
         </a>
         <a class="account-sidebar-link" href="/workouts">
-          <span class="account-sidebar-icon runner-icon" aria-hidden="true">🏃</span>
+          <span class="account-sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="13.5" cy="5" r="1.8"/><path d="m11.5 9 3.5 2 2.5-1.5M11.5 9 9 13l-2 4M15 11l-1 5 3.5 3M9 13l-4-1M10 17l-3 3"/></svg></span>
           <span data-i18n="historyNavShort">Тренування</span>
         </a>
         <a class="account-sidebar-link" href="/progress">
-          <span class="account-sidebar-icon" aria-hidden="true">↗</span>
+          <span class="account-sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 17 10 12l3 3 6-7"/><path d="M14 8h5v5"/></svg></span>
           <span data-i18n="dynamicsNav">Динаміка</span>
         </a>
         <div class="account-sidebar-divider" aria-hidden="true"></div>
         <p class="account-sidebar-section-label" data-i18n="toolsNav">ІНСТРУМЕНТИ</p>
         <a class="account-sidebar-link account-sidebar-link-secondary is-active" href="/calculator">
-          <span class="account-sidebar-icon" aria-hidden="true">◌</span>
+          <span class="account-sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="3.5" width="14" height="17" rx="2.5"/><rect x="8" y="6.5" width="8" height="3" rx=".7"/><path d="M8.5 13h1M12 13h1M15.5 13h0M8.5 16.5h1M12 16.5h1M15.5 16.5h0"/></svg></span>
           <span data-i18n="navCalculator">Калькулятор бігу</span>
         </a>
       </nav>
@@ -154,9 +154,24 @@
   </div>
 </main>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 
 // Shared Runory shell behavior for the standalone calculator page.
+const RUNORY_SUPABASE_URL = "https://vabzqqptpzcoguvuujaz.supabase.co";
+const RUNORY_SUPABASE_KEY = "sb_publishable_Jm_w-bNZJ8bnrGIbkzc5yw_IGZjneHN";
+const runoryAuthClient = window.supabase?.createClient(RUNORY_SUPABASE_URL, RUNORY_SUPABASE_KEY);
+const calculatorAuthButton = document.getElementById("calculatorAuthButton");
+const calculatorAuthButtonText = document.getElementById("calculatorAuthButtonText");
+async function syncCalculatorAuth() {
+  if (!runoryAuthClient) return;
+  const { data } = await runoryAuthClient.auth.getSession();
+  const signedIn = !!data?.session?.user;
+  calculatorAuthButton?.classList.toggle("is-signed-in", signedIn);
+  if (calculatorAuthButtonText) calculatorAuthButtonText.textContent = signedIn ? "Акаунт" : "Увійти";
+}
+syncCalculatorAuth();
+runoryAuthClient?.auth.onAuthStateChange(() => syncCalculatorAuth());
 document.getElementById("addWorkoutButton")?.addEventListener("click", () => {
   window.location.href = "/";
 });
@@ -169,7 +184,7 @@ const calculatorMobileBackdrop = document.getElementById("sidebarMobileBackdrop"
 calculatorSidebarToggle?.addEventListener("click", () => {
   const collapsed = calculatorSidebar.classList.toggle("is-collapsed");
   calculatorSidebarToggle.setAttribute("aria-expanded", String(!collapsed));
-  calculatorSidebarToggle.querySelector("span")?.replaceChildren(document.createTextNode(collapsed ? "›" : "‹"));
+  calculatorSidebarToggle.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${collapsed ? "m9.5 6 6 6-6 6" : "m14.5 6-6 6 6 6"}"/></svg>`;
 });
 
 calculatorMobileToggle?.addEventListener("click", () => {
