@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" data-i18n-content="metaDescription" content="Runory — калькулятор бігу: час, дистанція та темп." />
   <title>Runory — калькулятор бігу</title>
-<link rel="stylesheet" href="/src/styles.css?v=13" />
+<link rel="stylesheet" href="/src/styles.css?v=15" />
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <main class="page-shell">
 
@@ -170,7 +170,8 @@ const calculatorMobileBackdrop = document.getElementById("sidebarMobileBackdrop"
 calculatorSidebarToggle?.addEventListener("click", () => {
   const collapsed = calculatorSidebar.classList.toggle("is-collapsed");
   calculatorSidebarToggle.setAttribute("aria-expanded", String(!collapsed));
-  calculatorSidebarToggle.querySelector("span")?.replaceChildren(document.createTextNode(collapsed ? "›" : "‹"));
+  calculatorSidebarToggle.setAttribute("aria-label", collapsed ? "Розгорнути меню" : "Згорнути меню");
+  calculatorSidebarToggle.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 5-7 7 7 7"></path></svg>';
 });
 
 calculatorMobileToggle?.addEventListener("click", () => {
