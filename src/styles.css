@@ -1361,173 +1361,696 @@
   .add-workout-button{width:38px;height:38px;border-radius:10px;font-size:25px}
   .language-switcher{display:inline-flex}
 }
-/* === Runory final sidebar design === */
 
-/* Иконки меню — без серых квадратов */
+/* === Runory v13 visual cleanup === */
 .account-sidebar-icon {
-  width: 28px !important;
-  height: 28px !important;
-  flex: 0 0 28px !important;
-  display: grid !important;
-  place-items: center !important;
-  padding: 0 !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  color: #68736d !important;
-  box-shadow: none !important;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  border-radius: 9px;
+  background: #f0f3ef;
+  color: #56635c;
 }
-
 .account-sidebar-icon svg {
-  width: 20px !important;
-  height: 20px !important;
-  display: block !important;
-  fill: none !important;
-  stroke: currentColor !important;
-  stroke-width: 1.7 !important;
-  stroke-linecap: round !important;
-  stroke-linejoin: round !important;
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
-
-/* Активный пункт */
-.account-sidebar-link.is-active {
-  background: var(--ink) !important;
-  color: #fff !important;
-}
-
 .account-sidebar-link.is-active .account-sidebar-icon {
-  background: transparent !important;
-  color: var(--lime) !important;
+  background: rgba(255,255,255,.11);
+  color: var(--lime);
 }
-
-.account-sidebar-link.is-active .account-sidebar-icon svg {
-  stroke: var(--lime) !important;
-}
-
-/* Обычный hover */
-.account-sidebar-link:hover {
-  background: #eef2ed !important;
-  color: var(--ink) !important;
-}
-
 .account-sidebar-link:hover .account-sidebar-icon {
-  background: transparent !important;
-  color: var(--ink) !important;
+  background: #e5eae4;
+  color: var(--ink);
+}
+.account-sidebar-link.is-active:hover .account-sidebar-icon {
+  background: rgba(255,255,255,.14);
+  color: var(--lime);
+}
+.account-sidebar-nav { gap: 7px; }
+.account-sidebar-link { min-height: 48px; gap: 12px; padding: 0 10px; }
+.account-sidebar-divider { margin: 14px 10px 8px; }
+.account-sidebar-section-label { margin: 0 10px 6px; }
+.account-sidebar.is-collapsed .account-sidebar-link { justify-content: center; padding: 0; }
+.account-sidebar.is-collapsed .account-sidebar-icon { width: 34px; height: 34px; }
+.account-sidebar.is-collapsed .account-sidebar-top { justify-content: center; }
+.account-sidebar.is-collapsed .account-sidebar-toggle { border: 0; background: transparent; }
+.account-sidebar-toggle { display:grid; place-items:center; }
+.account-sidebar-toggle span { display:block; line-height:1; transform:translateX(-1px); }
+
+/* Keep the profile page visually centered inside the content column. */
+.profile-page {
+  max-width: 920px;
+  margin: 0 auto;
+  padding-left: 24px;
+  padding-right: 24px;
+}
+.profile-page-heading { text-align: center; max-width: 680px; margin: 0 auto 34px; }
+.profile-card { max-width: 760px; margin: 0 auto; }
+
+/* History is a clean list: workout type is conveyed by text, not decorative emoji tiles. */
+.history-type-icon { display: none !important; }
+.history-item { grid-template-columns: minmax(0,1fr) auto; padding: 20px !important; }
+
+/* Calculator uses the same visual shell as the rest of Runory. */
+.calculator-view { max-width: 1080px; margin: 0 auto; padding-top: 64px; }
+.calculator-intro { max-width: 720px; }
+.calculator-card { border-radius: 16px; box-shadow: 0 10px 30px rgba(31,40,31,.035); }
+
+@media (max-width: 980px) {
+  .page-shell { padding-left: 28px; padding-right: 28px; }
+  .app-layout { grid-template-columns: 196px minmax(0,1fr); gap: 28px; }
 }
 
-/* КАЛЬКУЛЯТОР — при наведении видны и иконка, и текст */
+@media (max-width: 680px) {
+  .page-shell { padding-left: 17px; padding-right: 17px; }
+  .profile-page { padding-left: 0; padding-right: 0; }
+  .calculator-view { padding-top: 48px; }
+}
+
+
+/* === Runory v14: clean navigation icons + centered profile === */
+.account-sidebar-link { border-radius: 11px; }
+.account-sidebar-icon {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: transparent;
+  color: #66716b;
+}
+.account-sidebar-icon svg {
+  width: 19px;
+  height: 19px;
+  display: block;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.65;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.account-sidebar-link:hover .account-sidebar-icon { background: transparent; color: var(--ink); }
+.account-sidebar-link.is-active .account-sidebar-icon,
+.account-sidebar-link.is-active:hover .account-sidebar-icon { background: transparent; color: var(--lime); }
+.account-sidebar-link.is-active .account-sidebar-icon svg { stroke-width: 1.85; }
+.account-sidebar.is-collapsed .account-sidebar-link { width: 46px; margin: 0 auto; padding: 0; justify-content: center; }
+.account-sidebar.is-collapsed .account-sidebar-icon { width: 34px; height: 34px; flex-basis: 34px; }
+.account-sidebar.is-collapsed .account-sidebar-icon svg { width: 20px; height: 20px; }
+.account-sidebar.is-collapsed .account-sidebar-top { justify-content: center; }
+.account-sidebar.is-collapsed .account-sidebar-toggle { width: 34px; height: 34px; }
+.account-sidebar-toggle svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; transition: transform .2s ease; }
+.account-sidebar.is-collapsed .account-sidebar-toggle svg { transform: rotate(180deg); }
+.account-sidebar-divider { margin-left: 10px; margin-right: 10px; }
+.profile-page { width: 100%; max-width: 900px; margin: 0 auto; padding: 74px 24px 40px; display: flex; flex-direction: column; align-items: center; }
+.profile-page-heading { width: 100%; max-width: 700px; margin: 0 auto 34px; text-align: center; }
+.profile-page-heading > p:last-child { margin-left: auto; margin-right: auto; }
+.profile-card { width: 100%; max-width: 760px; margin: 0 auto; }
+.history-empty-icon { color: #5c6a62; }
+.history-empty-icon svg { width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+@media (max-width: 680px) {
+  .profile-page { padding: 52px 0 24px; }
+  .profile-page-heading { max-width: 100%; }
+  .profile-card { max-width: 100%; }
+}
+
+/* === Runory v15: restore the proven icon set and simplify states === */
+.account-sidebar-icon {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  background: transparent !important;
+  color: #647069;
+}
+.account-sidebar-icon svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.account-sidebar-link:hover .account-sidebar-icon,
+.account-sidebar-link.is-active .account-sidebar-icon,
+.account-sidebar-link.is-active:hover .account-sidebar-icon {
+  background: transparent !important;
+}
+.account-sidebar-link:hover .account-sidebar-icon { color: var(--ink); }
+.account-sidebar-link.is-active .account-sidebar-icon { color: var(--lime); }
+.account-sidebar-link.is-active .account-sidebar-icon svg { stroke-width: 1.85; }
+.account-sidebar-toggle {
+  display: grid;
+  place-items: center;
+  font-size: 0;
+}
+.account-sidebar-toggle svg {
+  width: 17px;
+  height: 17px;
+  display: block;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform .2s ease;
+}
+.account-sidebar.is-collapsed .account-sidebar-toggle svg { transform: rotate(180deg); }
+.account-sidebar.is-collapsed .account-sidebar-link {
+  width: 48px;
+  min-height: 46px;
+  margin: 0 auto;
+  padding: 0;
+  justify-content: center;
+}
+.account-sidebar.is-collapsed .account-sidebar-icon {
+  width: 28px;
+  height: 28px;
+  flex-basis: 28px;
+}
+.account-sidebar.is-collapsed .account-sidebar-icon svg { width: 21px; height: 21px; }
+.account-sidebar.is-collapsed .account-sidebar-top { justify-content: center; }
+.account-sidebar.is-collapsed .account-sidebar-toggle { width: 34px; height: 34px; }
+.account-sidebar-link-secondary:hover,
+.account-sidebar-link-secondary:hover .account-sidebar-icon { color: var(--ink); }
+.account-sidebar-link-secondary:focus-visible { outline: 2px solid #a7c96a; outline-offset: 2px; }
+
+/* Keep profile content centered in the actual content column. */
+.app-content { width: 100%; min-width: 0; }
+#profile .profile-page { width: min(100%, 920px); margin-left: auto; margin-right: auto; }
+#profile .profile-page-heading,
+#profile .profile-card { margin-left: auto; margin-right: auto; }
+
+/* History cards have no decorative type tiles. */
+.history-type-icon { display: none !important; }
+.history-item { padding: 19px 20px !important; }
+
+/* Calculator hover must keep both label and icon readable. */
 .account-sidebar-link-secondary:hover {
   background: var(--ink) !important;
   color: #fff !important;
 }
-
 .account-sidebar-link-secondary:hover .account-sidebar-icon {
-  background: transparent !important;
   color: var(--lime) !important;
 }
-
-.account-sidebar-link-secondary:hover > span:last-child {
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
+.account-sidebar-link-secondary.is-active,
+.account-sidebar-link-secondary.is-active:hover {
+  background: var(--ink) !important;
+  color: #fff !important;
 }
 
-/* Свернутое меню */
+@media (max-width: 680px) {
+  #profile .profile-page { width: 100%; }
+  .account-sidebar.is-collapsed .account-sidebar-link { width: 100%; min-height: 43px; margin: 0; padding: 0 12px; justify-content: flex-start; }
+  .account-sidebar.is-collapsed .account-sidebar-link > span:last-child { display: block; }
+}
+
+
+/* === Runory v16: final visual cleanup === */
+:root { --sidebar-icon-size: 38px; }
+.account-sidebar { padding-top: 34px; }
+.account-sidebar-top { margin-bottom: 18px; }
+.account-sidebar-nav { gap: 6px; }
+.account-sidebar-link {
+  min-height: 46px;
+  gap: 12px;
+  padding: 0 10px;
+  border-radius: 11px;
+  color: #657069;
+}
+.account-sidebar-link:hover { background: #eef2ed; color: var(--ink); }
+.account-sidebar-link.is-active { background: var(--ink); color: #fff; }
+.account-sidebar-icon {
+  width: var(--sidebar-icon-size);
+  height: var(--sidebar-icon-size);
+  flex: 0 0 var(--sidebar-icon-size);
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: #edf2ed !important;
+  color: #56635b;
+}
+.account-sidebar-icon svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.account-sidebar-link.is-active .account-sidebar-icon {
+  background: rgba(255,255,255,.10) !important;
+  color: var(--lime);
+}
+.account-sidebar-link:hover .account-sidebar-icon { color: var(--ink); }
+.account-sidebar-link.is-active:hover .account-sidebar-icon { color: var(--lime); }
+.account-sidebar-link-secondary.is-active,
+.account-sidebar-link-secondary.is-active:hover {
+  background: var(--ink) !important;
+  color: #fff !important;
+}
+.account-sidebar-link-secondary.is-active .account-sidebar-icon,
+.account-sidebar-link-secondary.is-active:hover .account-sidebar-icon {
+  background: rgba(255,255,255,.10) !important;
+  color: var(--lime) !important;
+}
+.account-sidebar-link-secondary:hover { background: var(--ink) !important; color: #fff !important; }
+.account-sidebar-link-secondary:hover .account-sidebar-icon { color: var(--lime) !important; }
+.account-sidebar-toggle {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  font-size: 0;
+  line-height: 0;
+}
+.account-sidebar-toggle svg { width: 16px; height: 16px; }
+.account-sidebar.is-collapsed { padding-right: 10px; }
+.app-layout:has(.account-sidebar.is-collapsed) { grid-template-columns: 74px minmax(0,1fr); gap: 28px; }
+.account-sidebar.is-collapsed .account-sidebar-top { justify-content: center; }
 .account-sidebar.is-collapsed .account-sidebar-link {
-  width: 44px !important;
-  height: 44px !important;
+  width: 46px;
+  min-height: 46px;
+  margin: 0 auto;
+  padding: 0;
+  justify-content: center;
+}
+.account-sidebar.is-collapsed .account-sidebar-icon {
+  width: 38px;
+  height: 38px;
+  flex-basis: 38px;
+  border-radius: 10px;
+}
+.account-sidebar.is-collapsed .account-sidebar-icon svg { width: 19px; height: 19px; }
+.account-sidebar.is-collapsed .account-sidebar-link.is-active .account-sidebar-icon {
+  background: #252d28 !important;
+  color: var(--lime);
+}
+.account-sidebar.is-collapsed .account-sidebar-divider { margin-left: 8px; margin-right: 8px; }
+.account-sidebar.is-collapsed .account-sidebar-section-label { display: none; }
+
+/* Profile: center against the usable content area, not the sidebar. */
+#profile .profile-page {
+  width: min(100%, 900px) !important;
+  margin: 0 auto !important;
+  padding-left: 24px;
+  padding-right: 24px;
+  box-sizing: border-box;
+}
+#profile .profile-page-heading { width: 100%; max-width: 700px; margin: 0 auto 34px !important; text-align: center; }
+#profile .profile-card { width: 100%; max-width: 760px; margin: 0 auto !important; }
+
+/* History: clean, useful workout mark — no emoji and no bulky tiles. */
+.history-item { padding: 18px 20px 18px 72px !important; }
+.history-workout-mark {
+  position: absolute;
+  left: 20px;
+  top: 20px;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #dfe6df;
+  border-radius: 10px;
+  background: #f4f7f3;
+  color: #59655e;
+}
+.history-workout-mark svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.history-item:hover .history-workout-mark { background: #eef4e8; color: #5d7f2b; border-color: #d7e3cd; }
+
+@media (max-width:680px) {
+  .account-sidebar.is-collapsed .account-sidebar-link { width: 100%; min-height: 43px; margin: 0; padding: 0 12px; justify-content: flex-start; }
+  .account-sidebar.is-collapsed .account-sidebar-link > span:last-child { display: block; }
+  #profile .profile-page { width: 100% !important; padding-left: 0; padding-right: 0; }
+  .history-item { padding: 16px !important; }
+  .history-workout-mark { display: none; }
+}
+
+/* === Runory v17: icon system / layout correction === */
+.account-sidebar {
+  width: 216px !important;
+  box-sizing: border-box;
+  padding: 34px 18px 24px !important;
+}
+.account-sidebar-top { margin-bottom: 16px !important; }
+.account-sidebar-nav { gap: 4px !important; }
+.account-sidebar-link {
   min-height: 44px !important;
+  padding: 0 10px !important;
+  gap: 12px !important;
+  border-radius: 10px !important;
+  background: transparent !important;
+  color: #66716b !important;
+}
+.account-sidebar-link:hover {
+  background: #f0f3ef !important;
+  color: var(--ink) !important;
+}
+.account-sidebar-link.is-active {
+  background: var(--ink) !important;
+  color: #fff !important;
+}
+/* Expanded navigation: clean line icons, no square behind them. */
+.account-sidebar-link .account-sidebar-icon,
+.account-sidebar-link:hover .account-sidebar-icon,
+.account-sidebar-link.is-active .account-sidebar-icon {
+  width: 30px !important;
+  height: 30px !important;
+  flex: 0 0 30px !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  color: #59645e !important;
+}
+.account-sidebar-link .account-sidebar-icon svg {
+  width: 20px !important;
+  height: 20px !important;
+  stroke-width: 1.75 !important;
+}
+.account-sidebar-link:hover .account-sidebar-icon { color: var(--ink) !important; }
+.account-sidebar-link.is-active .account-sidebar-icon,
+.account-sidebar-link.is-active:hover .account-sidebar-icon {
+  background: rgba(255,255,255,.10) !important;
+  color: var(--lime) !important;
+}
+.account-sidebar-link-secondary:hover,
+.account-sidebar-link-secondary.is-active,
+.account-sidebar-link-secondary.is-active:hover {
+  background: var(--ink) !important;
+  color: #fff !important;
+}
+.account-sidebar-link-secondary:hover .account-sidebar-icon,
+.account-sidebar-link-secondary.is-active .account-sidebar-icon {
+  background: rgba(255,255,255,.10) !important;
+  color: var(--lime) !important;
+}
+.account-sidebar-divider { margin: 14px 4px 12px !important; }
+.account-sidebar-section-label { margin-left: 10px !important; }
+
+/* Collapsed navigation: only the icon remains, centered in a quiet tile. */
+.app-layout:has(.account-sidebar.is-collapsed) {
+  grid-template-columns: 74px minmax(0,1fr) !important;
+  gap: 28px !important;
+}
+.account-sidebar.is-collapsed {
+  width: 74px !important;
+  padding: 34px 8px 24px !important;
+}
+.account-sidebar.is-collapsed .account-sidebar-top { justify-content: center !important; }
+.account-sidebar.is-collapsed .account-sidebar-link {
+  width: 48px !important;
+  min-height: 48px !important;
   margin: 0 auto !important;
   padding: 0 !important;
   justify-content: center !important;
-  gap: 0 !important;
+  border-radius: 12px !important;
 }
-
-.account-sidebar.is-collapsed .account-sidebar-icon {
-  width: 28px !important;
-  height: 28px !important;
-  flex-basis: 28px !important;
-}
-
-.account-sidebar.is-collapsed .account-sidebar-icon svg {
-  width: 20px !important;
-  height: 20px !important;
-}
-
-/* В свернутом меню никаких серых фонов */
-.account-sidebar.is-collapsed .account-sidebar-link:hover,
-.account-sidebar.is-collapsed .account-sidebar-link.is-active {
-  background: var(--ink) !important;
-}
-
-.account-sidebar.is-collapsed .account-sidebar-link > span:last-child {
-  display: none !important;
-}
-
-/* Кнопка сворачивания */
-.account-sidebar-toggle {
-  width: 34px !important;
-  height: 34px !important;
-  padding: 0 !important;
-  display: grid !important;
-  place-items: center !important;
-}
-
-/* JS вставляет сюда ‹ / › — превращаем символ в аккуратную стрелку */
-.account-sidebar-toggle span {
-  display: block !important;
-  width: 8px !important;
-  height: 8px !important;
-  border-right: 1.8px solid currentColor !important;
-  border-bottom: 1.8px solid currentColor !important;
-  font-size: 0 !important;
-  transform: rotate(135deg);
-}
-
-.account-sidebar.is-collapsed .account-sidebar-toggle span {
-  transform: rotate(-45deg);
-}
-
-/* Профиль — реально по центру контентной области */
-.profile-page {
-  width: 100% !important;
-  max-width: 980px !important;
-  margin-left: auto !important;
-  margin-right: auto !important;
-}
-
-.profile-page-heading {
-  max-width: 760px !important;
-  margin-left: auto !important;
-  margin-right: auto !important;
-  text-align: center !important;
-}
-
-.profile-card {
-  margin-left: auto !important;
-  margin-right: auto !important;
-}
-
-/* История — если старые иконки типов ещё присутствуют */
-.history-type-icon {
+.account-sidebar.is-collapsed .account-sidebar-link .account-sidebar-icon,
+.account-sidebar.is-collapsed .account-sidebar-link:hover .account-sidebar-icon,
+.account-sidebar.is-collapsed .account-sidebar-link.is-active .account-sidebar-icon {
   width: 36px !important;
   height: 36px !important;
-  display: grid !important;
-  place-items: center !important;
-  border: 0 !important;
-  border-radius: 9px !important;
-  background: #f1f4ef !important;
-  color: #526058 !important;
-  font-size: 0 !important;
+  flex-basis: 36px !important;
+  border-radius: 10px !important;
+  background: #eef2ed !important;
+  color: #4f5b54 !important;
+}
+.account-sidebar.is-collapsed .account-sidebar-link:hover .account-sidebar-icon {
+  background: #e5ebe4 !important;
+  color: var(--ink) !important;
+}
+.account-sidebar.is-collapsed .account-sidebar-link.is-active {
+  background: transparent !important;
+}
+.account-sidebar.is-collapsed .account-sidebar-link.is-active .account-sidebar-icon,
+.account-sidebar.is-collapsed .account-sidebar-link-secondary.is-active .account-sidebar-icon {
+  background: #252d28 !important;
+  color: var(--lime) !important;
+}
+.account-sidebar.is-collapsed .account-sidebar-link-secondary:hover {
+  background: transparent !important;
+}
+.account-sidebar.is-collapsed .account-sidebar-link-secondary:hover .account-sidebar-icon {
+  background: var(--ink) !important;
+  color: var(--lime) !important;
+}
+.account-sidebar.is-collapsed .account-sidebar-divider { margin-left: 10px !important; margin-right: 10px !important; }
+.account-sidebar-toggle { font-size: 0 !important; }
+
+/* Calculator hover: never hide its icon or label. */
+.account-sidebar-link-secondary:hover > span:last-child,
+.account-sidebar-link-secondary.is-active > span:last-child { color: #fff !important; opacity: 1 !important; visibility: visible !important; }
+.account-sidebar-link-secondary:hover .account-sidebar-icon svg,
+.account-sidebar-link-secondary.is-active .account-sidebar-icon svg { opacity: 1 !important; visibility: visible !important; }
+
+/* Profile is centered in the content column. */
+#profile .profile-page {
+  width: min(100%, 900px) !important;
+  max-width: 900px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+#profile .profile-page-heading,
+#profile .profile-card {
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+#profile .profile-page-heading { text-align: center !important; }
+
+/* History: one restrained document mark for every workout. */
+.history-workout-mark {
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 10px !important;
+  background: #f3f6f2 !important;
+  border: 1px solid #e0e6e0 !important;
+  color: #68736c !important;
+}
+.history-workout-mark svg { width: 17px !important; height: 17px !important; stroke-width: 1.6 !important; }
+.history-item:hover .history-workout-mark { background: #edf4e7 !important; color: #617f35 !important; }
+
+@media (max-width: 1100px) and (min-width: 681px) {
+  .account-sidebar { width: 190px !important; }
 }
 
-.history-type-icon::before {
-  content: "↗";
-  font-size: 17px;
-  line-height: 1;
-  color: currentColor;
+/* =========================================================
+   RUNORY REFERENCE UI — FINAL VISUAL SYSTEM
+   Pure presentation layer. Does not change workout logic.
+   ========================================================= */
+
+:root {
+  --canvas: #f7f9f6;
+  --white: #ffffff;
+  --ink: #171b1d;
+  --muted: #69736d;
+  --line: #dfe5df;
+  --lime: #c9ff48;
+  --soft: #f1f5ef;
+  --soft-lime: #f2f9e8;
 }
 
-.history-type-icon svg {
-  display: none !important;
+.page-shell { max-width: 1600px !important; padding: 0 30px 48px !important; }
+.topbar { height: 96px !important; padding: 0 2px !important; }
+.brand-logo { width: 275px !important; height: auto !important; }
+.topbar-right { gap: 10px !important; }
+
+.add-workout-button {
+  width: 44px !important; height: 44px !important; border-radius: 12px !important;
+  background: var(--ink) !important; color: #fff !important; border: 0 !important;
+  box-shadow: 0 8px 22px rgba(20,27,22,.08) !important;
+}
+.auth-button {
+  height: 44px !important; min-width: 106px !important; padding: 0 17px !important;
+  border-radius: 12px !important; background: var(--ink) !important; color: #fff !important;
+  border: 0 !important; font-size: 12px !important;
+}
+.auth-button-dot { background: var(--lime) !important; }
+.language-switcher { height: 44px !important; padding: 4px !important; border-radius: 12px !important; }
+.language-button { height: 34px !important; min-width: 36px !important; border-radius: 9px !important; }
+
+.app-layout { grid-template-columns: 220px minmax(0,1fr) !important; gap: 28px !important; }
+.account-sidebar {
+  width: 220px !important; padding: 30px 8px 24px !important; background: transparent !important;
+}
+.account-sidebar-top { margin-bottom: 20px !important; padding: 0 8px !important; }
+.account-sidebar-label { color: #68736d !important; font-size: 9px !important; }
+.account-sidebar-toggle {
+  width: 38px !important; height: 38px !important; border: 1px solid var(--line) !important;
+  background: #fff !important; border-radius: 10px !important; color: #657069 !important;
+}
+.account-sidebar-toggle:hover { background: #eef3ed !important; color: var(--ink) !important; }
+.account-sidebar-toggle svg { width: 17px !important; height: 17px !important; fill: none !important; stroke: currentColor !important; stroke-width: 1.8 !important; stroke-linecap: round !important; stroke-linejoin: round !important; }
+.account-sidebar.is-collapsed .account-sidebar-toggle svg { transform: rotate(180deg) !important; }
+
+.account-sidebar-nav { gap: 5px !important; }
+.account-sidebar-link,
+.account-sidebar-link-secondary {
+  min-height: 48px !important; width: 100% !important; padding: 0 14px !important;
+  gap: 13px !important; border: 0 !important; border-radius: 12px !important;
+  background: transparent !important; color: #69746e !important;
+  font-size: 13px !important; font-weight: 700 !important; text-decoration: none !important;
+  transition: background .16s ease, color .16s ease, transform .16s ease !important;
+}
+.account-sidebar-link:hover,
+.account-sidebar-link-secondary:hover {
+  background: #eef3ed !important; color: var(--ink) !important;
+}
+.account-sidebar-link.is-active,
+.account-sidebar-link.is-active:hover,
+.account-sidebar-link-secondary.is-active,
+.account-sidebar-link-secondary.is-active:hover {
+  background: var(--ink) !important; color: #fff !important;
+}
+
+.account-sidebar-icon,
+.account-sidebar-link:hover .account-sidebar-icon,
+.account-sidebar-link.is-active .account-sidebar-icon,
+.account-sidebar-link-secondary:hover .account-sidebar-icon,
+.account-sidebar-link-secondary.is-active .account-sidebar-icon {
+  width: 30px !important; height: 30px !important; flex: 0 0 30px !important;
+  display: grid !important; place-items: center !important; padding: 0 !important;
+  border: 0 !important; border-radius: 0 !important; background: transparent !important;
+  color: currentColor !important; box-shadow: none !important;
+}
+.account-sidebar-icon svg {
+  width: 21px !important; height: 21px !important; display: block !important;
+  fill: none !important; stroke: currentColor !important; stroke-width: 1.7 !important;
+  stroke-linecap: round !important; stroke-linejoin: round !important;
+}
+.account-sidebar-link.is-active .account-sidebar-icon,
+.account-sidebar-link.is-active .account-sidebar-icon svg,
+.account-sidebar-link-secondary.is-active .account-sidebar-icon,
+.account-sidebar-link-secondary.is-active .account-sidebar-icon svg { color: var(--lime) !important; stroke: var(--lime) !important; }
+
+.account-sidebar-divider { margin: 16px 12px 12px !important; background: var(--line) !important; }
+.account-sidebar-section-label { margin: 0 14px 7px !important; color: #89938d !important; }
+
+/* collapsed sidebar: the item itself is the hover/active surface; icon never gets a square */
+.app-layout:has(.account-sidebar.is-collapsed) { grid-template-columns: 74px minmax(0,1fr) !important; gap: 28px !important; }
+.account-sidebar.is-collapsed {
+  width: 74px !important; padding: 30px 8px 24px !important;
+}
+.account-sidebar.is-collapsed .account-sidebar-top { justify-content: center !important; padding: 0 !important; }
+.account-sidebar.is-collapsed .account-sidebar-label { display: none !important; }
+.account-sidebar.is-collapsed .account-sidebar-link,
+.account-sidebar.is-collapsed .account-sidebar-link-secondary {
+  width: 50px !important; min-height: 50px !important; height: 50px !important;
+  margin: 0 auto !important; padding: 0 !important; justify-content: center !important;
+  gap: 0 !important; border-radius: 12px !important;
+}
+.account-sidebar.is-collapsed .account-sidebar-link > span:last-child { display: none !important; }
+.account-sidebar.is-collapsed .account-sidebar-icon {
+  width: 30px !important; height: 30px !important; flex-basis: 30px !important;
+  background: transparent !important; border-radius: 0 !important;
+}
+.account-sidebar.is-collapsed .account-sidebar-link:hover { background: #eef3ed !important; }
+.account-sidebar.is-collapsed .account-sidebar-link.is-active { background: var(--ink) !important; }
+.account-sidebar.is-collapsed .account-sidebar-link.is-active .account-sidebar-icon { background: transparent !important; }
+.account-sidebar.is-collapsed .account-sidebar-divider { margin: 16px 5px 12px !important; }
+.account-sidebar.is-collapsed .account-sidebar-section-label { display: none !important; }
+.account-sidebar.is-collapsed .account-sidebar-link-secondary:hover { background: #eef3ed !important; }
+
+/* equal hover treatment for dynamics tabs */
+.dynamics-tab,
+.dynamics-tab:hover,
+.dynamics-tab.is-disabled:hover { transition: background .16s ease, color .16s ease, border-color .16s ease !important; }
+.dynamics-tab:hover:not(.is-active):not(.is-disabled) { background: #eef3ed !important; border-color: #d2dbd3 !important; color: var(--ink) !important; transform: none !important; }
+.dynamics-tab.is-active,
+.dynamics-tab.is-active:hover { background: var(--ink) !important; border-color: var(--ink) !important; color: #fff !important; }
+.dynamics-tab.is-disabled,
+.dynamics-tab.is-disabled:hover { background: #f7f8f6 !important; border-color: var(--line) !important; color: #a0a8a3 !important; transform: none !important; }
+
+/* profile centered in the content column */
+#profile .profile-page {
+  width: min(100%, 960px) !important; max-width: 960px !important;
+  margin: 0 auto !important; padding: 62px 0 60px !important;
+  display: flex !important; flex-direction: column !important; align-items: center !important;
+}
+#profile .profile-page-heading { width: 100% !important; max-width: 700px !important; margin: 0 auto 30px !important; text-align: center !important; }
+#profile .profile-card { width: 100% !important; max-width: 760px !important; margin: 0 auto !important; }
+
+/* history item: neutral document mark */
+.history-type-icon,
+.history-workout-mark {
+  background: #f2f5f1 !important; border: 1px solid #e2e8e1 !important;
+  color: #4f5b54 !important; border-radius: 10px !important;
+}
+.history-type-icon { font-size: 0 !important; }
+.history-type-icon::before { content: "▤" !important; font-size: 17px !important; color: currentColor !important; }
+.history-item:hover .history-type-icon,
+.history-item:hover .history-workout-mark { background: #eef5e8 !important; color: #5d7d2c !important; }
+
+/* HOME reference layout */
+.home-page { max-width: 1260px !important; padding: 48px 0 70px !important; }
+.home-heading { max-width: 820px !important; margin-bottom: 26px !important; }
+.home-heading h1 { font-size: clamp(46px, 5.2vw, 72px) !important; letter-spacing: -4px !important; }
+.home-heading p:last-child { font-size: 16px !important; max-width: 680px !important; }
+.home-grid { grid-template-columns: minmax(0,1.55fr) minmax(330px,.85fr) !important; gap: 16px !important; }
+.home-card { border-radius: 18px !important; box-shadow: 0 8px 26px rgba(31,40,31,.028) !important; }
+.home-latest-card { padding: 26px 28px !important; }
+.home-latest-main { margin-top: 22px !important; }
+.home-latest-main h2 { font-size: 29px !important; }
+.home-latest-main>strong { font-size: 46px !important; }
+.home-metrics { gap: 10px !important; margin-top: 25px !important; }
+.home-metrics>div { padding: 15px !important; background: #f3f6f2 !important; border-radius: 12px !important; }
+.home-metrics strong { font-size: 19px !important; }
+.home-form-card,.home-week-card { padding: 21px 23px !important; }
+.home-form-row { padding: 14px 0 !important; }
+
+.home-tools { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; margin-top:16px; }
+.home-tool-card {
+  min-height:104px; display:grid; grid-template-columns:50px 1fr 32px; align-items:center; gap:13px;
+  padding:16px 18px; border:1px solid var(--line); border-radius:16px; background:#fff; color:var(--ink);
+  text-align:left; cursor:pointer; transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease, background .16s ease;
+}
+.home-tool-card:hover { transform:translateY(-1px); border-color:#cbd5cc; background:#fbfdf9; box-shadow:0 10px 24px rgba(31,40,31,.045); }
+.home-tool-icon { width:46px; height:46px; display:grid; place-items:center; border-radius:13px; background:#f1f5ef; color:var(--ink); }
+.home-tool-icon svg { width:23px; height:23px; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
+.home-tool-card:first-child .home-tool-icon { background:var(--soft-lime); }
+.home-tool-card span:nth-child(2) { min-width:0; }
+.home-tool-card strong { display:block; font-size:14px; }
+.home-tool-card small { display:block; margin-top:5px; color:#7a857e; font-size:10px; line-height:1.4; }
+.home-tool-card>b { width:32px; height:32px; display:grid; place-items:center; border:1px solid var(--line); border-radius:50%; font-size:17px; font-weight:500; }
+
+.home-recent-section { margin-top:28px; }
+.home-section-heading { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:10px; }
+.home-section-heading h2 { margin:0; font-size:22px; letter-spacing:-.7px; }
+.home-outline-button { padding:9px 13px; border:1px solid var(--line); border-radius:10px; background:#fff; color:var(--ink); font:700 11px Manrope,sans-serif; cursor:pointer; }
+.home-outline-button:hover { background:#eef3ed; }
+.home-recent-list { border:1px solid var(--line); border-radius:16px; background:#fff; overflow:hidden; }
+.home-recent-item { width:100%; display:grid; grid-template-columns:48px minmax(0,1fr) 24px; align-items:center; gap:14px; padding:15px 18px; border:0; border-bottom:1px solid #edf0ed; background:#fff; text-align:left; cursor:pointer; color:var(--ink); }
+.home-recent-item:last-child { border-bottom:0; }
+.home-recent-item:hover { background:#fbfdf9; }
+.home-recent-icon { width:42px; height:42px; display:grid; place-items:center; border-radius:11px; background:#f2f5f1; color:#4e5953; }
+.home-recent-icon svg { width:19px; height:19px; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
+.home-recent-copy { min-width:0; }
+.home-recent-copy strong { display:block; font-size:13px; }
+.home-recent-copy span { display:block; margin-top:4px; color:#7a857e; font-size:10px; }
+.home-recent-arrow { color:#5e6962; font-size:20px; }
+.home-recent-empty { padding:22px; color:#7a857e; font-size:12px; }
+
+@media (max-width:900px) {
+  .home-tools { grid-template-columns:1fr; }
+  .home-heading h1 { letter-spacing:-3px !important; }
+}
+@media (max-width:680px) {
+  .page-shell { padding:0 17px 28px !important; }
+  .brand-logo { width:170px !important; }
+  .app-layout { grid-template-columns:1fr !important; }
+  .account-sidebar { width:220px !important; }
+  .home-page { padding:34px 0 50px !important; }
+  .home-heading h1 { font-size:38px !important; letter-spacing:-2.3px !important; }
+  .home-tools { grid-template-columns:1fr; }
+  #profile .profile-page { padding:46px 0 30px !important; }
 }
