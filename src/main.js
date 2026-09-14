@@ -3504,7 +3504,12 @@ function renderCalculator(type = activeCalculator, { preserveResult = false } = 
     const active = tab.dataset.calculator === type;
     tab.classList.toggle("is-active", active);
     tab.setAttribute("aria-selected", String(active));
-    tab.textContent = t(type === "time" ? "tabTime" : type === "distance" ? "tabDistance" : "tabPace");
+    const labelKey = tab.dataset.calculator === "time"
+      ? "tabTime"
+      : tab.dataset.calculator === "distance"
+        ? "tabDistance"
+        : "tabPace";
+    tab.textContent = t(labelKey);
   });
 
   const eyebrow = panel.querySelector("#calc-eyebrow");
