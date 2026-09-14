@@ -2794,3 +2794,20 @@
   color: var(--ink) !important;
   stroke: currentColor !important;
 }
+
+/* Calculator active state: exactly the same as active primary sidebar items. */
+.account-sidebar-link-secondary[data-view-target="calculator"].is-active {
+  background: var(--ink) !important;
+  color: var(--lime) !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+.account-sidebar-link-secondary[data-view-target="calculator"].is-active .account-sidebar-icon,
+.account-sidebar-link-secondary[data-view-target="calculator"].is-active .account-sidebar-icon svg {
+  color: var(--lime) !important;
+  background: transparent !important;
+  stroke: currentColor !important;
+}
+.account-sidebar-link-secondary[data-view-target="calculator"].is-active > span:last-child {
+  color: #fff !important;
+}
