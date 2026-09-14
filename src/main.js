@@ -187,23 +187,6 @@ const translations = {
     historyEasyNearTypical: "Результат близький до типового рівня",
     historyEasyTrendHint: "Для впевненого висновку про тренд потрібно більше схожих тренувань.",
     historyEasyCompared: "На основі {count} схожих тренувань",
-    historyTempoDynamics: "Динаміка темпових тренувань",
-    historyTempoHint: "Порівнюємо лише безперервні темпові тренування зі схожим обсягом роботи.",
-    historyTempoNoTrend: "Поки недостатньо схожих темпових тренувань для надійного висновку.",
-    historyTempoPace: "Середній темп темпової роботи",
-    historyTempoHr: "Середній пульс темпової роботи",
-    historyTempoVolume: "Обсяг темпової роботи",
-    historyTempoLatest: "Останнє темпове",
-    historyTempoPrevious: "Попереднє схоже",
-    historyTempoImproved: "Темпова форма покращується",
-    historyTempoStable: "Темпова форма стабільна",
-    historyTempoDeclined: "Є ознаки погіршення темпової форми",
-    historyTempoCompared: "На основі {count} схожих темпових тренувань",
-    historyTempoFaster: "швидше на {value} с/км",
-    historyTempoSlower: "повільніше на {value} с/км",
-    historyTempoHrLower: "нижче на {value} уд/хв",
-    historyTempoHrHigher: "вище на {value} уд/хв",
-    historyTempoNoChange: "без суттєвої зміни",
     historyAvgPace: "Середній темп",
     historyAvgHr: "Середній пульс",
     historyNoData: "Недостатньо даних для графіка",
@@ -453,23 +436,6 @@ const translations = {
     historyEasyNearTypical: "The result is close to the typical level",
     historyEasyTrendHint: "More similar workouts are needed for a confident trend conclusion.",
     historyEasyCompared: "Based on {count} similar workouts",
-    historyTempoDynamics: "Tempo workout dynamics",
-    historyTempoHint: "We compare only continuous tempo workouts with a similar work volume.",
-    historyTempoNoTrend: "Not enough similar tempo workouts for a reliable conclusion yet.",
-    historyTempoPace: "Average tempo-work pace",
-    historyTempoHr: "Average tempo-work heart rate",
-    historyTempoVolume: "Tempo-work volume",
-    historyTempoLatest: "Latest tempo",
-    historyTempoPrevious: "Previous similar",
-    historyTempoImproved: "Tempo fitness is improving",
-    historyTempoStable: "Tempo fitness is stable",
-    historyTempoDeclined: "Signs of declining tempo fitness",
-    historyTempoCompared: "Based on {count} similar tempo workouts",
-    historyTempoFaster: "{value} sec/km faster",
-    historyTempoSlower: "{value} sec/km slower",
-    historyTempoHrLower: "{value} bpm lower",
-    historyTempoHrHigher: "{value} bpm higher",
-    historyTempoNoChange: "no meaningful change",
     historyAvgPace: "Average pace",
     historyAvgHr: "Average heart rate",
     historyNoData: "Not enough data for a chart",
@@ -968,6 +934,108 @@ function renderAiAnalysis(text) {
   return parts.join("");
 }
 
+function getPersonalEasyTempoBaseline(summary) {
+  const history = Array.isArray(historyWorkouts) ? historyWorkouts : [];
+  if (history.length < 3) return null;
+
+  const currentHr = Number(summary?.heartRate);
+  if (!Number.isFinite(currentHr) || currentHr <= 0) return null;
+
+  const currentDate = summary?.date || summary?.workout_date || summary?.startTime || null;
+  const currentTs = currentDate ? new Date(currentDate).getTime() : Date.now();
+
+  // Use only already classified easy/routine runs. Do not call derivedWorkoutType
+  // here: getWorkoutPattern() itself uses this baseline, so that would recurse.
+  const easy = history
+    .filter(w => historyTypeClass(w?.workout_type) === "run")
+    .map(w => ({
+      pace: paceToSeconds(w?.pace),
+      hr: Number(w?.heart_rate),
+      distance: Number(w?.distance_km),
+      date: new Date(w?.workout_date || w?.created_at || 0).getTime()
+    }))
+    .filter(w => Number.isFinite(w.pace) && Number.isFinite(w.hr) && w.hr > 0 && w.distance >= 5 && w.distance <= 16 && Number.isFinite(w.date));
+
+  if (easy.length < 3) return null;
+
+  // Recent easy running defines the current state. HR matching makes the
+  // baseline adapt when easy pace changes because of fitness or conditions.
+  const ranked = easy
+    .map(w => ({
+      ...w,
+      hrDistance: Math.abs(w.hr - currentHr),
+      ageDays: Math.max(0, (currentTs - w.date) / 86400000)
+    }))
+    .sort((a, b) => a.hrDistance - b.hrDistance || a.ageDays - b.ageDays);
+
+  let matches = ranked.filter(w => w.hrDistance <= 8);
+  if (matches.length < 3) matches = ranked.filter(w => w.hrDistance <= 15);
+  if (matches.length < 3) matches = ranked.slice(0, Math.min(8, ranked.length));
+  matches = matches.slice(0, Math.min(10, matches.length));
+
+  const weighted = matches.map(w => {
+    const recencyWeight = Math.exp(-w.ageDays / 45);
+    const hrWeight = Math.exp(-w.hrDistance / 7);
+    return { ...w, weight: Math.max(0.08, recencyWeight * hrWeight) };
+  });
+
+  const weightSum = weighted.reduce((sum, w) => sum + w.weight, 0);
+  if (!weightSum) return null;
+
+  const pace = weighted.reduce((sum, w) => sum + w.pace * w.weight, 0) / weightSum;
+  const hr = weighted.reduce((sum, w) => sum + w.hr * w.weight, 0) / weightSum;
+
+  return {
+    pace,
+    hr,
+    count: weighted.length,
+    confidence: weighted.length >= 5 ? "good" : "moderate"
+  };
+}
+
+function detectContinuousTempo(summary, paces) {
+  const distance = Number(summary?.distance);
+  if (!Number.isFinite(distance) || distance < 5 || paces.length < 5) return null;
+
+  const baseline = getPersonalEasyTempoBaseline(summary);
+  if (!baseline) return null;
+
+  const averagePace = paces.reduce((sum, pace) => sum + pace, 0) / paces.length;
+  const spread = Math.max(...paces) - Math.min(...paces);
+  const meanDeviation = paces.reduce((sum, pace) => sum + Math.abs(pace - averagePace), 0) / paces.length;
+  const variation = meanDeviation / averagePace;
+
+  // Continuous tempo: the workout is already fast from the start and stays
+  // controlled, rather than containing a distinct warm-up/tempo/cool-down block.
+  const firstCount = Math.max(2, Math.floor(paces.length / 3));
+  const lastCount = Math.max(2, Math.floor(paces.length / 3));
+  const firstAvg = paces.slice(0, firstCount).reduce((a, b) => a + b, 0) / firstCount;
+  const lastAvg = paces.slice(-lastCount).reduce((a, b) => a + b, 0) / lastCount;
+  const edgeDelta = Math.abs(firstAvg - lastAvg);
+  const fasterBy = baseline.pace - averagePace;
+
+  if (fasterBy < 30) return null;
+  if (variation > 0.045 || spread > 25 || edgeDelta > 15) return null;
+
+  const currentHr = Number(summary?.heartRate);
+  const hrDelta = Number.isFinite(currentHr) ? currentHr - baseline.hr : null;
+
+  // If pace is only ~30–40 sec/km faster but HR is still essentially the same,
+  // prefer interpreting it as improved easy fitness rather than tempo.
+  if (fasterBy < 45 && hrDelta !== null && hrDelta < 4) return null;
+
+  return {
+    type: "tempo",
+    variant: "continuous",
+    tempoStart: 0,
+    tempoEnd: paces.length - 1,
+    easyBaselinePace: baseline.pace,
+    easyBaselineHr: baseline.hr,
+    paceDeltaFromEasy: fasterBy,
+    hrDeltaFromEasy: hrDelta
+  };
+}
+
 function getWorkoutPattern(summary) {
   const distance = Number(summary?.distance);
   const splits = Array.isArray(summary?.splits) ? summary.splits : [];
@@ -1001,7 +1069,7 @@ function getWorkoutPattern(summary) {
     }, 0) / 1000;
 
     const isLongWithWork =
-      distance >= 16
+      distance >= 18
       && preWorkDistance >= 12
       && preWorkDistance / Math.max(distance, 1) >= 0.45;
 
@@ -1017,7 +1085,7 @@ function getWorkoutPattern(summary) {
     return { type: "intervals" };
   }
   if (paces.length < 4) {
-    return distance >= 16 ? { type: "long" } : { type: "run" };
+    return distance >= 15 ? { type: "long" } : { type: "run" };
   }
 
   const sorted = [...paces].sort((a, b) => a - b);
@@ -1049,6 +1117,9 @@ function getWorkoutPattern(summary) {
   if (transitions >= 5 && fastCount >= 3 && slowCount >= 3) {
     return { type: "fartlek", states };
   }
+
+  const continuousTempo = detectContinuousTempo(summary, paces);
+  if (continuousTempo) return continuousTempo;
 
   // Tempo = a sustained faster block between a slower warm-up and cool-down.
   // Use the outer splits as the baseline so a long tempo block does not distort the median.
@@ -1103,7 +1174,7 @@ function getWorkoutPattern(summary) {
     }
   }
 
-  if (distance >= 16) return { type: "long" };
+  if (distance >= 15) return { type: "long" };
   return { type: "run" };
 }
 
@@ -2227,7 +2298,7 @@ function getWorkoutTypeKey(summary) {
   if (pattern?.type === "intervals") return "intervals";
   if (pattern?.type === "tempo") return "tempo";
   if (pattern?.type === "fartlek") return "fartlek";
-  if (Number(summary?.distance) >= 16) return "long";
+  if (Number(summary?.distance) >= 15) return "long";
   return "run";
 }
 
@@ -2628,34 +2699,6 @@ function renderHome(workouts = historyWorkouts) {
 
   document.querySelector("#homeDynamicsButton")?.addEventListener("click", () => navigateToView("dynamics"));
   document.querySelector("#homeHistoryButton")?.addEventListener("click", () => navigateToView("history"));
-  document.querySelector("#homeAddWorkoutButton")?.addEventListener("click", () => document.querySelector("#addWorkoutButton")?.click());
-  document.querySelectorAll("[data-home-workout]").forEach(button => button.addEventListener("click", () => {
-    const id = button.dataset.homeWorkout;
-    window.history.pushState({ view: "analysis", workoutId: id }, "", `/workouts/${encodeURIComponent(id)}`);
-    openWorkoutFromHistoryId(id);
-  }));
-}
-
-function openWorkoutFromHistoryId(id) {
-  const record = historyWorkouts.find(item => String(item.id) === String(id));
-  if (!record) return;
-  openWorkoutFromHistory(record);
-}
-
-function renderHistoryAnalytics(workouts) {
-  const analytics = document.querySelector("#historyAnalytics");
-  if (!analytics) return;
-  if (!workouts.length) { analytics.innerHTML = ""; return; }
-
-  const byWeek = new Map();
-  workouts.forEach(workout => {
-    const date = workout.workout_date ? new Date(workout.workout_date) : null;
-    if (!date || Number.isNaN(date.getTime())) return;
-    const key = getWeekStart(date).toISOString().slice(0, 10);
-    if (!byWeek.has(key)) byWeek.set(key, { date: getWeekStart(date), distance: 0 });
-    const row = byWeek.get(key);
-    row.distance += Number(workout.distance_km) || 0;
-  });
 
   const weeks = [...byWeek.values()].sort((a, b) => a.date - b.date).slice(-8);
   const maxDistance = Math.max(...weeks.map(w => w.distance), 1);
@@ -2674,175 +2717,52 @@ function renderHistoryAnalytics(workouts) {
     </article>`;
 }
 
-let dynamicsActiveTab = "easy";
-
-function tempoWorkDistanceKm(workout) {
-  const summary = {
-    distance: Number(workout?.distance_km) || 0,
-    splits: Array.isArray(workout?.splits) ? workout.splits : [],
-    structure: Array.isArray(workout?.structure) ? workout.structure : []
-  };
-  const pattern = getWorkoutPattern(summary);
-  if (pattern?.type !== "tempo") return 0;
-  const start = Number(pattern.tempoStart);
-  const end = Number(pattern.tempoEnd);
-  if (!Number.isInteger(start) || !Number.isInteger(end) || end < start) return 0;
-  return (end - start + 1);
-}
-
-function tempoComparable(current, candidate) {
-  const currentVolume = tempoWorkDistanceKm(current);
-  const candidateVolume = tempoWorkDistanceKm(candidate);
-  if (!currentVolume || !candidateVolume) return false;
-  const ratio = candidateVolume / currentVolume;
-  return ratio >= 0.75 && ratio <= 1.33;
-}
-
-function buildTempoDynamics(workouts) {
-  const tempo = workouts
-    .filter(w => derivedWorkoutType(w) === "tempo")
-    .filter(w => paceToSeconds(w.pace) != null)
-    .sort((a, b) => new Date(a.workout_date) - new Date(b.workout_date));
-  if (tempo.length < 2) return null;
-
-  const current = tempo.at(-1);
-  const candidates = tempo.slice(0, -1).filter(w => tempoComparable(current, w));
-  if (!candidates.length) return null;
-
-  const currentVolume = tempoWorkDistanceKm(current);
-  const ranked = candidates
-    .map(w => ({
-      workout: w,
-      volumeDistance: Math.abs(tempoWorkDistanceKm(w) - currentVolume)
-    }))
-    .sort((a, b) => a.volumeDistance - b.volumeDistance || new Date(b.workout.workout_date) - new Date(a.workout.workout_date));
-
-  const similar = ranked.slice(0, Math.min(5, ranked.length)).map(item => item.workout);
-  const paceBaseline = median(similar.map(w => paceToSeconds(w.pace)));
-  const hrValues = similar.map(w => Number(w.heart_rate)).filter(v => Number.isFinite(v) && v > 0);
-  const hrBaseline = hrValues.length ? median(hrValues) : null;
-  const currentPace = paceToSeconds(current.pace);
-  const currentHr = Number(current.heart_rate);
-  const paceDelta = paceBaseline != null ? paceBaseline - currentPace : null;
-  const hrDelta = Number.isFinite(currentHr) && hrBaseline != null ? currentHr - hrBaseline : null;
-
-  const ordered = similar.slice().sort((a, b) => new Date(a.workout_date) - new Date(b.workout_date));
-  const split = Math.floor(ordered.length / 2);
-  const older = ordered.slice(0, split);
-  const recent = ordered.slice(split);
-  const olderPace = median(older.map(w => paceToSeconds(w.pace)));
-  const recentPace = median(recent.map(w => paceToSeconds(w.pace)));
-  const olderHrValues = older.map(w => Number(w.heart_rate)).filter(v => Number.isFinite(v) && v > 0);
-  const recentHrValues = recent.map(w => Number(w.heart_rate)).filter(v => Number.isFinite(v) && v > 0);
-  const olderHr = olderHrValues.length ? median(olderHrValues) : null;
-  const recentHr = recentHrValues.length ? median(recentHrValues) : null;
-
-  let trend = "stable";
-  if (ordered.length >= 4) {
-    const paceTrend = olderPace != null && recentPace != null
-      ? (olderPace - recentPace >= 4 ? "improved" : olderPace - recentPace <= -4 ? "declined" : "stable")
-      : null;
-    const hrTrend = olderHr != null && recentHr != null
-      ? (recentHr - olderHr <= -2 ? "improved" : recentHr - olderHr >= 2 ? "declined" : "stable")
-      : null;
-    if (paceTrend === "improved" && (hrTrend === "improved" || hrTrend === "stable" || hrTrend == null)) trend = "improved";
-    else if (paceTrend === "declined" && (hrTrend === "declined" || hrTrend === "stable" || hrTrend == null)) trend = "declined";
-    else if (hrTrend === "improved" && paceTrend === "stable") trend = "improved";
-    else if (hrTrend === "declined" && paceTrend === "stable") trend = "declined";
-  }
-
-  return { current, previous: similar.at(-1), count: similar.length, currentVolume, paceBaseline, hrBaseline, paceDelta, hrDelta, trend };
-}
-
-function renderTempoDynamics(workouts) {
-  const dynamics = buildTempoDynamics(workouts);
-  if (!dynamics) {
-    return `<div class="dynamics-empty"><strong>${escapeHtml(t("historyTempoNoTrend"))}</strong><p>${escapeHtml(t("historyTempoHint"))}</p></div>`;
-  }
-
-  const paceText = Number.isFinite(dynamics.paceDelta) && Math.abs(dynamics.paceDelta) >= 2
-    ? t(dynamics.paceDelta > 0 ? "historyTempoFaster" : "historyTempoSlower", { value: Math.abs(Math.round(dynamics.paceDelta)) })
-    : t("historyTempoNoChange");
-  const hrText = Number.isFinite(dynamics.hrDelta) && Math.abs(dynamics.hrDelta) >= 2
-    ? t(dynamics.hrDelta < 0 ? "historyTempoHrLower" : "historyTempoHrHigher", { value: Math.abs(Math.round(dynamics.hrDelta)) })
-    : t("historyTempoNoChange");
-
-  let trendLabel = t("historyTempoStable");
-  if (dynamics.trend === "improved") trendLabel = t("historyTempoImproved");
-  else if (dynamics.trend === "declined") trendLabel = t("historyTempoDeclined");
-
-  const compared = t("historyTempoCompared").replace("{count}", String(dynamics.count));
-  const volume = `${dynamics.currentVolume} км`;
-  const previous = dynamics.previous ? `${formatHistoryDate(dynamics.previous.workout_date)} · ${dynamics.previous.pace || "—"}/км · ${tempoWorkDistanceKm(dynamics.previous)} км` : "—";
-
-  return `
-    <div class="history-dynamic-status"><strong>${escapeHtml(trendLabel)}</strong><span>${escapeHtml(compared)}</span></div>
-    <div class="history-dynamic-row"><span>${escapeHtml(t("historyTempoPace"))}</span><strong>${escapeHtml(dynamics.current.pace || "—")} <small>${escapeHtml(paceText)}</small></strong></div>
-    <div class="history-dynamic-row"><span>${escapeHtml(t("historyTempoHr"))}</span><strong>${Number.isFinite(Number(dynamics.current.heart_rate)) ? `${Math.round(Number(dynamics.current.heart_rate))} уд/хв` : "—"} <small>${escapeHtml(hrText)}</small></strong></div>
-    <div class="history-dynamic-row"><span>${escapeHtml(t("historyTempoVolume"))}</span><strong>${escapeHtml(volume)}</strong></div>
-    <p>${escapeHtml(t("historyTempoLatest"))}: ${escapeHtml(formatHistoryDate(dynamics.current.workout_date))} · ${escapeHtml(t("historyTempoPrevious"))}: ${escapeHtml(previous)}</p>`;
-}
-
 function renderDynamics(workouts) {
   const container = document.querySelector("#dynamicsContent");
   if (!container) return;
-
   const dynamics = buildEasyRunDynamics(workouts);
-  let contentHtml = "";
 
-  if (dynamicsActiveTab === "tempo") {
-    contentHtml = renderTempoDynamics(workouts);
+  let easyHtml;
+  if (!dynamics) {
+    easyHtml = `<div class="dynamics-empty"><strong>${escapeHtml(t("historyEasyNoTrend"))}</strong><p>${escapeHtml(t("historyEasyDynamicsHint"))}</p></div>`;
   } else {
-    let easyHtml;
-    if (!dynamics) {
-      easyHtml = `<div class="dynamics-empty"><strong>${escapeHtml(t("historyEasyNoTrend"))}</strong><p>${escapeHtml(t("historyEasyDynamicsHint"))}</p></div>`;
-    } else {
-      const paceDeltaText = Number.isFinite(dynamics.paceDelta) && Math.abs(dynamics.paceDelta) >= 3
-        ? `${dynamics.paceDelta > 0 ? "повільніше" : "швидше"} на ${Math.abs(Math.round(dynamics.paceDelta))} с/км`
-        : "без суттєвої зміни";
-      const hrDeltaText = Number.isFinite(dynamics.hrDelta) && Math.abs(dynamics.hrDelta) >= 1
-        ? `${dynamics.hrDelta < 0 ? "нижче" : "вище"} на ${Math.abs(Math.round(dynamics.hrDelta))} уд/хв`
-        : "без суттєвої зміни";
-      const currentPaceSignal = Number.isFinite(dynamics.paceDelta) && Math.abs(dynamics.paceDelta) >= 6 ? (dynamics.paceDelta > 0 ? "better" : "worse") : "neutral";
-      const currentHrSignal = Number.isFinite(dynamics.hrDelta) && Math.abs(dynamics.hrDelta) >= 3 ? (dynamics.hrDelta < 0 ? "better" : "worse") : "neutral";
-      let trendLabel;
-      if (dynamics.trend === "improved") trendLabel = t("historyEasyImproved");
-      else if (dynamics.trend === "declined") trendLabel = t("historyEasyDeclined");
-      else if ((currentPaceSignal === "better" && currentHrSignal === "worse") || (currentPaceSignal === "worse" && currentHrSignal === "better")) trendLabel = t("historyEasyMixed");
-      else if (currentPaceSignal === "better" && currentHrSignal === "better") trendLabel = t("historyEasyCurrentBetter");
-      else if (currentPaceSignal === "worse" && currentHrSignal === "worse") trendLabel = t("historyEasyCurrentWorse");
-      else if (currentPaceSignal !== "neutral" || currentHrSignal !== "neutral") trendLabel = t("historyEasyNearTypical");
-      else trendLabel = t("historyEasyStable");
-      const compared = t("historyEasyCompared").replace("{count}", String(dynamics.count));
-      const trendHint = dynamics.count < 4 ? t("historyEasyTrendHint") : t("historyEasyDynamicsHint");
+    const paceDeltaText = Number.isFinite(dynamics.paceDelta) && Math.abs(dynamics.paceDelta) >= 3
+      ? `${dynamics.paceDelta > 0 ? "повільніше" : "швидше"} на ${Math.abs(Math.round(dynamics.paceDelta))} с/км`
+      : "без суттєвої зміни";
+    const hrDeltaText = Number.isFinite(dynamics.hrDelta) && Math.abs(dynamics.hrDelta) >= 1
+      ? `${dynamics.hrDelta < 0 ? "нижче" : "вище"} на ${Math.abs(Math.round(dynamics.hrDelta))} уд/хв`
+      : "без суттєвої зміни";
+    const currentPaceSignal = Number.isFinite(dynamics.paceDelta) && Math.abs(dynamics.paceDelta) >= 6 ? (dynamics.paceDelta > 0 ? "better" : "worse") : "neutral";
+    const currentHrSignal = Number.isFinite(dynamics.hrDelta) && Math.abs(dynamics.hrDelta) >= 3 ? (dynamics.hrDelta < 0 ? "better" : "worse") : "neutral";
+    let trendLabel;
+    if (dynamics.trend === "improved") trendLabel = t("historyEasyImproved");
+    else if (dynamics.trend === "declined") trendLabel = t("historyEasyDeclined");
+    else if ((currentPaceSignal === "better" && currentHrSignal === "worse") || (currentPaceSignal === "worse" && currentHrSignal === "better")) trendLabel = t("historyEasyMixed");
+    else if (currentPaceSignal === "better" && currentHrSignal === "better") trendLabel = t("historyEasyCurrentBetter");
+    else if (currentPaceSignal === "worse" && currentHrSignal === "worse") trendLabel = t("historyEasyCurrentWorse");
+    else if (currentPaceSignal !== "neutral" || currentHrSignal !== "neutral") trendLabel = t("historyEasyNearTypical");
+    else trendLabel = t("historyEasyStable");
+    const compared = t("historyEasyCompared").replace("{count}", String(dynamics.count));
+    const trendHint = dynamics.count < 4 ? t("historyEasyTrendHint") : t("historyEasyDynamicsHint");
 
-      easyHtml = `
-        <div class="history-dynamic-status"><strong>${escapeHtml(trendLabel)}</strong><span>${escapeHtml(compared)}</span></div>
-        <div class="history-dynamic-row"><span>${escapeHtml(t("historyEasyPaceAtHr"))}</span><strong>${escapeHtml(dynamics.paceBaseline != null ? formatPaceSeconds(dynamics.paceBaseline) : "—")} <small>${escapeHtml(paceDeltaText)}</small></strong></div>
-        <div class="history-dynamic-row"><span>${escapeHtml(t("historyEasyHrAtPace"))}</span><strong>${dynamics.hrBaseline != null ? `${Math.round(dynamics.hrBaseline)} уд/хв` : "—"} <small>${escapeHtml(hrDeltaText)}</small></strong></div>
-        <p>${escapeHtml(trendHint)}</p>`;
-    }
-    contentHtml = easyHtml;
+    easyHtml = `
+      <div class="history-dynamic-status"><strong>${escapeHtml(trendLabel)}</strong><span>${escapeHtml(compared)}</span></div>
+      <div class="history-dynamic-row"><span>${escapeHtml(t("historyEasyPaceAtHr"))}</span><strong>${escapeHtml(dynamics.paceBaseline != null ? formatPaceSeconds(dynamics.paceBaseline) : "—")} <small>${escapeHtml(paceDeltaText)}</small></strong></div>
+      <div class="history-dynamic-row"><span>${escapeHtml(t("historyEasyHrAtPace"))}</span><strong>${dynamics.hrBaseline != null ? `${Math.round(dynamics.hrBaseline)} уд/хв` : "—"} <small>${escapeHtml(hrDeltaText)}</small></strong></div>
+      <p>${escapeHtml(trendHint)}</p>`;
   }
 
   container.innerHTML = `
     <div class="dynamics-tabs" role="tablist" aria-label="${escapeHtml(t("dynamicsTitle"))}">
-      <button class="dynamics-tab ${dynamicsActiveTab === "easy" ? "is-active" : ""}" type="button" data-dynamics-tab="easy">${escapeHtml(t("dynamicsEasy"))}</button>
-      <button class="dynamics-tab ${dynamicsActiveTab === "tempo" ? "is-active" : ""}" type="button" data-dynamics-tab="tempo">${escapeHtml(t("dynamicsTempo"))}</button>
+      <button class="dynamics-tab is-active" type="button">${escapeHtml(t("dynamicsEasy"))}</button>
+      <button class="dynamics-tab is-disabled" type="button" disabled>${escapeHtml(t("dynamicsTempo"))}<span>${escapeHtml(t("dynamicsComingSoon"))}</span></button>
       <button class="dynamics-tab is-disabled" type="button" disabled>${escapeHtml(t("dynamicsIntervals"))}<span>${escapeHtml(t("dynamicsComingSoon"))}</span></button>
       <button class="dynamics-tab is-disabled" type="button" disabled>${escapeHtml(t("dynamicsLong"))}<span>${escapeHtml(t("dynamicsComingSoon"))}</span></button>
     </div>
     <article class="dynamics-module">
-      <div class="dynamics-module-heading"><div><span class="eyebrow">${escapeHtml(dynamicsActiveTab === "tempo" ? t("dynamicsTempo") : t("dynamicsEasy"))}</span><h2>${escapeHtml(dynamicsActiveTab === "tempo" ? t("historyTempoDynamics") : t("historyEasyDynamics"))}</h2></div></div>
-      ${contentHtml}
+      <div class="dynamics-module-heading"><div><span class="eyebrow">${escapeHtml(t("dynamicsEasy"))}</span><h2>${escapeHtml(t("historyEasyDynamics"))}</h2></div></div>
+      ${easyHtml}
     </article>`;
-
-  container.querySelectorAll("[data-dynamics-tab]").forEach(button => {
-    button.addEventListener("click", () => {
-      dynamicsActiveTab = button.dataset.dynamicsTab || "easy";
-      renderDynamics(workouts);
-    });
-  });
 }
 
 function renderHistoryControls() {
@@ -3573,15 +3493,8 @@ async function initAuth() {
   updateAuthUI(data?.session || null);
   historyLoaded = false;
   if (data?.session?.user) {
-    try {
-      await ensureUserProfile(data.session.user);
-    } catch (error) {
-      console.warn("Runory: profile restore skipped.", error);
-    }
-    const activeDataView = document.querySelector("#home.is-active, #history.is-active, #dynamics.is-active");
-    if (window.__runoryPendingWorkoutId || activeDataView) {
-      await loadWorkoutHistory(true);
-    }
+    await ensureUserProfile(data.session.user);
+    if (window.__runoryPendingWorkoutId) await loadWorkoutHistory(true);
   } else if (window.__runoryPendingWorkoutId) {
     openAuthModal();
   }
@@ -3590,16 +3503,8 @@ async function initAuth() {
     window.setTimeout(async () => {
       updateAuthUI(session);
       historyLoaded = false;
-      if (session?.user) {
-        try {
-          await ensureUserProfile(session.user);
-        } catch (error) {
-          console.warn("Runory: profile restore skipped.", error);
-        }
-      }
-      if (session?.user && (window.__runoryPendingWorkoutId || document.querySelector("#home")?.classList.contains("is-active") || document.querySelector("#history")?.classList.contains("is-active") || document.querySelector("#dynamics")?.classList.contains("is-active"))) {
-        await loadWorkoutHistory(true);
-      }
+      if (session?.user) await ensureUserProfile(session.user);
+      if (window.__runoryPendingWorkoutId || document.querySelector("#home")?.classList.contains("is-active") || document.querySelector("#history")?.classList.contains("is-active") || document.querySelector("#dynamics")?.classList.contains("is-active")) loadWorkoutHistory(true);
     }, 0);
   });
 }
@@ -3666,6 +3571,7 @@ document.addEventListener("keydown", event => {
   if (event.key === "Escape" && authModal && !authModal.hidden) closeAuthModal();
 });
 
+
 // ==================== Runory calculator (SPA) ====================
 let calculatorInitialized = false;
 let activeCalculator = "time";
@@ -3703,12 +3609,7 @@ function renderCalculator(type = activeCalculator, { preserveResult = false } = 
     const active = tab.dataset.calculator === type;
     tab.classList.toggle("is-active", active);
     tab.setAttribute("aria-selected", String(active));
-    const labelKey = tab.dataset.calculator === "time"
-      ? "tabTime"
-      : tab.dataset.calculator === "distance"
-        ? "tabDistance"
-        : "tabPace";
-    tab.textContent = t(labelKey);
+    tab.textContent = t(type === "time" ? "tabTime" : type === "distance" ? "tabDistance" : "tabPace");
   });
 
   const eyebrow = panel.querySelector("#calc-eyebrow");
