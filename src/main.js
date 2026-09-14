@@ -968,108 +968,6 @@ function renderAiAnalysis(text) {
   return parts.join("");
 }
 
-function getPersonalEasyTempoBaseline(summary) {
-  const history = Array.isArray(historyWorkouts) ? historyWorkouts : [];
-  if (history.length < 3) return null;
-
-  const currentHr = Number(summary?.heartRate);
-  if (!Number.isFinite(currentHr) || currentHr <= 0) return null;
-
-  const currentDate = summary?.date || summary?.workout_date || summary?.startTime || null;
-  const currentTs = currentDate ? new Date(currentDate).getTime() : Date.now();
-
-  // Use only already classified easy/routine runs. Do not call derivedWorkoutType
-  // here: getWorkoutPattern() itself uses this baseline, so that would recurse.
-  const easy = history
-    .filter(w => historyTypeClass(w?.workout_type) === "run")
-    .map(w => ({
-      pace: paceToSeconds(w?.pace),
-      hr: Number(w?.heart_rate),
-      distance: Number(w?.distance_km),
-      date: new Date(w?.workout_date || w?.created_at || 0).getTime()
-    }))
-    .filter(w => Number.isFinite(w.pace) && Number.isFinite(w.hr) && w.hr > 0 && w.distance >= 5 && w.distance <= 16 && Number.isFinite(w.date));
-
-  if (easy.length < 3) return null;
-
-  // Recent easy running defines the current state. HR matching makes the
-  // baseline adapt when easy pace changes because of fitness or conditions.
-  const ranked = easy
-    .map(w => ({
-      ...w,
-      hrDistance: Math.abs(w.hr - currentHr),
-      ageDays: Math.max(0, (currentTs - w.date) / 86400000)
-    }))
-    .sort((a, b) => a.hrDistance - b.hrDistance || a.ageDays - b.ageDays);
-
-  let matches = ranked.filter(w => w.hrDistance <= 8);
-  if (matches.length < 3) matches = ranked.filter(w => w.hrDistance <= 15);
-  if (matches.length < 3) matches = ranked.slice(0, Math.min(8, ranked.length));
-  matches = matches.slice(0, Math.min(10, matches.length));
-
-  const weighted = matches.map(w => {
-    const recencyWeight = Math.exp(-w.ageDays / 45);
-    const hrWeight = Math.exp(-w.hrDistance / 7);
-    return { ...w, weight: Math.max(0.08, recencyWeight * hrWeight) };
-  });
-
-  const weightSum = weighted.reduce((sum, w) => sum + w.weight, 0);
-  if (!weightSum) return null;
-
-  const pace = weighted.reduce((sum, w) => sum + w.pace * w.weight, 0) / weightSum;
-  const hr = weighted.reduce((sum, w) => sum + w.hr * w.weight, 0) / weightSum;
-
-  return {
-    pace,
-    hr,
-    count: weighted.length,
-    confidence: weighted.length >= 5 ? "good" : "moderate"
-  };
-}
-
-function detectContinuousTempo(summary, paces) {
-  const distance = Number(summary?.distance);
-  if (!Number.isFinite(distance) || distance < 5 || paces.length < 5) return null;
-
-  const baseline = getPersonalEasyTempoBaseline(summary);
-  if (!baseline) return null;
-
-  const averagePace = paces.reduce((sum, pace) => sum + pace, 0) / paces.length;
-  const spread = Math.max(...paces) - Math.min(...paces);
-  const meanDeviation = paces.reduce((sum, pace) => sum + Math.abs(pace - averagePace), 0) / paces.length;
-  const variation = meanDeviation / averagePace;
-
-  // Continuous tempo: the workout is already fast from the start and stays
-  // controlled, rather than containing a distinct warm-up/tempo/cool-down block.
-  const firstCount = Math.max(2, Math.floor(paces.length / 3));
-  const lastCount = Math.max(2, Math.floor(paces.length / 3));
-  const firstAvg = paces.slice(0, firstCount).reduce((a, b) => a + b, 0) / firstCount;
-  const lastAvg = paces.slice(-lastCount).reduce((a, b) => a + b, 0) / lastCount;
-  const edgeDelta = Math.abs(firstAvg - lastAvg);
-  const fasterBy = baseline.pace - averagePace;
-
-  if (fasterBy < 30) return null;
-  if (variation > 0.045 || spread > 25 || edgeDelta > 15) return null;
-
-  const currentHr = Number(summary?.heartRate);
-  const hrDelta = Number.isFinite(currentHr) ? currentHr - baseline.hr : null;
-
-  // If pace is only ~30–40 sec/km faster but HR is still essentially the same,
-  // prefer interpreting it as improved easy fitness rather than tempo.
-  if (fasterBy < 45 && hrDelta !== null && hrDelta < 4) return null;
-
-  return {
-    type: "tempo",
-    variant: "continuous",
-    tempoStart: 0,
-    tempoEnd: paces.length - 1,
-    easyBaselinePace: baseline.pace,
-    easyBaselineHr: baseline.hr,
-    paceDeltaFromEasy: fasterBy,
-    hrDeltaFromEasy: hrDelta
-  };
-}
-
 function getWorkoutPattern(summary) {
   const distance = Number(summary?.distance);
   const splits = Array.isArray(summary?.splits) ? summary.splits : [];
@@ -1151,9 +1049,6 @@ function getWorkoutPattern(summary) {
   if (transitions >= 5 && fastCount >= 3 && slowCount >= 3) {
     return { type: "fartlek", states };
   }
-
-  const continuousTempo = detectContinuousTempo(summary, paces);
-  if (continuousTempo) return continuousTempo;
 
   // Tempo = a sustained faster block between a slower warm-up and cool-down.
   // Use the outer splits as the baseline so a long tempo block does not distort the median.
@@ -2630,16 +2525,18 @@ function formatHomeHours(seconds) {
 function derivedWorkoutType(record) {
   if (!record) return "run";
   const structure = Array.isArray(record.structure) ? record.structure : [];
-  const hasUsableStructure = structure.length > 0;
-  if (!hasUsableStructure) return historyTypeClass(record.workout_type);
 
+  // Recalculate the type from the saved workout data even when an older
+  // history record has no stored structure. This keeps the History list and
+  // filters in sync with the current workout-classification logic.
   const summary = {
     distance: Number(record.distance_km) || 0,
     splits: Array.isArray(record.splits) ? record.splits : [],
     structure
   };
 
-  return getWorkoutTypeKey(summary);
+  const derived = getWorkoutTypeKey(summary);
+  return derived || historyTypeClass(record.workout_type);
 }
 
 function homeWorkoutLabel(workout) {
