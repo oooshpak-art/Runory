@@ -983,7 +983,7 @@ function getWorkoutPattern(summary) {
     return { type: "intervals" };
   }
   if (paces.length < 4) {
-    return distance >= 15 ? { type: "long" } : { type: "run" };
+    return distance >= 16 ? { type: "long" } : { type: "run" };
   }
 
   const sorted = [...paces].sort((a, b) => a - b);
@@ -2193,7 +2193,7 @@ function getWorkoutTypeKey(summary) {
   if (pattern?.type === "intervals") return "intervals";
   if (pattern?.type === "tempo") return "tempo";
   if (pattern?.type === "fartlek") return "fartlek";
-  if (Number(summary?.distance) >= 15) return "long";
+  if (Number(summary?.distance) >= 16) return "long";
   return "run";
 }
 
