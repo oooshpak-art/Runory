@@ -2777,3 +2777,20 @@
   background: var(--ink) !important;
   color: var(--lime) !important;
 }
+
+/* Final expanded-sidebar calculator hover fix. */
+.account-sidebar:not(.is-collapsed) .account-sidebar-link-secondary[data-view-target="calculator"]:hover {
+  background: #eef3ed !important;
+  color: var(--ink) !important;
+}
+.account-sidebar:not(.is-collapsed) .account-sidebar-link-secondary[data-view-target="calculator"]:hover > span:last-child {
+  color: var(--ink) !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+.account-sidebar:not(.is-collapsed) .account-sidebar-link-secondary[data-view-target="calculator"]:hover .account-sidebar-icon,
+.account-sidebar:not(.is-collapsed) .account-sidebar-link-secondary[data-view-target="calculator"]:hover .account-sidebar-icon svg {
+  background: transparent !important;
+  color: var(--ink) !important;
+  stroke: currentColor !important;
+}
