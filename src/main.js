@@ -3388,11 +3388,15 @@ async function initAuth() {
   updateAuthUI(data?.session || null);
   historyLoaded = false;
   if (data?.session?.user) {
-    await ensureUserProfile(data.session.user);
+    // Profile loading must never block workout history.
+    try {
+      await ensureUserProfile(data.session.user);
+    } catch (error) {
+      console.warn("Runory: profile restore skipped.", error);
+    }
 
-    // The initial route is resolved before auth restoration. If the user
-    // opens Training/Dynamics directly, the first load sees no session and
-    // clears the history. Reload it after Supabase restores the session.
+    // The route is resolved before auth restoration. Once Supabase restores
+    // the session, explicitly load the data for the currently visible view.
     const activeDataView = document.querySelector("#home.is-active, #history.is-active, #dynamics.is-active");
     if (window.__runoryPendingWorkoutId || activeDataView) {
       await loadWorkoutHistory(true);
@@ -3405,8 +3409,16 @@ async function initAuth() {
     window.setTimeout(async () => {
       updateAuthUI(session);
       historyLoaded = false;
-      if (session?.user) await ensureUserProfile(session.user);
-      if (window.__runoryPendingWorkoutId || document.querySelector("#home")?.classList.contains("is-active") || document.querySelector("#history")?.classList.contains("is-active") || document.querySelector("#dynamics")?.classList.contains("is-active")) loadWorkoutHistory(true);
+      if (session?.user) {
+        try {
+          await ensureUserProfile(session.user);
+        } catch (error) {
+          console.warn("Runory: profile restore skipped.", error);
+        }
+      }
+      if (session?.user && (window.__runoryPendingWorkoutId || document.querySelector("#home")?.classList.contains("is-active") || document.querySelector("#history")?.classList.contains("is-active") || document.querySelector("#dynamics")?.classList.contains("is-active"))) {
+        await loadWorkoutHistory(true);
+      }
     }, 0);
   });
 }
