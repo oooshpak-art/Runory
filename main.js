@@ -1,0 +1,3650 @@
+const dropZone = document.querySelector("#dropZone");
+const input = document.querySelector("#fileInput");
+const uploadState = document.querySelector("#uploadState");
+const results = document.querySelector("#results");
+const fileName = document.querySelector("#fileName");
+const fileStatus = document.querySelector("#fileStatus");
+const progressBar = document.querySelector("#progressBar");
+const progressValue = document.querySelector("#progressValue");
+const resetButton = document.querySelector("#resetButton");
+
+const distanceValue = document.querySelector("#summaryDistance");
+const durationValue = document.querySelector("#summaryDuration");
+const paceValue = document.querySelector("#summaryPace");
+const heartRateValue = document.querySelector("#summaryHeartRate");
+const caloriesValue = document.querySelector("#summaryCalories");
+const ascentValue = document.querySelector("#summaryAscent");
+const runLabel = document.querySelector(".run-label");
+const insightText = document.querySelector(".insight-text");
+const splitsBody = document.querySelector("#splitsBody");
+const structureCard = document.querySelector("#structureCard");
+const structureBody = document.querySelector("#structureBody");
+const aiAnalyzeButton = document.querySelector("#aiAnalyzeButton");
+const aiAnalysis = document.querySelector("#aiAnalysis");
+const aiAnalysisText = document.querySelector("#aiAnalysisText");
+const workoutSavePanel = document.querySelector("#workoutSavePanel");
+const saveWorkoutButton = document.querySelector("#saveWorkoutButton");
+const cancelWorkoutButton = document.querySelector("#cancelWorkoutButton");
+const workoutSaveStatus = document.querySelector("#workoutSaveStatus");
+
+let currentWorkout = null;
+let currentHistoryId = null;
+let historyLoaded = false;
+let historyWorkouts = [];
+let historyTypeFilter = "all";
+let historyPeriodFilter = "all";
+
+const translations = {
+  uk: {
+    navAnalysis: "Аналіз тренування",
+    homeNav: "Головна",
+    historyNavShort: "Тренування",
+    toolsNav: "ІНСТРУМЕНТИ",
+    homeEyebrow: "ТВІЙ RUNORY",
+    homeTitle: "Твій біг — коротко й по суті.",
+    homeCopy: "Останнє тренування, зміни форми та те, що відбувається цього тижня.",
+    homeLatest: "ОСТАННЄ ТРЕНУВАННЯ",
+    homeLatestEmpty: "Поки немає збережених тренувань.",
+    homeLatestEmptyCopy: "Додай перше тренування через плюс у верхній панелі.",
+    homeViewWorkout: "Переглянути тренування",
+    homeInsightSaved: "Аналіз тренування збережено в історії.",
+    homeInsightWorkout: "Тренування збережено в Runory.",
+    homeForm: "ЩО ВІДБУВАЄТЬСЯ З ФОРМОЮ",
+    homeViewDynamics: "Переглянути динаміку",
+    homeWeek: "ЦЬОГО ТИЖНЯ",
+    homeWeekWorkouts: "тренувань",
+    homeWeekDistance: "км",
+    homeWeekTime: "год",
+    homeWeekEmpty: "Цього тижня тренувань ще немає.",
+    homeNoTrend: "Недостатньо даних",
+    homeEasy: "Легкі",
+    homeTempo: "Темпові",
+    homeIntervals: "Інтервали",
+    homeLong: "Довгі",
+    navCalculator: "Калькулятор бігу",
+    calcPageTitle: "Runory — калькулятор бігу",
+    calcHeroTitle: "Плануй забіг<br />у цифрах.",
+    calcHeroCopy: "Введи два значення — Runory одразу порахує третє.",
+    calculatorEyebrow: "ІНСТРУМЕНТ БІГУНА",
+    calculatorType: "Тип розрахунку",
+    tabTime: "Знайти час",
+    tabDistance: "Знайти дистанцію",
+    tabPace: "Знайти темп",
+    timeEyebrow: "ДИСТАНЦІЯ + ТЕМП",
+    timeTitle: "Який буде час?",
+    timeDescription: "Вкажи дистанцію та бажаний темп.",
+    timeLabel: "Твій орієнтовний час",
+    distanceEyebrow: "ЧАС + ТЕМП",
+    distanceTitle: "Яка буде дистанція?",
+    distanceDescription: "Вкажи час, який маєш, і свій темп.",
+    distanceLabel: "Твоя орієнтовна дистанція",
+    paceEyebrow: "ДИСТАНЦІЯ + ЧАС",
+    paceTitle: "Який потрібен темп?",
+    paceDescription: "Вкажи дистанцію та бажаний фінішний час.",
+    paceLabel: "Твій потрібний темп",
+    exampleDistance: "Наприклад, 21.1",
+    hours: "год",
+    minutesShort: "хв",
+    secondsShort: "сек",
+    calculate: "Розрахувати",
+    resultTime: "Твій орієнтовний час",
+    checkValues: "Перевір введені значення",
+    rangeError: "Хвилини та секунди мають бути від 0 до 59.",
+    perKm: "/ км",
+    heroEyebrow: "РОЗУМНИЙ ПІДХІД ДО ТВОЇХ ТРЕНУВАНЬ",
+    heroTitle: "Кожен кілометр<br />має значення.",
+    heroCopy: "Runory — аналіз твоїх тренувань у цифрах.<br />Завантаж тренування з Garmin та дізнайся,<br />що насправді відбулося під час пробіжки.",
+    uploadEyebrow: "НОВЕ ТРЕНУВАННЯ",
+    uploadTitle: "Завантаж FIT-файл",
+    uploadHelp: "FIT-файл з Garmin Connect<br />Обробка лише на твоєму пристрої",
+    dropTitle: "Додай тренування з Garmin",
+    chooseFit: "Обрати FIT-файл",
+    dropSubtitle: "або перетягни файл у цю область",
+    fileReady: "Готово до аналізу",
+    removeFile: "Видалити файл",
+    summaryTitle: "ПІДСУМОК ТРЕНУВАННЯ",
+    distance: "Дистанція",
+    time: "Час",
+    pace: "Середній темп",
+    heartRate: "Середній пульс",
+    calories: "Калорії",
+    ascent: "Набір висоти",
+    structureTitle: "СТРУКТУРА ТРЕНУВАННЯ",
+    structureNote: "Структуру тренування визначено автоматично на основі даних Garmin та динаміки сплітів.",
+    resultsEyebrow: "ТРЕНУВАННЯ ГОТОВЕ",
+    resultsTitle: "Твій забіг у цифрах",
+    splitsEyebrow: "КІЛОМЕТРОВІ СПЛІТИ",
+    splitsTitle: "Як змінювався твій біг",
+    splitKm: "Км",
+    splitPace: "Темп",
+    splitHr: "Пульс",
+    splitCadence: "Каденс",
+    splitAscent: "Набір",
+    splitsEmpty: "Спліти з'являться після завантаження FIT-файлу.",
+    insightEyebrow: "ПЕРШИЙ ПОГЛЯД",
+    insightEmpty: "Завантаж тренування, щоб побачити реальні дані Garmin.",
+    aiButton: "Проаналізувати тренування",
+    saveWorkoutEyebrow: "ЗБЕРЕЖЕННЯ",
+    saveWorkoutQuestion: "Зберегти це тренування?",
+    saveWorkout: "Зберегти тренування",
+    cancelWorkout: "Скасувати",
+    savingWorkout: "Зберігаємо…",
+    workoutSaved: "✓ Тренування збережено",
+    historySaveError: "Не вдалося зберегти тренування",
+    aiLoading: "Аналізую тренування…",
+    aiEyebrow: "AI-АНАЛІЗ ТРЕНЕРА",
+    aiTitle: "Що говорить твоє тренування",
+    futureTitle: "Незабаром у Runory",
+    historyNav: "Мої тренування",
+    historyTitle: "Мої тренування",
+    historyCopy: "Усі тренування, які ти зберіг у Runory.",
+    dynamicsNav: "Динаміка",
+    dynamicsTitle: "Динаміка бігової форми",
+    dynamicsCopy: "Порівнюємо схожі тренування, щоб бачити зміни форми з часом.",
+    dynamicsEasy: "Легкі",
+    dynamicsTempo: "Темпові",
+    dynamicsIntervals: "Інтервали",
+    dynamicsLong: "Довгі",
+    dynamicsComingSoon: "Незабаром",
+    historyEmpty: "Тут поки немає збережених тренувань.",
+    historyLoading: "Завантажуємо тренування…",
+    historyView: "Відкрити",
+    historyDelete: "Видалити",
+    historyLoginHint: "Увійди в Runory, щоб бачити свої тренування.",
+    historyError: "Не вдалося завантажити тренування.",
+    historySaveError: "Не вдалося зберегти тренування.",
+    historyDeleteError: "Не вдалося видалити тренування.",
+    historyDeleted: "Тренування видалено." ,
+    futureHistory: "Історія тренувань",
+    historyStatsWorkouts: "Тренування",
+    historyStatsDistance: "Дистанція",
+    historyStatsTime: "Час",
+    historyOpen: "Відкрити аналіз",
+    historyDelete: "Видалити",
+    historyEmptyAction: "Додати тренування",
+    historyFilterAll: "Усі",
+    historyFilterEasy: "Легкі",
+    historyFilterTempo: "Темпові",
+    historyFilterIntervals: "Інтервали",
+    historyFilterLong: "Довгі",
+    historyPeriod7: "7 днів",
+    historyPeriod30: "30 днів",
+    historyPeriodAll: "Увесь час",
+    historyOverview: "Огляд",
+    historyWeeklyDistance: "Кілометраж по тижнях",
+    historyDynamics: "Динаміка",
+    historyEasyDynamics: "Динаміка легких пробіжок",
+    historyEasyDynamicsHint: "Порівнюємо тренування зі схожим рівнем легкої інтенсивності, а не всі пробіжки підряд.",
+    historyEasyPaceAtHr: "Темп при схожому пульсі",
+    historyEasyHrAtPace: "Пульс при схожому темпі",
+    historyEasyNoTrend: "Поки недостатньо схожих тренувань для надійного висновку.",
+    historyEasyImproved: "Показники покращуються",
+    historyEasyStable: "Стабільний рівень",
+    historyEasyDeclined: "Є ознаки погіршення",
+    historyEasyCurrentBetter: "Останній результат кращий за типовий рівень",
+    historyEasyCurrentWorse: "Останній результат слабший за типовий рівень",
+    historyEasyMixed: "Показники різноспрямовані",
+    historyEasyNearTypical: "Результат близький до типового рівня",
+    historyEasyTrendHint: "Для впевненого висновку про тренд потрібно більше схожих тренувань.",
+    historyEasyCompared: "На основі {count} схожих тренувань",
+    historyAvgPace: "Середній темп",
+    historyAvgHr: "Середній пульс",
+    historyNoData: "Недостатньо даних для графіка",
+    historyWeek: "Тиждень",
+    futureGarmin: "Garmin Connect",
+    futureAi: "AI-аналіз тренера",
+    aiScoreExcellent: "Відмінна робота",
+    aiScoreStrong: "Сильне тренування",
+    aiScoreImprove: "Є що покращити",
+    aiScoreCautious: "Потрібен обережніший підхід",
+    aiScoreEyebrow: "ОЦІНКА ТРЕНЕРА",
+    aiScoreDescription: "Оцінка сформована на основі темпу, пульсу, каденсу, обсягу та динаміки сплітів.",
+    aiFallbackTitle: "Аналіз",
+    workoutLong: "Довга пробіжка",
+    workoutIntervals: "Інтервальне тренування",
+    workoutTempo: "Темповий / рівномірний біг",
+    workoutFartlek: "Фартлек",
+    fastSegment: "Швидкий відрізок",
+    slowSegment: "Повільний відрізок",
+    workoutRun: "Бігове тренування",
+    insightUnavailable: "Реальні дані з Garmin завантажено. Детальний аналіз сплітів недоступний.",
+    insightFaster: "Ти поступово прискорювався — друга половина тренування була швидшою.",
+    insightSlower: "На початку темп був швидшим, а в другій половині відбулося поступове зниження.",
+    insightEven: "Темп був відносно рівним протягом тренування — хороший контроль зусилля.",
+    avgHr: "Середній пульс",
+    cadence: "каденс",
+    ascentShort: "набір",
+    language: "Мова",
+    splitsNotFound: "Спліти не знайдені",
+    terrain: "Рельєф",
+    flat: "Рівно",
+    climb: "Набір",
+    descent: "Спуск",
+    work: "Робота",
+    interval: "Інтервал",
+    recovery: "Відновлення",
+    warmup: "Розминка",
+    cooldown: "Заминка",
+    uploadedWorkout: "Завантажене тренування",
+    today: "сьогодні",
+    errorAi: "Помилка AI-аналізу",
+    errorAiGeneric: "Не вдалося виконати AI-аналіз",
+    errorAiUnavailable: "Не вдалося отримати аналіз",
+    chooseFitError: "Обери файл із розширенням .fit",
+    preparing: "Готуємо тренування…",
+    readyToView: "Тренування готове до перегляду",
+    readFileError: "Не вдалося прочитати файл",
+    locale: "uk-UA",
+    ariaHome: "Runory — головна",
+    ariaNav: "Розділи Runory",
+    ariaSummary: "Підсумок тренування",
+    ariaFuture: "Майбутні можливості",
+    ariaScore: "Оцінка {score} з 10",
+     authSignIn: "Увійти",
+     authProfile: "Мій профіль",
+    authAccount: "Акаунт",
+     authEyebrow: "ТВОЄМУ RUNORY ПОТРІБЕН АККАУНТ",
+     authTitle: "Увійти в Runory",
+     authCopy: "Збережемо твою історію тренувань і зможемо бачити прогрес з часом.",
+     authGoogle: "Продовжити з Google",
+     authOr: "або",
+     authEmail: "Email",
+     authPassword: "Пароль",
+     authSubmitSignIn: "Увійти",
+     authSubmitSignUp: "Створити акаунт",
+     authNoAccount: "Ще немає акаунта?",
+     authHaveAccount: "Вже маєш акаунт?",
+     authCreateAccount: "Створити акаунт",
+     authSwitchToSignIn: "Увійти",
+     authAccountEyebrow: "ТВОЄМУ RUNORY",
+     authAccountTitle: "Мій акаунт",
+     authAccountCopy: "Тут керування входом в акаунт. Профіль спортсмена відкривається окремо в меню зліва.",
+     authLogout: "Вийти",
+     authSignedUp: "Акаунт створено. Перевір email і підтвердь адресу, щоб увійти.",
+     authSignedIn: "Ти успішно увійшов у Runory.",
+     authSignedOut: "Ти вийшов з акаунта.",
+     authError: "Не вдалося виконати вхід. Перевір дані та спробуй ще раз.",
+     authGoogleError: "Не вдалося увійти через Google. Спробуй ще раз.",
+     authLoggedInAs: "Увійшов як",
+     profilePageEyebrow: "ПРОФІЛЬ СПОРТСМЕНА",
+    profilePageTitle: "Мій профіль",
+    profilePageCopy: "Дані, які допомагають Runory точніше аналізувати твої тренування та прогрес.",
+    profileEyebrow: "ДАНІ СПОРТСМЕНА",
+     profileCopy: "Ці дані допоможуть Runory точніше аналізувати твій прогрес.",
+     profileBirthDate: "Дата народження",
+     profileGender: "Стать",
+     profileGenderChoose: "Обрати",
+     profileGenderMale: "Чоловік",
+     profileGenderFemale: "Жінка",
+     profileHeight: "Зріст, см",
+     profileWeight: "Вага, кг",
+     profileSave: "Зберегти дані",
+     profileSaving: "Зберігаємо…",
+     profileSaved: "Дані спортсмена збережено.",
+     profileLoadError: "Не вдалося завантажити дані профілю.",
+     profileSaveError: "Не вдалося зберегти дані профілю."
+  },
+  en: {
+    navAnalysis: "Workout analysis",
+    homeNav: "Home",
+    historyNavShort: "Workouts",
+    toolsNav: "TOOLS",
+    homeEyebrow: "YOUR RUNORY",
+    homeTitle: "Your running — short and clear.",
+    homeCopy: "Your latest workout, form changes, and what is happening this week.",
+    homeLatest: "LATEST WORKOUT",
+    homeLatestEmpty: "No saved workouts yet.",
+    homeLatestEmptyCopy: "Add your first workout using the plus button above.",
+    homeViewWorkout: "View workout",
+    homeInsightSaved: "Workout analysis is saved in your history.",
+    homeInsightWorkout: "Workout saved in Runory.",
+    homeForm: "WHAT IS HAPPENING WITH YOUR FORM",
+    homeViewDynamics: "View dynamics",
+    homeWeek: "THIS WEEK",
+    homeWeekWorkouts: "workouts",
+    homeWeekDistance: "km",
+    homeWeekTime: "h",
+    homeWeekEmpty: "No workouts this week yet.",
+    homeNoTrend: "Not enough data",
+    homeEasy: "Easy",
+    homeTempo: "Tempo",
+    homeIntervals: "Intervals",
+    homeLong: "Long",
+    navCalculator: "Running calculator",
+    calcPageTitle: "Runory — running calculator",
+    calcHeroTitle: "Plan your run<br />with numbers.",
+    calcHeroCopy: "Enter two values — Runory will calculate the third instantly.",
+    calculatorEyebrow: "RUNNER'S TOOL",
+    calculatorType: "Calculation type",
+    tabTime: "Find time",
+    tabDistance: "Find distance",
+    tabPace: "Find pace",
+    timeEyebrow: "DISTANCE + PACE",
+    timeTitle: "What will the time be?",
+    timeDescription: "Enter the distance and target pace.",
+    timeLabel: "Your estimated time",
+    distanceEyebrow: "TIME + PACE",
+    distanceTitle: "What will the distance be?",
+    distanceDescription: "Enter the time you have and your pace.",
+    distanceLabel: "Your estimated distance",
+    paceEyebrow: "DISTANCE + TIME",
+    paceTitle: "What pace do you need?",
+    paceDescription: "Enter the distance and target finish time.",
+    paceLabel: "Your required pace",
+    exampleDistance: "For example, 21.1",
+    hours: "hr",
+    minutesShort: "min",
+    secondsShort: "sec",
+    calculate: "Calculate",
+    resultTime: "Your estimated time",
+    checkValues: "Check the entered values",
+    rangeError: "Minutes and seconds must be between 0 and 59.",
+    perKm: "/ km",
+    heroEyebrow: "A SMARTER APPROACH TO YOUR TRAINING",
+    heroTitle: "Every kilometer<br />matters.",
+    heroCopy: "Runory — your training, analyzed through data.<br />Upload a Garmin workout and find out<br />what really happened during your run.",
+    uploadEyebrow: "NEW WORKOUT",
+    uploadTitle: "Upload a FIT file",
+    uploadHelp: "FIT file from Garmin Connect<br />Processed entirely on your device",
+    dropTitle: "Upload your Garmin workout",
+    chooseFit: "Choose a FIT file",
+    dropSubtitle: "or drag the file here",
+    fileReady: "Ready for analysis",
+    removeFile: "Remove file",
+    summaryTitle: "WORKOUT SUMMARY",
+    distance: "Distance",
+    time: "Time",
+    pace: "Average pace",
+    heartRate: "Average heart rate",
+    calories: "Calories",
+    ascent: "Elevation gain",
+    structureTitle: "WORKOUT STRUCTURE",
+    structureNote: "Workout structure is automatically detected from Garmin data and split dynamics.",
+    resultsEyebrow: "WORKOUT ANALYZED",
+    resultsTitle: "Your run in numbers",
+    splitsEyebrow: "KILOMETER SPLITS",
+    splitsTitle: "How your run changed",
+    splitKm: "Km",
+    splitPace: "Pace",
+    splitHr: "Heart rate",
+    splitCadence: "Cadence",
+    splitAscent: "Elevation",
+    splitsEmpty: "Splits will appear after you upload a FIT file.",
+    insightEyebrow: "FIRST LOOK",
+    insightEmpty: "Upload a workout to see your real Garmin data.",
+    aiButton: "Analyze workout",
+    saveWorkoutEyebrow: "SAVE WORKOUT",
+    saveWorkoutQuestion: "Save this workout?",
+    saveWorkout: "Save workout",
+    cancelWorkout: "Cancel",
+    savingWorkout: "Saving…",
+    workoutSaved: "✓ Workout saved",
+    historySaveError: "Could not save workout",
+    aiLoading: "Analyzing workout…",
+    aiEyebrow: "AI COACH ANALYSIS",
+    aiTitle: "What your workout tells us",
+    futureTitle: "Coming soon to Runory",
+    historyNav: "My workouts",
+    historyTitle: "My workouts",
+    historyCopy: "All workouts you have saved in Runory.",
+    dynamicsNav: "Dynamics",
+    dynamicsTitle: "Running form dynamics",
+    dynamicsCopy: "Compare similar workouts to see how your form changes over time.",
+    dynamicsEasy: "Easy",
+    dynamicsTempo: "Tempo",
+    dynamicsIntervals: "Intervals",
+    dynamicsLong: "Long",
+    dynamicsComingSoon: "Coming soon",
+    historyEmpty: "There are no saved workouts yet.",
+    historyLoading: "Loading workouts…",
+    historyView: "Open",
+    historyDelete: "Delete",
+    historyLoginHint: "Sign in to Runory to see your workouts.",
+    historyError: "Could not load workouts.",
+    historySaveError: "Could not save workout.",
+    historyDeleteError: "Could not delete workout.",
+    historyDeleted: "Workout deleted.",
+    futureHistory: "Workout history",
+    historyStatsWorkouts: "Workouts",
+    historyStatsDistance: "Distance",
+    historyStatsTime: "Time",
+    historyOpen: "Open analysis",
+    historyDelete: "Delete",
+    historyEmptyAction: "Add a workout",
+    historyFilterAll: "All",
+    historyFilterEasy: "Easy",
+    historyFilterTempo: "Tempo",
+    historyFilterIntervals: "Intervals",
+    historyFilterLong: "Long",
+    historyPeriod7: "7 days",
+    historyPeriod30: "30 days",
+    historyPeriodAll: "All time",
+    historyOverview: "Overview",
+    historyWeeklyDistance: "Weekly mileage",
+    historyDynamics: "Dynamics",
+    historyEasyDynamics: "Easy run dynamics",
+    historyEasyDynamicsHint: "We compare only similar workouts, not every run in a row.",
+    historyEasyPaceAtHr: "Pace at a similar heart rate",
+    historyEasyHrAtPace: "Heart rate at a similar pace",
+    historyEasyNoTrend: "Not enough similar workouts for a reliable conclusion yet.",
+    historyEasyImproved: "Indicators are improving",
+    historyEasyStable: "Stable level",
+    historyEasyDeclined: "Signs of decline",
+    historyEasyCurrentBetter: "The latest result is better than the typical level",
+    historyEasyCurrentWorse: "The latest result is below the typical level",
+    historyEasyMixed: "The indicators are mixed",
+    historyEasyNearTypical: "The result is close to the typical level",
+    historyEasyTrendHint: "More similar workouts are needed for a confident trend conclusion.",
+    historyEasyCompared: "Based on {count} similar workouts",
+    historyAvgPace: "Average pace",
+    historyAvgHr: "Average heart rate",
+    historyNoData: "Not enough data for a chart",
+    historyWeek: "Week",
+    futureGarmin: "Garmin Connect",
+    futureAi: "AI coach analysis",
+    aiScoreExcellent: "Excellent work",
+    aiScoreStrong: "Strong workout",
+    aiScoreImprove: "Room to improve",
+    aiScoreCautious: "A more cautious approach is needed",
+    aiScoreEyebrow: "COACH SCORE",
+    aiScoreDescription: "The score is based on pace, heart rate, cadence, volume, and split dynamics.",
+    aiFallbackTitle: "Analysis",
+    workoutLong: "Long run",
+    workoutIntervals: "Interval workout",
+    workoutTempo: "Tempo / steady run",
+    workoutFartlek: "Fartlek",
+    fastSegment: "Fast segment",
+    slowSegment: "Slow segment",
+    workoutRun: "Running workout",
+    insightUnavailable: "Real Garmin data was loaded. Detailed split analysis is unavailable.",
+    insightFaster: "You gradually accelerated — the second half of the workout was faster.",
+    insightSlower: "The pace started faster, then gradually slowed in the second half.",
+    insightEven: "The pace stayed relatively even throughout the workout — good effort control.",
+    avgHr: "Average heart rate",
+    cadence: "cadence",
+    ascentShort: "elevation gain",
+    language: "Language",
+    splitsNotFound: "No splits found",
+    terrain: "Terrain",
+    flat: "Flat",
+    climb: "Gain",
+    descent: "Descent",
+    work: "Work",
+    interval: "Interval",
+    recovery: "Recovery",
+    warmup: "Warm-up",
+    cooldown: "Cool-down",
+    uploadedWorkout: "Uploaded workout",
+    today: "today",
+    errorAi: "AI analysis error",
+    errorAiGeneric: "AI analysis could not be completed",
+    errorAiUnavailable: "Could not get an analysis",
+    chooseFitError: "Choose a file with the .fit extension",
+    preparing: "Preparing workout…",
+    readyToView: "Workout ready to view",
+    readFileError: "Could not read the file",
+    locale: "en-US",
+    ariaHome: "Runory — home",
+    ariaNav: "Runory sections",
+    ariaSummary: "Workout summary",
+    ariaFuture: "Future features",
+    ariaScore: "Score {score} out of 10",
+     authSignIn: "Sign in",
+     authProfile: "My profile",
+    authAccount: "Account",
+     authEyebrow: "YOUR RUNORY ACCOUNT",
+     authTitle: "Sign in to Runory",
+     authCopy: "We’ll save your workout history and track your progress over time.",
+     authGoogle: "Continue with Google",
+     authOr: "or",
+     authEmail: "Email",
+     authPassword: "Password",
+     authSubmitSignIn: "Sign in",
+     authSubmitSignUp: "Create account",
+     authNoAccount: "Don’t have an account yet?",
+     authHaveAccount: "Already have an account?",
+     authCreateAccount: "Create account",
+     authSwitchToSignIn: "Sign in",
+     authAccountEyebrow: "ATHLETE PROFILE",
+     authAccountTitle: "My account",
+     authAccountCopy: "Account access is managed here. Your athlete profile is available separately in the left menu.",
+     authLogout: "Sign out",
+     authSignedUp: "Account created. Check your email and confirm your address before signing in.",
+     authSignedIn: "You’re now signed in to Runory.",
+     authSignedOut: "You’re signed out.",
+     authError: "Sign-in failed. Check your details and try again.",
+     authGoogleError: "Google sign-in failed. Please try again.",
+     authLoggedInAs: "Signed in as",
+     profilePageEyebrow: "ATHLETE PROFILE",
+    profilePageTitle: "My profile",
+    profilePageCopy: "Details that help Runory analyze your training and progress more accurately.",
+    profileEyebrow: "ATHLETE DATA",
+     profileCopy: "These details help Runory analyze your progress more accurately.",
+     profileBirthDate: "Date of birth",
+     profileGender: "Gender",
+     profileGenderChoose: "Choose",
+     profileGenderMale: "Male",
+     profileGenderFemale: "Female",
+     profileHeight: "Height, cm",
+     profileWeight: "Weight, kg",
+     profileSave: "Save athlete data",
+     profileSaving: "Saving…",
+     profileSaved: "Athlete data saved.",
+     profileLoadError: "Could not load profile data.",
+     profileSaveError: "Could not save profile data."
+  }
+};
+
+let currentLanguage = localStorage.getItem("runory-language") || "uk";
+if (!translations[currentLanguage]) currentLanguage = "uk";
+
+function normalizeTranslationKey(key) {
+  return String(key ?? "").replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
+}
+
+function t(key, vars = {}) {
+  const normalizedKey = normalizeTranslationKey(key);
+  let value = translations[currentLanguage]?.[normalizedKey] ?? translations.uk[normalizedKey] ?? key;
+  Object.entries(vars).forEach(([name, replacement]) => {
+    value = value.replaceAll(`{${name}}`, String(replacement));
+  });
+  return value;
+}
+
+function applyLanguage() {
+  document.documentElement.lang = currentLanguage;
+
+  document.querySelectorAll("[data-i18n]").forEach(element => {
+    element.innerHTML = t(element.dataset.i18n);
+  });
+
+  document.querySelectorAll("[data-i18n-aria]").forEach(element => {
+    element.setAttribute("aria-label", t(element.dataset.i18nAria));
+  });
+
+  const title = document.querySelector("#calculator")?.classList.contains("is-active")
+    ? t("calcPageTitle")
+    : (currentLanguage === "uk" ? "Runory — аналіз тренувань" : "Runory — workout analysis");
+  document.title = title;
+
+  const home = document.querySelector(".brand");
+  const nav = document.querySelector(".app-nav");
+  const summary = document.querySelector(".results-sidebar");
+  const future = document.querySelector(".future-strip");
+  const languageSwitcher = document.querySelector(".language-switcher");
+  if (home) home.setAttribute("aria-label", t("ariaHome"));
+  if (nav) nav.setAttribute("aria-label", t("ariaNav"));
+  if (summary) summary.setAttribute("aria-label", t("ariaSummary"));
+  if (future) future.setAttribute("aria-label", t("ariaFuture"));
+  if (languageSwitcher) languageSwitcher.setAttribute("aria-label", t("language"));
+
+  document.querySelectorAll(".language-button").forEach(button => {
+    const active = button.dataset.lang === currentLanguage;
+    button.classList.toggle("is-active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
+
+  if (currentWorkout) renderSummary(currentWorkout);
+  if (document.querySelector("#home")?.classList.contains("is-active") || document.querySelector("#history")?.classList.contains("is-active") || document.querySelector("#dynamics")?.classList.contains("is-active")) {
+    historyLoaded = false;
+    loadWorkoutHistory(true);
+  }
+  else if (splitsBody) {
+    splitsBody.innerHTML = `<tr><td colspan="5" class="splits-empty">${escapeHtml(t("splitsEmpty"))}</td></tr>`;
+  }
+}
+
+function setLanguage(language) {
+  if (!translations[language] || language === currentLanguage) return;
+  currentLanguage = language;
+  localStorage.setItem("runory-language", currentLanguage);
+  applyLanguage();
+  refreshCalculatorLanguage();
+}
+
+
+function routeForView(viewName) {
+  const map = { home: "/", history: "/workouts", dynamics: "/progress", profile: "/account", calculator: "/calculator" };
+  return map[viewName] || "/";
+}
+
+function currentRouteWorkoutId() {
+  const match = window.location.pathname.match(/^\/workouts\/([^/]+)$/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+function navigateToView(viewName, { push = true } = {}) {
+  if (push) {
+    const target = routeForView(viewName);
+    if (window.location.pathname !== target) window.history.pushState({ view: viewName }, "", target);
+  }
+  setActiveView(viewName, { updateRoute: false });
+}
+
+function setActiveView(viewName, { updateRoute = true } = {}) {
+  document.querySelectorAll("[data-view-panel]").forEach(panel => {
+    panel.classList.toggle("is-active", panel.id === viewName);
+  });
+
+  document.querySelectorAll("[data-view-target]").forEach(button => {
+    const active = button.dataset.viewTarget === viewName;
+    button.classList.toggle("is-active", active);
+    button.setAttribute("aria-current", active ? "page" : "false");
+  });
+
+  if (updateRoute) {
+    const target = routeForView(viewName);
+    if (window.location.pathname !== target) window.history.pushState({ view: viewName }, "", target);
+  }
+
+  if (viewName === "home" || viewName === "history" || viewName === "dynamics") {
+    loadWorkoutHistory();
+  }
+
+  if (viewName === "calculator") {
+    initCalculator();
+  }
+
+  if (viewName === "profile") {
+    if (currentSession?.user) {
+      ensureUserProfile(currentSession.user);
+    } else {
+      openAuthModal();
+      return;
+    }
+  }
+
+  setMobileSidebar(false);
+}
+
+document.querySelectorAll("[data-view-target]").forEach(button => {
+  button.addEventListener("click", () => navigateToView(button.dataset.viewTarget));
+});
+
+function initializeRoute() {
+  const workoutId = currentRouteWorkoutId();
+  if (workoutId) {
+    setActiveView("analysis", { updateRoute: false });
+    window.__runoryPendingWorkoutId = workoutId;
+    return;
+  }
+  const path = window.location.pathname.replace(/\/$/, "") || "/";
+  const view = path === "/workouts" ? "history" : path === "/progress" ? "dynamics" : path === "/account" ? "profile" : path === "/calculator" ? "calculator" : "home";
+  setActiveView(view, { updateRoute: false });
+}
+
+window.addEventListener("popstate", () => initializeRoute());
+
+const sidebarProfileButton = document.querySelector("#sidebarProfileButton");
+const accountSidebar = document.querySelector("#accountSidebar");
+const accountSidebarToggle = document.querySelector("#accountSidebarToggle");
+const sidebarMobileToggle = document.querySelector("#sidebarMobileToggle");
+const sidebarMobileBackdrop = document.querySelector("#sidebarMobileBackdrop");
+
+function openProfileView() {
+  if (!currentSession?.user) {
+    openAuthModal();
+    return;
+  }
+  setActiveView("profile");
+}
+
+sidebarProfileButton?.addEventListener("click", openProfileView);
+
+// Sidebar starts collapsed by default. It opens only when the user clicks the arrow.
+accountSidebar?.classList.add("is-collapsed");
+
+function updateSidebarToggle() {
+  const collapsed = accountSidebar?.classList.contains("is-collapsed");
+  if (accountSidebarToggle) {
+    accountSidebarToggle.setAttribute("aria-expanded", String(!collapsed));
+    accountSidebarToggle.setAttribute("aria-label", collapsed ? "Розгорнути меню" : "Згорнути меню");
+    accountSidebarToggle.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 5-7 7 7 7"></path></svg>`;
+  }
+}
+
+accountSidebarToggle?.addEventListener("click", () => {
+  accountSidebar?.classList.toggle("is-collapsed");
+  updateSidebarToggle();
+});
+updateSidebarToggle();
+
+function setMobileSidebar(open) {
+  accountSidebar?.classList.toggle("is-open", open);
+  sidebarMobileBackdrop?.classList.toggle("is-visible", open);
+  sidebarMobileToggle?.setAttribute("aria-expanded", String(open));
+  sidebarMobileToggle?.setAttribute("aria-label", open ? "Закрити меню" : "Відкрити меню");
+}
+
+sidebarMobileToggle?.addEventListener("click", () => {
+  setMobileSidebar(!accountSidebar?.classList.contains("is-open"));
+});
+sidebarMobileBackdrop?.addEventListener("click", () => setMobileSidebar(false));
+document.querySelectorAll(".account-sidebar-link").forEach(link => {
+  link.addEventListener("click", () => setMobileSidebar(false));
+});
+
+
+function formatMetric(value) {
+  const stringValue = String(value ?? "—");
+  const index = stringValue.search(/[.:]/);
+  return index === -1
+    ? stringValue
+    : `${stringValue.slice(0, index)}<span>${stringValue.slice(index)}</span>`;
+}
+
+function paceToSeconds(pace) {
+  if (!pace || typeof pace !== "string") return null;
+  const parts = pace.split(":").map(Number);
+  if (parts.length !== 2 || parts.some(v => !Number.isFinite(v))) return null;
+  return parts[0] * 60 + parts[1];
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function capitalizeSentences(text) {
+  return String(text ?? "").replace(/([.!?…])([\s]+)([a-zа-яіїєґ])/g, (match, punctuation, space, letter) =>
+    `${punctuation}${space}${letter.toUpperCase()}`
+  );
+}
+
+function formatInlineMarkdown(text) {
+  return escapeHtml(capitalizeSentences(text))
+    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+    .replace(/`([^`]+)`/g, '<span class="ai-code">$1</span>');
+}
+
+function splitAiSections(text) {
+  const normalized = String(text ?? "")
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .trim();
+
+  const matches = [...normalized.matchAll(/(?:^|\n)\s*(?:#{1,6}\s*)?(\d+)\.\s+([^\n]+)\s*/g)];
+
+  if (!matches.length) {
+    return [{ number: 0, title: t("aiFallbackTitle"), body: normalized }];
+  }
+
+  return matches.map((match, index) => {
+    const bodyStart = match.index + match[0].length;
+    const bodyEnd = index + 1 < matches.length ? matches[index + 1].index : normalized.length;
+    return {
+      number: Number(match[1]),
+      title: match[2].trim(),
+      body: normalized.slice(bodyStart, bodyEnd).trim()
+    };
+  });
+}
+
+function extractScore(title, body) {
+  const source = `${title} ${body}`;
+  const match = source.match(/(?:оцінка|оценка|score)\s*[—:-]?\s*(\d+(?:[.,]\d+)?)\s*\/\s*10/i)
+    || source.match(/(\d+(?:[.,]\d+)?)\s*\/\s*10/);
+  if (!match) return null;
+  const score = Number(String(match[1]).replace(",", "."));
+  return Number.isFinite(score) ? Math.max(0, Math.min(10, score)) : null;
+}
+
+function cleanSectionTitle(title) {
+  return String(title ?? "")
+    .replace(/^#{1,6}\s*/, "")
+    .replace(/^\d+\.\s*/, "")
+    .replace(/\s*[—:-]\s*\d+(?:[.,]\d+)?\s*\/\s*10\s*$/i, "")
+    .trim();
+}
+
+function parseBodyBlocks(body) {
+  const lines = String(body ?? "")
+    .split("\n")
+    .map(line => line.trim())
+    .filter(Boolean);
+
+  const blocks = [];
+  let list = [];
+
+  const flushList = () => {
+    if (!list.length) return;
+    blocks.push({ type: "list", items: list });
+    list = [];
+  };
+
+  for (const line of lines) {
+    const subheading = line.match(/^#{1,6}\s+(.+)$/);
+    if (subheading) {
+      flushList();
+      blocks.push({ type: "heading", text: subheading[1].trim() });
+      continue;
+    }
+
+    if (/^(?:[-*•]|\d+[.)])\s+/.test(line)) {
+      list.push(line.replace(/^(?:[-*•]|\d+[.)])\s+/, "").trim());
+      continue;
+    }
+
+    flushList();
+    blocks.push({ type: "paragraph", text: line });
+  }
+
+  flushList();
+  return blocks;
+}
+
+function renderAiBlocks(body, options = {}) {
+  const blocks = parseBodyBlocks(body);
+  return blocks.map(block => {
+    if (block.type === "heading") {
+      return `<h5>${formatInlineMarkdown(block.text)}</h5>`;
+    }
+    if (block.type === "list") {
+      const items = block.items.map(item => `
+        <li><span class="ai-list-icon" aria-hidden="true">${options.icon || "✓"}</span><span>${formatInlineMarkdown(item)}</span></li>
+      `).join("");
+      return `<ul class="ai-list">${items}</ul>`;
+    }
+    return `<p>${formatInlineMarkdown(block.text)}</p>`;
+  }).join("");
+}
+
+function renderAiAnalysis(text) {
+  const sections = splitAiSections(text);
+  const scoreSection = sections.find(section => section.number === 1) || sections[0];
+  const score = extractScore(scoreSection?.title, scoreSection?.body);
+  const parts = [];
+
+  if (score != null) {
+    const scoreLabel = score >= 8.5
+      ? t("aiScoreExcellent")
+      : score >= 7
+        ? t("aiScoreStrong")
+        : score >= 5
+          ? t("aiScoreImprove")
+          : t("aiScoreCautious");
+
+    parts.push(`
+      <div class="ai-score-card">
+        <div class="ai-score-ring" style="--score:${score * 36}deg" aria-label="${t("ariaScore", { score })}">
+          <strong>${String(score).replace(".", ",")}</strong><span>/10</span>
+        </div>
+        <div class="ai-score-copy">
+          <p class="eyebrow">${t("aiScoreEyebrow")}</p>
+          <h4>${escapeHtml(scoreLabel)}</h4>
+          <p>${t("aiScoreDescription")}</p>
+        </div>
+      </div>
+    `);
+  }
+
+  for (const section of sections) {
+    const title = cleanSectionTitle(section.title);
+    const body = section.body;
+    if (!body && section.number !== 1) continue;
+    if (section.number === 1) continue;
+
+    if (section.number === 3) {
+      parts.push(`
+        <details class="ai-accordion">
+          <summary>
+            <span><strong>${formatInlineMarkdown(title)}</strong></span>
+            <span class="ai-accordion-toggle" aria-hidden="true">+</span>
+          </summary>
+          <div class="ai-accordion-body">${renderAiBlocks(body)}</div>
+        </details>
+      `);
+      continue;
+    }
+
+    const variant = section.number === 5
+      ? " is-positive"
+      : section.number === 6
+        ? " is-warning"
+        : section.number === 8
+          ? " is-recovery"
+          : section.number === 9
+            ? " is-conclusion"
+            : "";
+    const icon = section.number === 5
+      ? "✓"
+      : section.number === 6
+        ? "!"
+        : section.number === 9
+          ? "→"
+          : "";
+
+    parts.push(`
+      <article class="ai-section${variant}">
+        <div class="ai-section-heading">
+          <div class="ai-section-title-wrap">
+            <h4>${formatInlineMarkdown(title)}</h4>
+          </div>
+          ${icon ? `<span class="ai-section-icon" aria-hidden="true">${icon}</span>` : ""}
+        </div>
+        <div class="ai-section-body">${renderAiBlocks(body, { icon: section.number === 5 ? "✓" : section.number === 6 ? "!" : "•" })}</div>
+      </article>
+    `);
+  }
+
+  return parts.join("");
+}
+
+function getWorkoutPattern(summary) {
+  const distance = Number(summary?.distance);
+  const splits = Array.isArray(summary?.splits) ? summary.splits : [];
+  const paces = splits
+    .map(s => paceToSeconds(s.pace))
+    .filter(Number.isFinite);
+
+  const structure = Array.isArray(summary?.structure) ? summary.structure : [];
+  const intervalIndex = structure.findIndex(block =>
+    block?.type === "intervals"
+    && Array.isArray(block.repetitions)
+    && block.repetitions.length > 0
+  );
+
+  const hasIntervals = intervalIndex >= 0;
+
+  /*
+   * A long run with a fast block at the end is still primarily a long run.
+   * Examples: 15–18 km easy + 3×3 km / 4×2 km with 1 km recoveries.
+   *
+   * Do not classify every long interval session this way. We require a
+   * substantial continuous running volume before the interval block: at least
+   * 12 km and at least ~45% of the whole activity. This keeps workouts such as
+   * 2 km warm-up + 5×2 km as interval sessions.
+   */
+  if (hasIntervals) {
+    const beforeInterval = structure.slice(0, intervalIndex);
+    const preWorkDistance = beforeInterval.reduce((sum, block) => {
+      if (!block || block.type === "intervals" || block.type === "recovery") return sum;
+      return sum + (Number(block.distance) || 0);
+    }, 0) / 1000;
+
+    const isLongWithWork =
+      distance >= 18
+      && preWorkDistance >= 12
+      && preWorkDistance / Math.max(distance, 1) >= 0.45;
+
+    if (isLongWithWork) {
+      return {
+        type: "long",
+        variant: "with_work",
+        preWorkDistance,
+        intervalIndex
+      };
+    }
+
+    return { type: "intervals" };
+  }
+  if (paces.length < 4) {
+    return distance >= 15 ? { type: "long" } : { type: "run" };
+  }
+
+  const sorted = [...paces].sort((a, b) => a - b);
+  const median = sorted.length % 2
+    ? sorted[Math.floor(sorted.length / 2)]
+    : (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2;
+
+  // Fartlek = repeated fast/slow alternation, without a Garmin-defined interval structure.
+  const contrastThreshold = Math.max(20, median * 0.055);
+  const states = paces.map(p => {
+    if (p <= median - contrastThreshold) return "fast";
+    if (p >= median + contrastThreshold) return "slow";
+    return "neutral";
+  });
+
+  let previous = null;
+  let transitions = 0;
+  let fastCount = 0;
+  let slowCount = 0;
+
+  for (const state of states) {
+    if (state === "neutral") continue;
+    if (state === "fast") fastCount++;
+    if (state === "slow") slowCount++;
+    if (previous && state !== previous) transitions++;
+    previous = state;
+  }
+
+  if (transitions >= 5 && fastCount >= 3 && slowCount >= 3) {
+    return { type: "fartlek", states };
+  }
+
+  // Tempo = a sustained faster block between a slower warm-up and cool-down.
+  // Use the outer splits as the baseline so a long tempo block does not distort the median.
+  const edgeCount = Math.max(1, Math.min(2, Math.floor(paces.length / 4)));
+  const edgePaces = [
+    ...paces.slice(0, edgeCount),
+    ...paces.slice(-edgeCount)
+  ];
+  const edgeBaseline = edgePaces.reduce((a, b) => a + b, 0) / edgePaces.length;
+  const fastThreshold = edgeBaseline * 0.94;
+  const fastFlags = paces.map(p => p <= fastThreshold);
+
+  let bestStart = -1;
+  let bestEnd = -1;
+  let i = 0;
+  while (i < fastFlags.length) {
+    if (!fastFlags[i]) { i++; continue; }
+    const startIndex = i;
+    while (i + 1 < fastFlags.length && fastFlags[i + 1]) i++;
+    const endIndex = i;
+    if (endIndex - startIndex + 1 > bestEnd - bestStart + 1) {
+      bestStart = startIndex;
+      bestEnd = endIndex;
+    }
+    i++;
+  }
+
+  if (bestStart >= 0) {
+    const blockLength = bestEnd - bestStart + 1;
+    const blockPaces = paces.slice(bestStart, bestEnd + 1);
+    const blockAverage = blockPaces.reduce((a, b) => a + b, 0) / blockPaces.length;
+    const blockVariation = blockPaces.reduce(
+      (sum, pace) => sum + Math.abs(pace - blockAverage) / blockAverage,
+      0
+    ) / blockPaces.length;
+    const share = blockLength / paces.length;
+    const hasWarmup = bestStart > 0;
+    const hasCooldown = bestEnd < paces.length - 1;
+
+    if (
+      blockLength >= 3
+      && share >= 0.30
+      && hasWarmup
+      && hasCooldown
+      && blockVariation <= 0.055
+    ) {
+      return {
+        type: "tempo",
+        tempoStart: bestStart,
+        tempoEnd: bestEnd
+      };
+    }
+  }
+
+  if (distance >= 15) return { type: "long" };
+  return { type: "run" };
+}
+
+function detectWorkoutType(summary) {
+  const pattern = getWorkoutPattern(summary);
+  if (pattern.type === "intervals") return t("workoutIntervals");
+  if (pattern.type === "fartlek") return t("workoutFartlek");
+  if (pattern.type === "tempo") return t("workoutTempo");
+  if (pattern.type === "long") return t("workoutLong");
+  return t("workoutRun");
+}
+
+function formatInsightPace(seconds) {
+  if (!Number.isFinite(seconds) || seconds <= 0) return "—";
+  const total = Math.round(seconds);
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
+}
+
+function statsPaceSeconds(stats) {
+  const distance = Number(stats?.distance);
+  const duration = Number(stats?.duration);
+  if (!Number.isFinite(distance) || distance <= 0 || !Number.isFinite(duration) || duration <= 0) return null;
+  return duration / (distance / 1000);
+}
+
+function getIntervalAnalysis(summary) {
+  const structure = Array.isArray(summary?.structure) ? summary.structure : [];
+  const block = structure.find(item =>
+    item?.type === "intervals" && Array.isArray(item.repetitions) && item.repetitions.length > 0
+  );
+
+  if (!block) return null;
+
+  const reps = block.repetitions.filter(rep => rep?.work);
+  if (!reps.length) return null;
+
+  const works = reps.map(rep => rep.work).filter(Boolean);
+  const recoveries = reps.map(rep => rep.recovery).filter(Boolean);
+  const workPaces = works.map(statsPaceSeconds).filter(Number.isFinite);
+  const workHr = works.map(item => Number(item.heartRate)).filter(Number.isFinite);
+  const recoveryPaces = recoveries.map(statsPaceSeconds).filter(Number.isFinite);
+  const recoveryDurations = recoveries.map(item => Number(item.duration)).filter(Number.isFinite);
+
+  if (!workPaces.length) return null;
+
+  const average = workPaces.reduce((a, b) => a + b, 0) / workPaces.length;
+  const spread = Math.max(...workPaces) - Math.min(...workPaces);
+  const firstCount = Math.max(1, Math.ceil(workPaces.length / 2));
+  const firstAvg = workPaces.slice(0, firstCount).reduce((a, b) => a + b, 0) / firstCount;
+  const last = workPaces.slice(-firstCount);
+  const lastAvg = last.reduce((a, b) => a + b, 0) / last.length;
+  const delta = firstAvg - lastAvg;
+
+  let dynamics = "even";
+  if (delta > 3) dynamics = "faster";
+  else if (delta < -3) dynamics = "slower";
+
+  let hrTrend = "stable";
+  if (workHr.length >= 2) {
+    const hrDelta = workHr[workHr.length - 1] - workHr[0];
+    if (hrDelta >= 5) hrTrend = "rising";
+    else if (hrDelta <= -5) hrTrend = "falling";
+  }
+
+  let recoveryTrend = "stable";
+  if (recoveryPaces.length >= 2) {
+    const recoverySpread = Math.max(...recoveryPaces) - Math.min(...recoveryPaces);
+    if (recoverySpread > 20) recoveryTrend = "variable";
+  }
+  if (recoveryDurations.length >= 2) {
+    const recoveryDurationSpread = Math.max(...recoveryDurations) - Math.min(...recoveryDurations);
+    if (recoveryDurationSpread > 10) recoveryTrend = "variable";
+  }
+
+  const totalWorkDistance = works.reduce((sum, item) => sum + Number(item.distance || 0), 0);
+
+  return {
+    reps,
+    recoveries,
+    average,
+    spread,
+    dynamics,
+    hrTrend,
+    recoveryTrend,
+    totalWorkDistance
+  };
+}
+
+function generateIntervalInsight(summary) {
+  const analysis = getIntervalAnalysis(summary);
+  if (!analysis) return null;
+
+  const unit = currentLanguage === "uk" ? "км" : "km";
+  const bpm = currentLanguage === "uk" ? "уд/хв" : "bpm";
+  const repsLabel = analysis.reps.length;
+  const firstWorkDistance = Number(analysis.reps[0]?.work?.distance || 0);
+  const repDistanceKm = firstWorkDistance / 1000;
+  const repDistanceLabel = Number.isInteger(repDistanceKm)
+    ? String(repDistanceKm)
+    : repDistanceKm.toFixed(1).replace(".", currentLanguage === "uk" ? "," : ".");
+  const workDistanceKm = analysis.totalWorkDistance / 1000;
+  const workDistanceLabel = Number.isInteger(workDistanceKm)
+    ? String(workDistanceKm)
+    : workDistanceKm.toFixed(1).replace(".", currentLanguage === "uk" ? "," : ".");
+  const pace = formatInsightPace(analysis.average);
+  const spread = Math.round(analysis.spread);
+
+  if (currentLanguage === "uk") {
+    const parts = [
+      `Інтервальна · ${repsLabel}×${repDistanceLabel} км`,
+      `середній темп роботи — ${pace}/км`,
+      `розкид темпу — ${spread} с/км`
+    ];
+
+    if (analysis.dynamics === "faster") parts.push("останні повторення швидші за перші");
+    else if (analysis.dynamics === "slower") parts.push("останні повторення повільніші за перші");
+    else parts.push("темп залишався стабільним");
+
+    if (analysis.hrTrend === "rising") parts.push(`ЧСС поступово зростала від першого до останнього повторення${workHrText(summary, bpm)}`);
+    else if (analysis.hrTrend === "falling") parts.push("ЧСС знижувалась до кінця серії");
+    else if (analysis.hrTrend === "stable") parts.push("ЧСС залишалась стабільною");
+
+    if (analysis.recoveries.length) {
+      parts.push(analysis.recoveryTrend === "variable"
+        ? "відновлення були нерівномірними"
+        : "відновлення залишались стабільними");
+    }
+
+    let conclusion;
+    if (analysis.dynamics === "slower" && analysis.spread > 10) {
+      conclusion = "До кінця серії темп помітно просів — навантаження було високим.";
+    } else if (analysis.dynamics === "slower") {
+      conclusion = "Наприкінці серії помітне невелике просідання темпу.";
+    } else if (analysis.recoveryTrend === "variable") {
+      conclusion = "Основна робота була виконана рівно, але відновлення були нестабільними.";
+    } else if (analysis.dynamics === "faster" && analysis.spread <= 8) {
+      conclusion = "Серію виконано рівно, з хорошим прискоренням наприкінці.";
+    } else if (analysis.spread > 12) {
+      conclusion = "Темп помітно коливався між повтореннями — робота була нерівномірною.";
+    } else {
+      conclusion = "Роботу виконано контрольовано.";
+    }
+
+    parts.push(`загальний обсяг швидкої роботи — ${workDistanceLabel} ${unit}`);
+    return `${parts.join(" · ")}. ${conclusion.replace("Робота виконана", "Роботу виконано")}`;
+  }
+
+  const parts = [
+    `Intervals · ${repsLabel} reps`,
+    `average work pace ${pace}/km`,
+    `spread ${spread} sec/km`
+  ];
+
+  if (analysis.dynamics === "faster") parts.push("the last reps were faster than the first");
+  else if (analysis.dynamics === "slower") parts.push("the last reps were slower than the first");
+  else parts.push("work pace stayed even");
+
+  if (analysis.hrTrend === "rising") parts.push(`HR rose from the first to the last rep`);
+  else if (analysis.hrTrend === "falling") parts.push("HR decreased toward the end");
+  else if (analysis.hrTrend === "stable") parts.push("HR stayed stable");
+
+  if (analysis.recoveries.length) {
+    parts.push(analysis.recoveryTrend === "variable" ? "recoveries were variable" : "recoveries stayed stable");
+  }
+
+  let conclusion;
+  if (analysis.dynamics === "slower" && analysis.spread > 10) {
+    conclusion = "The pace dropped noticeably toward the end — the load was high.";
+  } else if (analysis.dynamics === "slower") {
+    conclusion = "There was a small pace drop toward the end of the set.";
+  } else if (analysis.recoveryTrend === "variable") {
+    conclusion = "The main work was even, but recoveries were inconsistent.";
+  } else if (analysis.dynamics === "faster" && analysis.spread <= 8) {
+    conclusion = "The set was even, with a strong acceleration at the end.";
+  } else if (analysis.spread > 12) {
+    conclusion = "Pace varied noticeably between reps — the work was uneven.";
+  } else {
+    conclusion = "The work was controlled.";
+  }
+
+  parts.push(`total fast-work volume ${workDistanceLabel} ${unit}`);
+  return `${parts.join(" · ")}. ${conclusion}`;
+}
+
+function generateTempoInsight(summary) {
+  const pattern = getWorkoutPattern(summary);
+  if (pattern.type !== "tempo") return null;
+
+  const splits = Array.isArray(summary?.splits) ? summary.splits : [];
+  const start = Number(pattern.tempoStart);
+  const end = Number(pattern.tempoEnd);
+  if (!Number.isInteger(start) || !Number.isInteger(end) || end < start) return null;
+
+  const tempoSplits = splits.slice(start, end + 1);
+  const paces = tempoSplits.map(split => paceToSeconds(split.pace)).filter(Number.isFinite);
+  if (paces.length < 3) return null;
+
+  const average = paces.reduce((sum, pace) => sum + pace, 0) / paces.length;
+  const spread = Math.max(...paces) - Math.min(...paces);
+  const firstCount = Math.max(1, Math.floor(paces.length / 3));
+  const lastCount = Math.max(1, Math.floor(paces.length / 3));
+  const firstAvg = paces.slice(0, firstCount).reduce((sum, pace) => sum + pace, 0) / firstCount;
+  const lastAvg = paces.slice(-lastCount).reduce((sum, pace) => sum + pace, 0) / lastCount;
+  const paceDelta = firstAvg - lastAvg;
+
+  const hrValues = tempoSplits.map(split => Number(split.heartRate)).filter(value => Number.isFinite(value) && value > 0);
+  let hrTrend = "unknown";
+  let hrDelta = null;
+  if (hrValues.length >= 3) {
+    const hrFirstCount = Math.max(1, Math.floor(hrValues.length / 3));
+    const hrLastCount = Math.max(1, Math.floor(hrValues.length / 3));
+    const hrFirst = hrValues.slice(0, hrFirstCount).reduce((sum, value) => sum + value, 0) / hrFirstCount;
+    const hrLast = hrValues.slice(-hrLastCount).reduce((sum, value) => sum + value, 0) / hrLastCount;
+    hrDelta = hrLast - hrFirst;
+    hrTrend = hrDelta >= 5 ? "rising" : hrDelta <= -5 ? "falling" : "stable";
+  }
+
+  let dynamics = "stable";
+  if (paceDelta > 5) dynamics = "faster";
+  else if (paceDelta < -5) dynamics = "slower";
+
+  const distanceKm = tempoSplits.reduce((sum, split) => {
+    const km = Number(split?.km);
+    return sum + (Number.isFinite(km) ? 1 : 0);
+  }, 0);
+  const volumeLabel = distanceKm > 0
+    ? `${Number.isInteger(distanceKm) ? distanceKm : distanceKm.toFixed(1).replace(".", currentLanguage === "uk" ? "," : ".")} км`
+    : `${paces.length} км`;
+
+  const paceLabel = formatInsightPace(average);
+  const spreadLabel = Math.round(spread);
+
+  if (currentLanguage === "uk") {
+    const parts = [
+      `Темпове · ${volumeLabel}`,
+      `середній темп — ${paceLabel}/км`,
+      `розкид темпу — ${spreadLabel} с/км`
+    ];
+
+    if (dynamics === "faster") parts.push("до кінця темп поступово прискорювався");
+    else if (dynamics === "slower") parts.push("до кінця темп поступово сповільнювався");
+    else parts.push("темп залишався стабільним");
+
+    if (hrTrend === "rising") parts.push("ЧСС поступово зростала");
+    else if (hrTrend === "falling") parts.push("ЧСС поступово знижувалась");
+    else if (hrTrend === "stable") parts.push("ЧСС залишалась стабільною");
+
+    let conclusion;
+    if (dynamics === "slower" && spread > 10) {
+      conclusion = "До кінця темп помітно просів — навантаження було високим.";
+    } else if (dynamics === "slower") {
+      conclusion = "Наприкінці роботи помітне невелике просідання темпу.";
+    } else if (spread > 12) {
+      conclusion = "Темп помітно коливався — робота була нерівномірною.";
+    } else if (dynamics === "faster" && spread <= 8) {
+      conclusion = "Темп добре контролювався, із сильним фінішем.";
+    } else if (hrDelta !== null && hrDelta >= 10 && dynamics !== "faster") {
+      conclusion = "ЧСС помітно зросла без відповідного прискорення темпу — наприкінці накопичувалась втома.";
+    } else {
+      conclusion = "Темпову роботу виконано контрольовано.";
+    }
+
+    return `${parts.join(" · ")}. ${conclusion}`;
+  }
+
+  const parts = [
+    `Tempo · ${volumeLabel}`,
+    `average pace ${paceLabel}/km`,
+    `pace spread ${spreadLabel} sec/km`
+  ];
+
+  if (dynamics === "faster") parts.push("pace gradually increased toward the end");
+  else if (dynamics === "slower") parts.push("pace gradually decreased toward the end");
+  else parts.push("pace stayed stable");
+
+  if (hrTrend === "rising") parts.push("HR gradually rose");
+  else if (hrTrend === "falling") parts.push("HR gradually decreased");
+  else if (hrTrend === "stable") parts.push("HR stayed stable");
+
+  let conclusion;
+  if (dynamics === "slower" && spread > 10) conclusion = "The pace dropped noticeably toward the end — the load was high.";
+  else if (dynamics === "slower") conclusion = "There was a small pace drop toward the end.";
+  else if (spread > 12) conclusion = "Pace varied noticeably — the work was uneven.";
+  else if (dynamics === "faster" && spread <= 8) conclusion = "Pace was well controlled, with a strong finish.";
+  else if (hrDelta !== null && hrDelta >= 10 && dynamics !== "faster") conclusion = "HR rose noticeably without a matching pace increase — fatigue accumulated toward the end.";
+  else conclusion = "The tempo work was controlled.";
+
+  return `${parts.join(" · ")}. ${conclusion}`;
+}
+
+function generateEasyRunInsight(summary) {
+  const pattern = getWorkoutPattern(summary);
+  if (pattern.type !== "run") return null;
+
+  const splits = Array.isArray(summary?.splits) ? summary.splits : [];
+  const valid = splits
+    .map(split => ({
+      pace: paceToSeconds(split?.pace),
+      hr: Number(split?.heartRate)
+    }))
+    .filter(item => Number.isFinite(item.pace));
+
+  if (valid.length < 4) return null;
+
+  const half = Math.floor(valid.length / 2);
+  const first = valid.slice(0, half);
+  const second = valid.slice(-half);
+  const avg = items => items.reduce((sum, item) => sum + item.pace, 0) / items.length;
+  const avgHr = items => {
+    const values = items.map(item => item.hr).filter(value => Number.isFinite(value) && value > 0);
+    return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null;
+  };
+
+  const firstPace = avg(first);
+  const secondPace = avg(second);
+  const paceDelta = firstPace - secondPace; // positive = faster later
+  const firstHr = avgHr(first);
+  const secondHr = avgHr(second);
+  const hrDelta = firstHr != null && secondHr != null ? secondHr - firstHr : null;
+
+  const paceValues = valid.map(item => item.pace);
+  const paceSpread = Math.max(...paceValues) - Math.min(...paceValues);
+
+  // Cardiac drift is most meaningful when pace stays broadly similar while HR rises.
+  const similarPace = Math.abs(paceDelta) <= 10;
+  const cardiacDrift = similarPace && hrDelta != null && hrDelta >= 5;
+  const highDrift = similarPace && hrDelta != null && hrDelta >= 10;
+  const paceDrop = paceDelta <= -10;
+  const paceDropStrong = paceDelta <= -20;
+  const acceleration = paceDelta >= 10;
+  const unstable = paceSpread > 25;
+
+  const volumeKm = Number(summary?.distance);
+  const volumeLabel = Number.isFinite(volumeKm) && volumeKm > 0
+    ? `${String(Number(volumeKm.toFixed(1))).replace(".", currentLanguage === "uk" ? "," : ".")} км`
+    : `${valid.length} км`;
+
+  if (currentLanguage === "uk") {
+    const parts = [`Легкий біг · ${volumeLabel}`];
+
+    if (summary?.pace) parts.push(`середній темп — ${summary.pace}/км`);
+
+    if (unstable) parts.push("темп помітно коливався протягом тренування");
+    else if (acceleration) parts.push("у другій половині темп став швидшим");
+    else if (paceDropStrong) parts.push("у другій половині темп помітно сповільнився");
+    else if (paceDrop) parts.push("у другій половині темп трохи сповільнився");
+    else parts.push("темп залишався стабільним");
+
+    if (highDrift) parts.push(`ЧСС зросла приблизно на ${Math.round(hrDelta)} уд/хв при схожому темпі`);
+    else if (cardiacDrift) parts.push(`ЧСС зросла приблизно на ${Math.round(hrDelta)} уд/хв при схожому темпі`);
+    else if (hrDelta != null && hrDelta <= -5) parts.push("ЧСС знижувалась у другій половині");
+    else if (hrDelta != null) parts.push("ЧСС залишалась відносно стабільною");
+
+    let conclusion;
+    if (paceDropStrong && highDrift) {
+      conclusion = "У другій половині одночасно знизився темп і зросла ЧСС — наприкінці тренування помітна втома.";
+    } else if (highDrift) {
+      conclusion = "Помітний кардіодрифт: ЧСС зростала без відповідного прискорення темпу.";
+    } else if (cardiacDrift) {
+      conclusion = "Є помірний кардіодрифт — ЧСС зростала при приблизно незмінному темпі.";
+    } else if (paceDropStrong) {
+      conclusion = "Наприкінці тренування темп помітно просів.";
+    } else if (unstable) {
+      conclusion = "Для легкого бігу темп був нерівномірним.";
+    } else if (acceleration) {
+      conclusion = "Тренування завершено швидше, ніж розпочато, без помітної втрати контролю.";
+    } else if (paceDrop) {
+      conclusion = "Невелике уповільнення наприкінці тренування є помітним, але без різкого просідання.";
+    } else {
+      // V8: кілька природних формулювань для справді рівного легкого бігу.
+      // Вибір детермінований даними тренування, тому текст не змінюється випадково
+      // після перезавантаження, але однакові тренування не звучать як копіпаст.
+      const variationKey = Math.round((volumeKm || valid.length) * 10) + Math.round(firstPace) + Math.round(firstHr || 0);
+      const stableConclusions = [
+        "Легкий біг виконано рівномірно, без помітного кардіодрифту.",
+        "Темп і ЧСС залишалися стабільними протягом тренування — біг пройдено рівно.",
+        "Навантаження залишалося контрольованим: темп не просідав, а ЧСС істотно не зростала.",
+        "Рівномірний легкий біг: темп стабільний, реакція ЧСС без помітних змін.",
+        "Тренування пройдено спокійно й рівно, без ознак помітного кардіодрифту."
+      ];
+      conclusion = stableConclusions[Math.abs(variationKey) % stableConclusions.length];
+    }
+
+    parts.push(conclusion);
+    return `${parts.join(" · ")}.`;
+  }
+
+  const parts = [`Easy run · ${volumeLabel}`];
+  if (summary?.pace) parts.push(`average pace ${summary.pace}/km`);
+  if (unstable) parts.push("pace varied noticeably throughout the run");
+  else if (acceleration) parts.push("pace was faster in the second half");
+  else if (paceDropStrong) parts.push("pace slowed noticeably in the second half");
+  else if (paceDrop) parts.push("pace slowed slightly in the second half");
+  else parts.push("pace stayed stable");
+
+  if (hrDelta != null && hrDelta >= 5) parts.push(`HR rose by about ${Math.round(hrDelta)} bpm at a similar pace`);
+  else if (hrDelta != null && hrDelta <= -5) parts.push("HR decreased in the second half");
+  else if (hrDelta != null) parts.push("HR stayed relatively stable");
+
+  let conclusion;
+  if (paceDropStrong && highDrift) conclusion = "Pace fell while HR rose toward the end — fatigue was noticeable.";
+  else if (highDrift) conclusion = "Noticeable cardiac drift: HR rose without a matching pace increase.";
+  else if (cardiacDrift) conclusion = "Moderate cardiac drift was present.";
+  else if (paceDropStrong) conclusion = "Pace dropped noticeably toward the end.";
+  else if (unstable) conclusion = "Pace was uneven for an easy run.";
+  else if (acceleration) conclusion = "The run finished faster than it started, without a clear loss of control.";
+  else if (paceDrop) conclusion = "There was a small pace drop toward the end, without a major slowdown.";
+  else conclusion = "The easy run was even, with no clear cardiac drift.";
+
+  parts.push(conclusion);
+  return `${parts.join(" · ")}.`;
+}
+
+
+function generateLongRunInsight(summary) {
+  const pattern = getWorkoutPattern(summary);
+  if (pattern.type !== "long") return null;
+
+  const isLongWithWork = pattern.variant === "with_work";
+  const splits = Array.isArray(summary?.splits) ? summary.splits : [];
+  const valid = splits
+    .map(split => ({
+      pace: paceToSeconds(split?.pace),
+      hr: Number(split?.heartRate)
+    }))
+    .filter(item => Number.isFinite(item.pace));
+
+  if (valid.length < 6) return null;
+
+  const half = Math.floor(valid.length / 2);
+  const first = valid.slice(0, half);
+  const second = valid.slice(-half);
+  const avg = items => items.length
+    ? items.reduce((sum, item) => sum + item.pace, 0) / items.length
+    : null;
+  const avgHr = items => {
+    const values = items.map(item => item.hr).filter(value => Number.isFinite(value) && value > 0);
+    return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null;
+  };
+
+  const firstPace = avg(first);
+  const secondPace = avg(second);
+  const paceDelta = firstPace - secondPace; // positive = faster later
+  const firstHr = avgHr(first);
+  const secondHr = avgHr(second);
+  const hrDelta = firstHr != null && secondHr != null ? secondHr - firstHr : null;
+
+  const paces = valid.map(item => item.pace);
+  const paceSpread = Math.max(...paces) - Math.min(...paces);
+  const similarPace = Math.abs(paceDelta) <= 12;
+  const moderateDrift = similarPace && hrDelta != null && hrDelta >= 5;
+  const strongDrift = similarPace && hrDelta != null && hrDelta >= 10;
+  const slowdown = paceDelta <= -10;
+  const strongSlowdown = paceDelta <= -20;
+  const finishFaster = paceDelta >= 10;
+  const uneven = paceSpread > 30;
+
+  const volumeKm = Number(summary?.distance);
+  const volumeLabel = Number.isFinite(volumeKm) && volumeKm > 0
+    ? `${String(Number(volumeKm.toFixed(1))).replace(".", currentLanguage === "uk" ? "," : ".")} км`
+    : `${valid.length} км`;
+
+  if (currentLanguage === "uk") {
+    const parts = [isLongWithWork ? `Довгий біг із роботою в кінці · ${volumeLabel}` : `Довгий біг · ${volumeLabel}`];
+    if (summary?.pace) parts.push(`середній темп — ${summary.pace}/км`);
+
+    if (uneven) parts.push("темп помітно коливався протягом дистанції");
+    else if (finishFaster) parts.push("у другій половині темп став швидшим");
+    else if (strongSlowdown) parts.push("у другій половині темп помітно сповільнився");
+    else if (slowdown) parts.push("у другій половині темп трохи сповільнився");
+    else parts.push("темп залишався стабільним протягом дистанції");
+
+    if (strongDrift) parts.push(`ЧСС зросла приблизно на ${Math.round(hrDelta)} уд/хв при схожому темпі`);
+    else if (moderateDrift) parts.push(`ЧСС зросла приблизно на ${Math.round(hrDelta)} уд/хв при схожому темпі`);
+    else if (hrDelta != null && hrDelta <= -5) parts.push("ЧСС знижувалась у другій половині");
+    else if (hrDelta != null) parts.push("ЧСС залишалась відносно стабільною");
+
+    let conclusion;
+    if (strongSlowdown && strongDrift) {
+      conclusion = "Наприкінці одночасно просів темп і зросла ЧСС — накопичення втоми було помітним.";
+    } else if (strongDrift) {
+      conclusion = "Помітний кардіодрифт: ЧСС зростала без відповідного прискорення темпу.";
+    } else if (moderateDrift) {
+      conclusion = "Є помірний кардіодрифт — для довгого бігу варто стежити за реакцією ЧСС у другій половині.";
+    } else if (strongSlowdown) {
+      conclusion = "У другій половині дистанції темп помітно просів — втома вже вплинула на виконання.";
+    } else if (slowdown) {
+      conclusion = "Невелике уповільнення в другій половині помітне, але без різкого просідання.";
+    } else if (uneven) {
+      conclusion = "Темп був нерівномірним протягом дистанції — довгий біг виконано без чіткої рівномірності.";
+    } else if (finishFaster) {
+      conclusion = "Дистанцію завершено швидше, ніж розпочато, без помітної втрати контролю.";
+    } else {
+      const variationKey = Math.round((volumeKm || valid.length) * 10) + Math.round(firstPace) + Math.round(firstHr || 0);
+      const stableConclusions = [
+        "Дистанцію пройдено рівномірно, без помітного кардіодрифту.",
+        "Темп і ЧСС залишалися стабільними — довгий біг виконано контрольовано.",
+        "Основна частина дистанції пройшла рівно, без вираженої зміни темпу чи ЧСС.",
+        "Рівномірний довгий біг: темп стабільний, реакція ЧСС без помітного погіршення.",
+        "Довгий біг виконано спокійно й рівно, без явних ознак накопичення втоми."
+      ];
+      conclusion = stableConclusions[Math.abs(variationKey) % stableConclusions.length];
+    }
+
+    parts.push(conclusion);
+    return `${parts.join(" · ")}.`;
+  }
+
+  const parts = [`Long run · ${volumeLabel}`];
+  if (summary?.pace) parts.push(`average pace ${summary.pace}/km`);
+  if (uneven) parts.push("pace varied noticeably throughout the distance");
+  else if (finishFaster) parts.push("pace was faster in the second half");
+  else if (strongSlowdown) parts.push("pace slowed noticeably in the second half");
+  else if (slowdown) parts.push("pace slowed slightly in the second half");
+  else parts.push("pace stayed stable throughout the distance");
+
+  if (hrDelta != null && hrDelta >= 5) parts.push(`HR rose by about ${Math.round(hrDelta)} bpm at a similar pace`);
+  else if (hrDelta != null && hrDelta <= -5) parts.push("HR decreased in the second half");
+  else if (hrDelta != null) parts.push("HR stayed relatively stable");
+
+  let conclusion;
+  if (strongSlowdown && strongDrift) conclusion = "Pace fell while HR rose toward the end — fatigue was noticeable.";
+  else if (strongDrift) conclusion = "Noticeable cardiac drift: HR rose without a matching pace increase.";
+  else if (moderateDrift) conclusion = "Moderate cardiac drift was present in the second half.";
+  else if (strongSlowdown) conclusion = "Pace dropped noticeably in the second half.";
+  else if (slowdown) conclusion = "There was a small pace drop in the second half, without a major slowdown.";
+  else if (uneven) conclusion = "Pace was uneven throughout the long run.";
+  else if (finishFaster) conclusion = "The run finished faster than it started, without a clear loss of control.";
+  else conclusion = "The long run was even, with no clear cardiac drift.";
+
+  parts.push(conclusion);
+  return `${parts.join(" · ")}.`;
+}
+
+function generateFartlekInsight(summary) {
+  const pattern = getWorkoutPattern(summary);
+  if (pattern.type !== "fartlek") return null;
+
+  const splits = Array.isArray(summary?.splits) ? summary.splits : [];
+  const items = splits.map((split, index) => ({
+    index,
+    pace: paceToSeconds(split?.pace),
+    hr: Number(split?.heartRate),
+    state: pattern.states?.[index] || "neutral"
+  })).filter(item => Number.isFinite(item.pace));
+
+  const fast = items.filter(item => item.state === "fast");
+  const slow = items.filter(item => item.state === "slow");
+  if (fast.length < 3 || slow.length < 2) return null;
+
+  const avg = values => values.length
+    ? values.reduce((sum, value) => sum + value, 0) / values.length
+    : null;
+
+  const fastPaces = fast.map(item => item.pace);
+  const fastAverage = avg(fastPaces);
+  const fastSpread = Math.max(...fastPaces) - Math.min(...fastPaces);
+
+  const firstFast = fast.slice(0, Math.max(1, Math.floor(fast.length / 3)));
+  const lastFast = fast.slice(-Math.max(1, Math.floor(fast.length / 3)));
+  const firstFastPace = avg(firstFast.map(item => item.pace));
+  const lastFastPace = avg(lastFast.map(item => item.pace));
+  const paceDelta = firstFastPace - lastFastPace;
+
+  const firstFastHr = avg(firstFast.map(item => item.hr).filter(value => Number.isFinite(value) && value > 0));
+  const lastFastHr = avg(lastFast.map(item => item.hr).filter(value => Number.isFinite(value) && value > 0));
+  const hrDelta = firstFastHr != null && lastFastHr != null ? lastFastHr - firstFastHr : null;
+
+  const recoveryPaces = slow.map(item => item.pace);
+  const recoverySpread = Math.max(...recoveryPaces) - Math.min(...recoveryPaces);
+
+  const fastDistanceKm = fast.length;
+  const volumeKm = Number(summary?.distance);
+  const volumeLabel = Number.isFinite(volumeKm) && volumeKm > 0
+    ? `${String(Number(volumeKm.toFixed(1))).replace(".", currentLanguage === "uk" ? "," : ".")} км`
+    : `${items.length} км`;
+
+  let dynamics = "stable";
+  if (paceDelta > 8) dynamics = "faster";
+  else if (paceDelta < -8) dynamics = "slower";
+
+  const unstable = fastSpread > 18;
+  const recoveryVariable = recoverySpread > 25;
+  const strongFatigue = dynamics === "slower" && hrDelta != null && hrDelta >= 8;
+  const moderateFatigue = dynamics === "slower" || (hrDelta != null && hrDelta >= 10 && dynamics !== "faster");
+
+  if (currentLanguage === "uk") {
+    const parts = [
+      `Фартлек · ${volumeLabel}`,
+      `${fast.length} прискорень`,
+      `середній темп швидких відрізків — ${formatInsightPace(fastAverage)}/км`,
+      `розкид — ${Math.round(fastSpread)} с/км`
+    ];
+
+    if (dynamics === "faster") parts.push("швидкі відрізки до кінця ставали швидшими");
+    else if (dynamics === "slower") parts.push("швидкі відрізки до кінця сповільнювалися");
+    else parts.push("темп швидких відрізків залишався відносно стабільним");
+
+    if (hrDelta != null && hrDelta >= 5) parts.push(`ЧСС на швидких відрізках зросла приблизно на ${Math.round(hrDelta)} уд/хв`);
+    else if (hrDelta != null && hrDelta <= -5) parts.push("ЧСС на швидких відрізках знижувалась до кінця");
+    else if (hrDelta != null) parts.push("ЧСС на швидких відрізках залишалась відносно стабільною");
+
+    if (recoveryVariable) parts.push("відновлення були нерівномірними");
+    else parts.push("відновлення залишались відносно стабільними");
+
+    let conclusion;
+    if (strongFatigue) {
+      conclusion = "Наприкінці швидких відрізків помітна втома: темп знизився, а ЧСС зросла.";
+    } else if (unstable && recoveryVariable) {
+      conclusion = "Інтенсивність і відновлення помітно коливалися — фартлек вийшов нерівномірним.";
+    } else if (moderateFatigue) {
+      conclusion = "До кінця роботи з'явилися ознаки накопичення втоми.";
+    } else if (unstable) {
+      conclusion = "Швидкі відрізки виконувалися з помітною різницею в темпі.";
+    } else if (recoveryVariable) {
+      conclusion = "Швидкі відрізки були достатньо стабільними, але відновлення помітно відрізнялися.";
+    } else if (dynamics === "faster" && fastSpread <= 12) {
+      conclusion = "Фартлек виконано контрольовано, з хорошою динамікою до кінця.";
+    } else {
+      conclusion = "Фартлек виконано рівномірно та контрольовано.";
+    }
+
+    parts.push(`загальний обсяг швидкої роботи — ${fastDistanceKm} км`);
+    parts.push(conclusion);
+    return `${parts.join(" · ")}.`;
+  }
+
+  const parts = [
+    `Fartlek · ${volumeLabel}`,
+    `${fast.length} fast segments`,
+    `average fast-segment pace ${formatInsightPace(fastAverage)}/km`,
+    `spread ${Math.round(fastSpread)} sec/km`
+  ];
+  if (dynamics === "faster") parts.push("fast segments got faster toward the end");
+  else if (dynamics === "slower") parts.push("fast segments slowed toward the end");
+  else parts.push("fast-segment pace stayed relatively stable");
+  if (hrDelta != null && hrDelta >= 5) parts.push(`HR rose by about ${Math.round(hrDelta)} bpm on fast segments`);
+  else if (hrDelta != null && hrDelta <= -5) parts.push("HR decreased on fast segments toward the end");
+  else if (hrDelta != null) parts.push("HR stayed relatively stable on fast segments");
+  parts.push(recoveryVariable ? "recoveries were variable" : "recoveries stayed relatively stable");
+  let conclusion;
+  if (strongFatigue) conclusion = "Fatigue was noticeable toward the end: pace slowed while HR rose.";
+  else if (unstable && recoveryVariable) conclusion = "Both intensity and recoveries varied noticeably — the fartlek was uneven.";
+  else if (moderateFatigue) conclusion = "There were signs of accumulating fatigue toward the end.";
+  else if (unstable) conclusion = "Fast segments varied noticeably in pace.";
+  else if (recoveryVariable) conclusion = "Fast segments were fairly stable, but recoveries varied noticeably.";
+  else if (dynamics === "faster" && fastSpread <= 12) conclusion = "The fartlek was controlled, with good late-session dynamics.";
+  else conclusion = "The fartlek was even and controlled.";
+  parts.push(`total fast-work volume ${fastDistanceKm} km`, conclusion);
+  return `${parts.join(" · ")}.`;
+}
+
+function workHrText(summary, bpm) {
+  const analysis = getIntervalAnalysis(summary);
+  if (!analysis) return "";
+  const hr = analysis.reps.map(rep => Number(rep.work?.heartRate)).filter(Number.isFinite);
+  if (hr.length < 2) return "";
+  return ` (${Math.round(hr[0])}→${Math.round(hr[hr.length - 1])} ${bpm})`;
+}
+
+function generateWorkoutInsight(summary) {
+  // Long runs with work at the end are analysed as long runs, not as pure
+  // interval sessions. The interval structure is still shown visually.
+  const longRunInsight = generateLongRunInsight(summary);
+  if (longRunInsight) return longRunInsight;
+
+  const intervalInsight = generateIntervalInsight(summary);
+  if (intervalInsight) return intervalInsight;
+
+  const fartlekInsight = generateFartlekInsight(summary);
+  if (fartlekInsight) return fartlekInsight;
+
+  const tempoInsight = generateTempoInsight(summary);
+  if (tempoInsight) return tempoInsight;
+
+  const easyInsight = generateEasyRunInsight(summary);
+  if (easyInsight) return easyInsight;
+
+  const splits = summary.splits || [];
+  const paces = splits.map(s => paceToSeconds(s.pace)).filter(Number.isFinite);
+
+  if (!paces.length) {
+    return t("insightUnavailable");
+  }
+
+  const half = Math.ceil(paces.length / 2);
+  const first = paces.slice(0, half);
+  const second = paces.slice(half);
+
+  const firstAvg = first.reduce((a, b) => a + b, 0) / first.length;
+  const secondAvg = second.length
+    ? second.reduce((a, b) => a + b, 0) / second.length
+    : firstAvg;
+
+  let text;
+
+  if (firstAvg - secondAvg > 8) {
+    text = t("insightFaster");
+  } else if (firstAvg - secondAvg < -8) {
+    text = t("insightSlower");
+  } else {
+    text = t("insightEven");
+  }
+
+  const details = [];
+
+  if (summary.heartRate != null) {
+    details.push(`${t("avgHr")} ${summary.heartRate} ${currentLanguage === "uk" ? "уд/хв" : "bpm"}`);
+  }
+
+  if (summary.cadence != null) {
+    details.push(`${t("cadence")} ${summary.cadence} ${currentLanguage === "uk" ? "кроків/хв" : "steps/min"}`);
+  }
+
+  if (summary.ascent != null) {
+    details.push(`${t("ascentShort")} ${summary.ascent} m`);
+  }
+
+  return details.length
+    ? `${text} ${details.join(" · ")}.`
+    : text;
+}
+
+function renderSplits(splits = []) {
+  if (!splitsBody) return;
+
+  splitsBody.innerHTML = "";
+
+  if (!splits.length) {
+    splitsBody.innerHTML = `
+      <tr>
+        <td colspan="5" class="splits-empty">
+          ${escapeHtml(t("splitsNotFound"))}
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  for (const split of splits) {
+    const row = document.createElement("tr");
+
+    row.innerHTML = `
+      <td class="split-km">${split.km}</td>
+      <td class="split-pace">${split.pace ?? "—"}</td>
+      <td>${split.heartRate ?? "—"}</td>
+      <td>${split.cadence ?? "—"}</td>
+      <td class="split-elevation ${Number(split.elevation) < 0 ? "is-down" : ""}">${split.elevation != null ? `${split.elevation > 0 ? '+' : ''}${split.elevation} ${currentLanguage === "uk" ? "м" : "m"}` : "—"}</td>
+    `;
+
+    splitsBody.appendChild(row);
+  }
+}
+
+function formatElevation(value) {
+  if (!Number.isFinite(Number(value))) return "—";
+  const n = Math.round(Number(value));
+  if (n === 0) return `0 ${currentLanguage === "uk" ? "м" : "m"}`;
+  return `${n > 0 ? '+' : ''}${n} м`;
+}
+
+function formatTerrain(value) {
+  if (!Number.isFinite(Number(value))) return `${t("terrain")} —`;
+  const n = Math.round(Number(value));
+  if (n === 0) return `${t("flat")} 0 ${currentLanguage === "uk" ? "м" : "m"}`;
+  return n > 0 ? `${t("climb")} +${n} ${currentLanguage === "uk" ? "м" : "m"}` : `${t("descent")} −${Math.abs(n)} ${currentLanguage === "uk" ? "м" : "m"}`;
+}
+
+function renderStructure(structure = [], summary = null) {
+  if (!structureCard || !structureBody) return;
+  structureBody.innerHTML = "";
+
+  let displayStructure = Array.isArray(structure) ? structure : [];
+  const explicitIntervals = displayStructure.some(block =>
+    block?.type === "intervals"
+    && Array.isArray(block.repetitions)
+    && block.repetitions.length > 0
+  );
+
+  // Garmin does not provide explicit blocks for tempo/fartlek in every FIT file,
+  // so build a visual structure from split dynamics when no explicit intervals exist.
+  if (!explicitIntervals && summary) {
+    const pattern = getWorkoutPattern(summary);
+    const splits = Array.isArray(summary.splits) ? summary.splits : [];
+
+    const splitStats = (split, index) => {
+      const pace = paceToSeconds(split?.pace);
+      const distance = 1000;
+      return {
+        distance,
+        duration: Number.isFinite(pace) ? pace : null,
+        pace: split?.pace || "—",
+        heartRate: split?.heartRate ?? null,
+        cadence: split?.cadence ?? null,
+        ascent: Number.isFinite(Number(split?.ascent)) ? Number(split.ascent) : 0,
+        descent: Number.isFinite(Number(split?.descent)) ? Number(split.descent) : 0,
+        elevation: Number.isFinite(Number(split?.elevation))
+          ? Number(split.elevation)
+          : (Number.isFinite(Number(split?.ascent)) ? Number(split.ascent) : 0)
+            - (Number.isFinite(Number(split?.descent)) ? Number(split.descent) : 0),
+        index
+      };
+    };
+
+    if (pattern.type === "tempo") {
+      const start = pattern.tempoStart;
+      const end = pattern.tempoEnd;
+      const warmup = splits.slice(0, start).map(splitStats);
+      const tempo = splits.slice(start, end + 1).map(splitStats);
+      const cooldown = splits.slice(end + 1).map(splitStats);
+      displayStructure = [];
+      if (warmup.length) displayStructure.push({ type: "warmup", label: t("warmup"), items: warmup });
+      if (tempo.length) displayStructure.push({ type: "tempo", label: t("workoutTempo"), items: tempo });
+      if (cooldown.length) displayStructure.push({ type: "cooldown", label: t("cooldown"), items: cooldown });
+    } else if (pattern.type === "fartlek") {
+      displayStructure = [{
+        type: "fartlek",
+        label: t("workoutFartlek"),
+        items: splits.map((split, index) => ({
+          ...splitStats(split, index),
+          state: pattern.states[index]
+        }))
+      }];
+    }
+  }
+
+  if (!displayStructure.length || (displayStructure.length === 1 && displayStructure[0].type === "easy")) {
+    structureCard.hidden = true;
+    return;
+  }
+
+  structureCard.hidden = false;
+
+  const formatDuration = (seconds) => {
+    const total = Math.max(0, Math.round(Number(seconds) || 0));
+    const minutes = Math.floor(total / 60);
+    const secs = String(total % 60).padStart(2, "0");
+    return `${minutes}:${secs}`;
+  };
+
+  const formatDistance = (meters) => {
+    const value = Number(meters);
+    if (!Number.isFinite(value)) return "—";
+    return value >= 1000
+      ? `${(value / 1000).toFixed(2).replace(".", currentLanguage === "uk" ? "," : ".")} ${currentLanguage === "uk" ? "км" : "km"}`
+      : `${Math.round(value)} ${currentLanguage === "uk" ? "м" : "m"}`;
+  };
+
+  const formatStats = (stats) => {
+    if (!stats) return "—";
+
+    const parts = [];
+
+    if (Number.isFinite(Number(stats.distance))) {
+      parts.push(formatDistance(stats.distance));
+    }
+
+    if (stats.duration != null && Number.isFinite(Number(stats.duration))) {
+      parts.push(formatDuration(stats.duration));
+    }
+
+    if (stats.pace && stats.pace !== "—") {
+      parts.push(`${stats.pace} /${currentLanguage === "uk" ? "км" : "km"}`);
+    }
+
+    if (Number.isFinite(Number(stats.heartRate))) {
+      parts.push(`${Math.round(Number(stats.heartRate))} ${currentLanguage === "uk" ? "уд/хв" : "bpm"}`);
+    }
+
+    if (Number.isFinite(Number(stats.cadence))) {
+      parts.push(`${Math.round(Number(stats.cadence))} ${currentLanguage === "uk" ? "к/хв" : "spm"}`);
+    }
+
+    if (Number.isFinite(Number(stats.elevation))) {
+      parts.push(formatTerrain(stats.elevation));
+    }
+
+    return parts.join(" · ") || "—";
+  };
+
+  const averageStats = (items = []) => {
+    const valid = items.filter(Boolean);
+    const distance = valid.reduce((sum, item) => sum + Number(item.distance || 0), 0);
+    const duration = valid.reduce((sum, item) => sum + Number(item.duration || 0), 0);
+    const hrValues = valid.map(item => Number(item.heartRate)).filter(Number.isFinite);
+    const cadValues = valid.map(item => Number(item.cadence)).filter(Number.isFinite);
+    const ascent = valid.reduce((sum, item) => sum + Number(item.ascent || 0), 0);
+    const descent = valid.reduce((sum, item) => sum + Number(item.descent || 0), 0);
+
+    return {
+      distance,
+      duration,
+      pace: distance > 0
+        ? `${Math.floor(duration / (distance / 1000) / 60)}:${String(Math.round(duration / (distance / 1000)) % 60).padStart(2, "0")}`
+        : "—",
+      heartRate: hrValues.length
+        ? Math.round(hrValues.reduce((a, b) => a + b, 0) / hrValues.length)
+        : null,
+      cadence: cadValues.length
+        ? Math.round(cadValues.reduce((a, b) => a + b, 0) / cadValues.length)
+        : null,
+      ascent,
+      descent,
+      elevation: ascent - descent
+    };
+  };
+
+  const addTimelineItem = (type, title, meta, extraClass = "") => {
+    const item = document.createElement("div");
+    item.className = `timeline-item timeline-${type} ${extraClass}`.trim();
+    item.innerHTML = `
+      <span class="timeline-dot" aria-hidden="true"></span>
+      <div class="timeline-content">
+        <strong>${title}</strong>
+        <span>${meta}</span>
+      </div>`;
+    structureBody.appendChild(item);
+  };
+
+  for (const block of displayStructure) {
+    if (block.type === "tempo") {
+      const items = block.items || [];
+      addTimelineItem(
+        "work",
+        t("workoutTempo"),
+        formatStats(averageStats(items))
+      );
+      continue;
+    }
+
+    if (block.type === "fartlek") {
+      const items = block.items || [];
+      addTimelineItem(
+        "work",
+        t("workoutFartlek"),
+        `${items.length} ${currentLanguage === "uk" ? "сплітів" : "splits"}`
+      );
+      items.forEach((item, index) => {
+        const isFast = item.state === "fast";
+        const isSlow = item.state === "slow";
+        const label = isFast
+          ? `${t("fastSegment")} ${index + 1}`
+          : isSlow
+            ? `${t("slowSegment")} ${index + 1}`
+            : `${t("workoutFartlek")} ${index + 1}`;
+        addTimelineItem(
+          isSlow ? "recovery" : "work",
+          label,
+          formatStats(item),
+          "timeline-detail"
+        );
+      });
+      continue;
+    }
+
+    if (block.type === "intervals") {
+      const reps = block.repetitions || [];
+
+      if (!reps.length) continue;
+
+      const workItems = reps.map(rep => rep.work).filter(Boolean);
+      const recoveryItems = reps.map(rep => rep.recovery).filter(Boolean);
+      const work = averageStats(workItems);
+      const recovery = averageStats(recoveryItems);
+      const workDistance = reps[0]?.work?.distance || 1000;
+      const recoveryDistance = reps.find(rep => rep.recovery)?.recovery?.distance || 400;
+
+      // Заголовок блока — сохраняем общую информацию о серии.
+      addTimelineItem(
+        "work",
+        `${t("work")} · ${block.workCount || reps.length} × ${Math.round(workDistance)} ${currentLanguage === "uk" ? "м" : "m"}`,
+        `${formatDistance(work.distance)} · ${formatDuration(work.duration)} · ${work.pace} /${currentLanguage === "uk" ? "км" : "km"} · ${formatTerrain(work.elevation)}`
+      );
+
+      // Главное: показываем КАЖДЫЙ интервал и КАЖДОЕ восстановление отдельно.
+      reps.forEach((rep, index) => {
+        const number = rep.number || index + 1;
+
+        if (rep.work) {
+          addTimelineItem(
+            "work",
+            `${t("interval")} ${number}`,
+            formatStats(rep.work),
+            "timeline-detail"
+          );
+        }
+
+        if (rep.recovery) {
+          addTimelineItem(
+            "recovery",
+            `${t("recovery")} ${number}`,
+            formatStats(rep.recovery),
+            "timeline-detail"
+          );
+        }
+      });
+
+      // Невеликий підсумок відновлень — тільки якщо вони реально є.
+      if (recoveryItems.length) {
+        addTimelineItem(
+          "recovery",
+          `${t("recovery")} · ${recoveryItems.length} × ${Math.round(recoveryDistance)} ${currentLanguage === "uk" ? "м" : "m"}`,
+          `${formatDistance(recovery.distance)} · ${formatDuration(recovery.duration)} · ${recovery.pace} /${currentLanguage === "uk" ? "км" : "km"} · ${formatTerrain(recovery.elevation)}`,
+          "timeline-summary"
+        );
+      }
+
+      continue;
+    }
+
+    const label =
+      block.type === "warmup"
+        ? t("warmup")
+        : block.type === "cooldown"
+          ? t("cooldown")
+          : block.label;
+
+    const type =
+      block.type === "warmup"
+        ? "warmup"
+        : block.type === "cooldown"
+          ? "cooldown"
+          : "work";
+
+    // Для автоматически определённых warmup/cooldown статистика хранится
+    // внутри items, поэтому агрегируем её так же, как и tempo-блок.
+    const blockStats = Array.isArray(block.items)
+      ? averageStats(block.items)
+      : block;
+
+    addTimelineItem(
+      type,
+      label,
+      formatStats(blockStats)
+    );
+  }
+}
+
+function renderSummary(summary) {
+  if (workoutSavePanel) workoutSavePanel.hidden = true;
+  if (distanceValue) distanceValue.textContent = summary.distance != null ? `${String(summary.distance).replace(".", currentLanguage === "uk" ? "," : ".")} ${currentLanguage === "uk" ? "км" : "km"}` : "—";
+  if (durationValue) durationValue.textContent = summary.duration ?? "—";
+  if (paceValue) paceValue.textContent = summary.pace != null ? `${summary.pace} /${currentLanguage === "uk" ? "км" : "km"}` : "—";
+  if (heartRateValue) heartRateValue.textContent = summary.heartRate != null ? `${summary.heartRate} ${currentLanguage === "uk" ? "уд/хв" : "bpm"}` : "—";
+  if (caloriesValue) {
+    const calories = summary.calories ?? summary.totalCalories ?? null;
+    const caloriesMetric = caloriesValue.closest(".summary-metric");
+
+    if (calories != null && Number.isFinite(Number(calories))) {
+      caloriesValue.textContent = `${Math.round(Number(calories)).toLocaleString(translations[currentLanguage].locale)} ${currentLanguage === "uk" ? "ккал" : "kcal"}`;
+      if (caloriesMetric) caloriesMetric.hidden = false;
+    } else {
+      // Якщо Garmin не передав калорії — не показуємо порожній показник.
+      if (caloriesMetric) caloriesMetric.hidden = true;
+    }
+  }
+  if (ascentValue) {
+    ascentValue.textContent = summary.ascent != null ? `${Math.round(summary.ascent)} ${currentLanguage === "uk" ? "м" : "m"}` : "—";
+  }
+
+  const date = summary.date instanceof Date && !Number.isNaN(summary.date.getTime())
+    ? summary.date.toLocaleDateString(translations[currentLanguage].locale, {
+        day: "numeric",
+        month: "long",
+        year: "numeric"
+      })
+    : t("uploadedWorkout");
+
+  runLabel.textContent =
+    `${detectWorkoutType(summary)} · ${date}`;
+
+  insightText.textContent =
+    generateWorkoutInsight(summary);
+
+  renderSplits(summary.splits);
+  renderStructure(summary.structure, summary);
+
+  if (aiAnalysis) aiAnalysis.hidden = true;
+  if (aiAnalysisText) aiAnalysisText.innerHTML = "";
+}
+
+function workoutDateIso(summary) {
+  if (!(summary?.date instanceof Date) || Number.isNaN(summary.date.getTime())) return null;
+  return summary.date.toISOString();
+}
+
+function workoutDurationSeconds(value) {
+  const parts = String(value || "").split(":").map(Number);
+  if (parts.length === 2 && parts.every(Number.isFinite)) return parts[0] * 60 + parts[1];
+  if (parts.length === 3 && parts.every(Number.isFinite)) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  return null;
+}
+
+function workoutFingerprint(summary) {
+  const date = workoutDateIso(summary) || "no-date";
+  const distance = Number(summary?.distance || 0).toFixed(2);
+  const duration = workoutDurationSeconds(summary?.duration) ?? 0;
+  return `${date}|${distance}|${duration}`;
+}
+
+function getWorkoutTypeKey(summary) {
+  const pattern = getWorkoutPattern(summary);
+  const structure = Array.isArray(summary?.structure) ? summary.structure : [];
+
+  // A long run with a quality block at the end is still a long run as a
+  // workout type. Keep the interval block inside the structure, but classify
+  // the whole session by its dominant purpose.
+  if (pattern?.type === "intervals" && structure.length) {
+    const intervalIndex = structure.findIndex(block =>
+      block?.type === "intervals" && Array.isArray(block.repetitions) && block.repetitions.length > 0
+    );
+    if (intervalIndex > 0) {
+      const preWorkDistance = structure
+        .slice(0, intervalIndex)
+        .filter(block => ["easy", "warmup"].includes(block?.type))
+        .reduce((sum, block) => sum + (Number(block?.distance) || 0), 0);
+      if (preWorkDistance >= 12000) return "long";
+    }
+  }
+
+  if (pattern?.type === "intervals") return "intervals";
+  if (pattern?.type === "tempo") return "tempo";
+  if (pattern?.type === "fartlek") return "fartlek";
+  if (Number(summary?.distance) >= 15) return "long";
+  return "run";
+}
+
+function workoutTypeLabel(value) {
+  const map = {
+    intervals: "workoutIntervals",
+    tempo: "workoutTempo",
+    fartlek: "workoutFartlek",
+    long: "workoutLong",
+    run: "workoutRun"
+  };
+  return t(map[value] || "workoutRun");
+}
+
+function historyPayload(summary, aiAnalysis = null) {
+  return {
+    workout_date: workoutDateIso(summary),
+    distance_km: Number(summary?.distance) || 0,
+    duration_sec: workoutDurationSeconds(summary?.duration),
+    pace: summary?.pace || null,
+    heart_rate: Number.isFinite(Number(summary?.heartRate)) ? Math.round(Number(summary.heartRate)) : null,
+    cadence: Number.isFinite(Number(summary?.cadence)) ? Math.round(Number(summary.cadence)) : null,
+    calories: summary?.calories != null && Number.isFinite(Number(summary.calories)) ? Math.round(Number(summary.calories)) : null,
+    ascent_m: Number.isFinite(Number(summary?.ascent)) ? Math.round(Number(summary.ascent)) : null,
+    workout_type: getWorkoutTypeKey(summary),
+    splits: Array.isArray(summary?.splits) ? summary.splits : [],
+    structure: Array.isArray(summary?.structure) ? summary.structure : [],
+    ai_analysis: aiAnalysis || summary?._aiAnalysis || null,
+    workout_key: workoutFingerprint(summary)
+  };
+}
+
+async function saveWorkoutToHistory(summary, aiAnalysis = null) {
+  if (!supabaseClient || !currentSession?.user || !summary) return null;
+
+  const payload = historyPayload(summary, aiAnalysis);
+  const { data, error } = await supabaseClient
+    .from("workouts")
+    .upsert({ user_id: currentSession.user.id, ...payload }, { onConflict: "user_id,workout_key" })
+    .select("id, workout_date, distance_km, duration_sec, pace, heart_rate, cadence, calories, ascent_m, workout_type, splits, structure, ai_analysis, workout_key, created_at")
+    .single();
+
+  if (error) {
+    console.warn("Runory: could not save workout history.", error);
+    setAuthMessage(error.message || t("historySaveError"), "error");
+    return null;
+  }
+
+  currentHistoryId = data.id;
+  currentWorkout._historyId = data.id;
+  currentWorkout._aiAnalysis = data.ai_analysis || null;
+  historyLoaded = false;
+  return data;
+}
+
+function formatHistoryDate(value) {
+  const date = value ? new Date(value) : null;
+  if (!date || Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleDateString(translations[currentLanguage].locale, {
+    day: "2-digit", month: "2-digit", year: "numeric"
+  });
+}
+
+function formatHistoryDuration(seconds) {
+  if (!Number.isFinite(Number(seconds))) return "—";
+  const total = Math.max(0, Math.round(Number(seconds)));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const sec = String(total % 60).padStart(2, "0");
+  return h ? `${h}:${String(m).padStart(2, "0")}:${sec}` : `${m}:${sec}`;
+}
+
+function formatHistoryDistance(value) {
+  return Number.isFinite(Number(value)) ? `${Number(value).toFixed(2).replace(".", currentLanguage === "uk" ? "," : ".")} ${currentLanguage === "uk" ? "км" : "km"}` : "—";
+}
+
+function formatHistoryTotalTime(seconds) {
+  const total = Math.max(0, Math.round(Number(seconds) || 0));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  if (h) return `${h} ${currentLanguage === "uk" ? "год" : "h"} ${m} ${currentLanguage === "uk" ? "хв" : "min"}`;
+  return `${m} ${currentLanguage === "uk" ? "хв" : "min"}`;
+}
+
+function historyTypeClass(value) {
+  return ["intervals", "tempo", "fartlek", "long", "run"].includes(value) ? value : "run";
+}
+
+function historyTypeIcon(value) {
+  const type = historyTypeClass(value);
+  if (type === "intervals") return "↯";
+  if (type === "tempo") return "≈";
+  if (type === "fartlek") return "✦";
+  if (type === "long") return "↗";
+  return "•";
+}
+
+function historyFilterLabel(type) {
+  const map = { all: "historyFilterAll", run: "historyFilterEasy", tempo: "historyFilterTempo", intervals: "historyFilterIntervals", long: "historyFilterLong" };
+  return t(map[type] || "historyFilterAll");
+}
+
+function historyPeriodStart() {
+  if (historyPeriodFilter === "all") return null;
+  const days = historyPeriodFilter === "7" ? 7 : 30;
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  start.setDate(start.getDate() - (days - 1));
+  return start;
+}
+
+function historyFilteredWorkouts() {
+  const start = historyPeriodStart();
+  return historyWorkouts.filter(workout => {
+    const typeOk = historyTypeFilter === "all" || derivedWorkoutType(workout) === historyTypeFilter;
+    const date = workout.workout_date ? new Date(workout.workout_date) : null;
+    const dateOk = !start || (date && !Number.isNaN(date.getTime()) && date >= start);
+    return typeOk && dateOk;
+  });
+}
+
+function paceToSeconds(value) {
+  if (typeof value === "number") return value > 20 ? value : value * 60;
+  const match = String(value || "").match(/(\d+)(?::|\.)(\d{1,2})/);
+  if (!match) return null;
+  return Number(match[1]) * 60 + Number(match[2]);
+}
+
+function formatPaceSeconds(seconds) {
+  if (!Number.isFinite(seconds)) return "—";
+  const rounded = Math.max(0, Math.round(seconds));
+  return `${Math.floor(rounded / 60)}:${String(rounded % 60).padStart(2, "0")}`;
+}
+
+function getWeekStart(date) {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  return d;
+}
+
+function formatWeekLabel(date) {
+  return date.toLocaleDateString(translations[currentLanguage].locale, { day: "2-digit", month: "2-digit" });
+}
+
+function median(values) {
+  const sorted = values.filter(Number.isFinite).sort((a, b) => a - b);
+  if (!sorted.length) return null;
+  const middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
+}
+
+function easyRunComparable(current, candidate) {
+  if (!current || !candidate || derivedWorkoutType(candidate) !== "run") return false;
+  const currentDistance = Number(current.distance_km);
+  const candidateDistance = Number(candidate.distance_km);
+  const currentDuration = Number(current.duration_sec);
+  const candidateDuration = Number(candidate.duration_sec);
+  const currentPace = paceToSeconds(current.pace);
+  const candidatePace = paceToSeconds(candidate.pace);
+  if (![currentDistance, candidateDistance, currentDuration, candidateDuration, currentPace, candidatePace].every(Number.isFinite)) return false;
+
+  // The workout type already tells us that both runs are easy. Here we only
+  // check whether the runs are physically comparable enough for a trend.
+  // Heart-rate intensity is handled separately and is personalized to the
+  // runner's own easy-run distribution — there are no universal HR limits.
+  const distanceRatio = candidateDistance / currentDistance;
+  const durationRatio = candidateDuration / currentDuration;
+  if (distanceRatio < 0.65 || distanceRatio > 1.40) return false;
+  if (durationRatio < 0.65 || durationRatio > 1.40) return false;
+
+  const currentAscent = Number(current.ascent_m);
+  const candidateAscent = Number(candidate.ascent_m);
+  if (Number.isFinite(currentAscent) && Number.isFinite(candidateAscent)) {
+    const ascentDiff = Math.abs(currentAscent - candidateAscent);
+    if (ascentDiff > Math.max(100, Math.max(currentAscent, candidateAscent) * 0.80)) return false;
+  }
+  return true;
+}
+
+function percentileRank(values, value) {
+  const valid = values.filter(Number.isFinite).sort((a, b) => a - b);
+  if (!valid.length || !Number.isFinite(value)) return null;
+  if (valid.length === 1) return 0.5;
+  const below = valid.filter(item => item < value).length;
+  const equal = valid.filter(item => item === value).length;
+  return (below + Math.max(0, equal - 1) / 2) / (valid.length - 1);
+}
+
+function easyIntensityDistance(currentHr, candidateHr, allHrs) {
+  if (!Number.isFinite(currentHr) || !Number.isFinite(candidateHr)) return Infinity;
+  const currentRank = percentileRank(allHrs, currentHr);
+  const candidateRank = percentileRank(allHrs, candidateHr);
+  if (currentRank == null || candidateRank == null) return Math.abs(currentHr - candidateHr) / 10;
+  return Math.abs(currentRank - candidateRank);
+}
+
+function selectEasyIntensityMatches(current, candidates) {
+  const currentHr = Number(current?.heart_rate);
+  const allHrs = candidates.map(item => Number(item.heart_rate)).filter(Number.isFinite);
+  if (!Number.isFinite(currentHr) || !allHrs.length) return [];
+
+  // Personalize intensity matching. A runner whose easy runs are 110 bpm and
+  // another whose easy runs are 150 bpm get the same relative treatment.
+  const ranked = candidates
+    .map(item => ({
+      item,
+      intensityDistance: easyIntensityDistance(currentHr, Number(item.heart_rate), allHrs),
+      hrDistance: Math.abs(Number(item.heart_rate) - currentHr)
+    }))
+    .sort((a, b) => a.intensityDistance - b.intensityDistance || a.hrDistance - b.hrDistance);
+
+  let matches = ranked.filter(item => item.intensityDistance <= 0.18);
+  if (matches.length < 2) matches = ranked.filter(item => item.intensityDistance <= 0.28);
+  return matches.map(item => item.item);
+}
+
+function buildEasyRunDynamics(workouts) {
+  const easy = workouts
+    .filter(w => derivedWorkoutType(w) === "run")
+    .filter(w => Number.isFinite(Number(w.heart_rate)) && paceToSeconds(w.pace) != null)
+    .sort((a, b) => new Date(a.workout_date) - new Date(b.workout_date));
+  if (easy.length < 2) return null;
+
+  const current = easy.at(-1);
+  const candidates = easy.slice(0, -1).filter(w => easyRunComparable(current, w));
+  if (!candidates.length) return null;
+
+  const currentHr = Number(current.heart_rate);
+  const currentPace = paceToSeconds(current.pace);
+  const intensityMatches = selectEasyIntensityMatches(current, candidates);
+  const samePace = candidates
+    .filter(w => Math.abs(paceToSeconds(w.pace) - currentPace) <= 25)
+    .sort((a, b) => Math.abs(paceToSeconds(a.pace) - currentPace) - Math.abs(paceToSeconds(b.pace) - currentPace));
+
+  const paceBaseline = median(intensityMatches.map(w => paceToSeconds(w.pace)));
+  const hrBaseline = median(samePace.slice(0, Math.max(3, Math.min(5, samePace.length))).map(w => Number(w.heart_rate)));
+  const paceDelta = paceBaseline != null ? paceBaseline - currentPace : null;
+  const hrDelta = hrBaseline != null ? currentHr - hrBaseline : null;
+
+  // Trend is calculated from several historical matches, split into older and
+  // newer halves. We do not call a single workout "progress".
+  const matches = intensityMatches.slice().sort((a, b) => new Date(a.workout_date) - new Date(b.workout_date));
+  const splitIndex = Math.floor(matches.length / 2);
+  const older = matches.slice(0, splitIndex);
+  const recent = matches.slice(splitIndex);
+  const olderPace = median(older.map(w => paceToSeconds(w.pace)));
+  const recentPace = median(recent.map(w => paceToSeconds(w.pace)));
+
+  const paceMatches = samePace.slice(0, Math.max(3, Math.min(5, samePace.length)));
+  const paceMatchesSorted = paceMatches.slice().sort((a, b) => new Date(a.workout_date) - new Date(b.workout_date));
+  const paceSplit = Math.floor(paceMatchesSorted.length / 2);
+  const olderHr = median(paceMatchesSorted.slice(0, paceSplit).map(w => Number(w.heart_rate)));
+  const recentHr = median(paceMatchesSorted.slice(paceSplit).map(w => Number(w.heart_rate)));
+
+  let trend = "stable";
+  if (matches.length >= 4) {
+    const paceTrend = olderPace != null && recentPace != null
+      ? (olderPace - recentPace >= 6 ? "improved" : olderPace - recentPace <= -6 ? "declined" : "stable")
+      : null;
+    const hrTrend = olderHr != null && recentHr != null
+      ? (recentHr - olderHr <= -3 ? "improved" : recentHr - olderHr >= 3 ? "declined" : "stable")
+      : null;
+
+    // Only call a long-term trend when the available signals agree. If pace
+    // and HR point in opposite directions, keep the result neutral rather
+    // than turning one good metric into a false progress/decline claim.
+    if (paceTrend === "improved" && (hrTrend === "improved" || hrTrend === "stable" || hrTrend == null)) trend = "improved";
+    else if (paceTrend === "declined" && (hrTrend === "declined" || hrTrend === "stable" || hrTrend == null)) trend = "declined";
+    else if (hrTrend === "improved" && paceTrend === "stable") trend = "improved";
+    else if (hrTrend === "declined" && paceTrend === "stable") trend = "declined";
+  }
+
+  return {
+    current,
+    count: matches.length,
+    paceBaseline,
+    hrBaseline,
+    paceDelta,
+    hrDelta,
+    trend,
+    sameHrCount: intensityMatches.length,
+    samePaceCount: paceMatches.length,
+    confidence: matches.length >= 4 ? "good" : matches.length >= 3 ? "moderate" : "low"
+  };
+}
+
+function formatHomeHours(seconds) {
+  if (!Number.isFinite(seconds) || seconds <= 0) return "0";
+  return (seconds / 3600).toFixed(1).replace(".", currentLanguage === "uk" ? "," : ".");
+}
+
+function derivedWorkoutType(record) {
+  if (!record) return "run";
+  const structure = Array.isArray(record.structure) ? record.structure : [];
+  const hasUsableStructure = structure.length > 0;
+  if (!hasUsableStructure) return historyTypeClass(record.workout_type);
+
+  const summary = {
+    distance: Number(record.distance_km) || 0,
+    splits: Array.isArray(record.splits) ? record.splits : [],
+    structure
+  };
+
+  return getWorkoutTypeKey(summary);
+}
+
+function homeWorkoutLabel(workout) {
+  return workoutTypeLabel(derivedWorkoutType(workout));
+}
+
+function homeTrendState(workouts) {
+  const dynamics = buildEasyRunDynamics(workouts);
+  if (!dynamics) return { label: t("homeNoTrend"), tone: "neutral" };
+  if (dynamics.trend === "improved") return { label: t("historyEasyImproved"), tone: "positive" };
+  if (dynamics.trend === "declined") return { label: t("historyEasyDeclined"), tone: "negative" };
+  return { label: t("historyEasyStable"), tone: "neutral" };
+}
+
+function renderHome(workouts = historyWorkouts) {
+  const container = document.querySelector("#homeContent");
+  if (!container) return;
+  const sorted = [...workouts].sort((a, b) => new Date(b.workout_date || b.created_at || 0) - new Date(a.workout_date || a.created_at || 0));
+  const latest = sorted[0] || null;
+  const now = new Date();
+  const weekStart = getWeekStart(now);
+  const weekWorkouts = sorted.filter(workout => {
+    const date = new Date(workout.workout_date || workout.created_at || 0);
+    return !Number.isNaN(date.getTime()) && date >= weekStart;
+  });
+  const weekDistance = weekWorkouts.reduce((sum, workout) => sum + (Number(workout.distance_km) || 0), 0);
+  const weekTime = weekWorkouts.reduce((sum, workout) => sum + (Number(workout.duration_sec) || 0), 0);
+  const trend = homeTrendState(workouts);
+
+  if (!currentSession?.user) {
+    container.innerHTML = `
+      <article class="home-empty-card">
+        <div class="home-empty-icon">＋</div>
+        <div><strong>${escapeHtml(t("homeLatestEmpty"))}</strong><p>${escapeHtml(t("homeLatestEmptyCopy"))}</p></div>
+        <button class="home-primary-button" type="button" id="homeSignInButton">${escapeHtml(t("authSignIn"))}</button>
+      </article>`;
+    document.querySelector("#homeSignInButton")?.addEventListener("click", openAuthModal);
+    return;
+  }
+
+  const latestHtml = latest ? `
+    <article class="home-card home-latest-card">
+      <div class="home-card-top"><span class="eyebrow">${escapeHtml(t("homeLatest"))}</span><span class="home-card-date">${escapeHtml(formatHistoryDate(latest.workout_date))}</span></div>
+      <div class="home-latest-main">
+        <div><h2>${escapeHtml(homeWorkoutLabel(latest))}</h2><p>${escapeHtml(latest.structure?.[0]?.label || "")}</p></div>
+        <strong>${escapeHtml(formatHistoryDistance(latest.distance_km))}</strong>
+      </div>
+      <div class="home-metrics">
+        <div><span>${escapeHtml(t("pace"))}</span><strong>${escapeHtml(latest.pace || "—")}</strong></div>
+        <div><span>${escapeHtml(t("time"))}</span><strong>${escapeHtml(formatHistoryDuration(latest.duration_sec))}</strong></div>
+        <div><span>${escapeHtml(t("heartRate"))}</span><strong>${latest.heart_rate != null ? `${Math.round(latest.heart_rate)} ${currentLanguage === "uk" ? "уд/хв" : "bpm"}` : "—"}</strong></div>
+      </div>
+      <div class="home-latest-footer"><span class="home-insight">${escapeHtml(latest.ai_analysis ? t("homeInsightSaved") : t("homeInsightWorkout"))}</span><button class="home-link-button" type="button" data-home-workout="${escapeHtml(latest.id)}">${escapeHtml(t("homeViewWorkout"))} →</button></div>
+    </article>` : `
+    <article class="home-card home-empty-card"><div><strong>${escapeHtml(t("homeLatestEmpty"))}</strong><p>${escapeHtml(t("homeLatestEmptyCopy"))}</p></div><button class="home-primary-button" type="button" id="homeAddWorkoutButton">＋</button></article>`;
+
+  const trendRows = [
+    [t("homeEasy"), historyTypeClass("run") === "run" ? trend.label : t("homeNoTrend"), trend.tone],
+    [t("homeTempo"), t("homeNoTrend"), "neutral"],
+    [t("homeIntervals"), t("homeNoTrend"), "neutral"],
+    [t("homeLong"), t("homeNoTrend"), "neutral"]
+  ];
+
+  const recentWorkouts = sorted.slice(0, 3);
+  const recentHtml = recentWorkouts.length ? recentWorkouts.map(workout => `
+    <button class="home-recent-item" type="button" data-home-workout="${escapeHtml(workout.id)}">
+      <span class="home-recent-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3.5h7l3 3V20.5H7z"></path><path d="M14 3.5v4h4M10 12h4M10 15h4"></path></svg></span>
+      <span class="home-recent-copy"><strong>${escapeHtml(homeWorkoutLabel(workout))}</strong><span>${escapeHtml(formatHistoryDate(workout.workout_date))} · ${escapeHtml(workout.pace || "—")}/км · ${escapeHtml(formatHistoryDistance(workout.distance_km))}</span></span>
+      <span class="home-recent-arrow" aria-hidden="true">→</span>
+    </button>`).join("") : `<div class="home-recent-empty">Після збереження тренувань вони з'являться тут.</div>`;
+
+  container.innerHTML = `
+    <div class="home-grid">
+      <div class="home-main-column">${latestHtml}</div>
+      <div class="home-side-column">
+        <article class="home-card home-form-card">
+          <div class="home-card-top"><span class="eyebrow">${escapeHtml(t("homeForm"))}</span><button class="home-text-button" type="button" id="homeDynamicsButton">${escapeHtml(t("homeViewDynamics"))} →</button></div>
+          <div class="home-form-list">${trendRows.map(([label, value, tone]) => `<div class="home-form-row"><span>${escapeHtml(label)}</span><strong class="${tone}">${escapeHtml(value)}</strong></div>`).join("")}</div>
+        </article>
+        <article class="home-card home-week-card">
+          <div class="home-card-top"><span class="eyebrow">${escapeHtml(t("homeWeek"))}</span><span class="home-card-date">${escapeHtml(formatWeekLabel(weekStart))} — ${escapeHtml(formatWeekLabel(now))}</span></div>
+          ${weekWorkouts.length ? `<div class="home-week-stats"><div><strong>${weekWorkouts.length}</strong><span>${escapeHtml(t("homeWeekWorkouts"))}</span></div><div><strong>${weekDistance.toFixed(1).replace(".", currentLanguage === "uk" ? "," : ".")}</strong><span>${escapeHtml(t("homeWeekDistance"))}</span></div><div><strong>${escapeHtml(formatHomeHours(weekTime))}</strong><span>${escapeHtml(t("homeWeekTime"))}</span></div></div><div class="home-week-days">${[1,2,3,4,5,6,0].map(day => { const d = new Date(weekStart); d.setDate(weekStart.getDate() + (day === 0 ? 6 : day - 1)); const has = weekWorkouts.some(w => { const wd = new Date(w.workout_date || w.created_at || 0); return wd.toDateString() === d.toDateString(); }); return `<span class="${has ? "has-workout" : ""}" title="${escapeHtml(d.toLocaleDateString(translations[currentLanguage].locale, { weekday: "short" }))}"></span>`; }).join("")}</div>` : `<div class="home-week-empty">${escapeHtml(t("homeWeekEmpty"))}</div>`}
+        </article>
+      </div>
+    </div>
+
+    <section class="home-recent-section">
+      <div class="home-section-heading"><h2>Останні тренування</h2><button class="home-outline-button" type="button" id="homeHistoryButton">Всі тренування&nbsp; →</button></div>
+      <div class="home-recent-list">${recentHtml}</div>
+    </section>`;
+
+  document.querySelector("#homeDynamicsButton")?.addEventListener("click", () => navigateToView("dynamics"));
+  document.querySelector("#homeHistoryButton")?.addEventListener("click", () => navigateToView("history"));
+
+  const weeks = [...byWeek.values()].sort((a, b) => a.date - b.date).slice(-8);
+  const maxDistance = Math.max(...weeks.map(w => w.distance), 1);
+  const chart = weeks.length ? weeks.map(w => `
+    <div class="history-bar-col" title="${escapeHtml(formatWeekLabel(w.date))}: ${escapeHtml(w.distance.toFixed(1))} km">
+      <div class="history-bar-track"><div class="history-bar" style="height:${Math.max(5, (w.distance / maxDistance) * 100)}%"></div></div>
+      <span>${escapeHtml(formatWeekLabel(w.date))}</span>
+      <strong>${escapeHtml(w.distance.toFixed(1))}</strong>
+    </div>`).join("") : `<div class="history-chart-empty">${escapeHtml(t("historyNoData"))}</div>`;
+
+  analytics.innerHTML = `
+    <div class="history-analytics-heading"><span class="eyebrow">${escapeHtml(t("historyOverview"))}</span></div>
+    <article class="history-chart-card">
+      <div class="history-card-heading"><h3>${escapeHtml(t("historyWeeklyDistance"))}</h3><span>${escapeHtml(t("historyWeek"))}</span></div>
+      <div class="history-bars">${chart}</div>
+    </article>`;
+}
+
+function renderDynamics(workouts) {
+  const container = document.querySelector("#dynamicsContent");
+  if (!container) return;
+  const dynamics = buildEasyRunDynamics(workouts);
+
+  let easyHtml;
+  if (!dynamics) {
+    easyHtml = `<div class="dynamics-empty"><strong>${escapeHtml(t("historyEasyNoTrend"))}</strong><p>${escapeHtml(t("historyEasyDynamicsHint"))}</p></div>`;
+  } else {
+    const paceDeltaText = Number.isFinite(dynamics.paceDelta) && Math.abs(dynamics.paceDelta) >= 3
+      ? `${dynamics.paceDelta > 0 ? "повільніше" : "швидше"} на ${Math.abs(Math.round(dynamics.paceDelta))} с/км`
+      : "без суттєвої зміни";
+    const hrDeltaText = Number.isFinite(dynamics.hrDelta) && Math.abs(dynamics.hrDelta) >= 1
+      ? `${dynamics.hrDelta < 0 ? "нижче" : "вище"} на ${Math.abs(Math.round(dynamics.hrDelta))} уд/хв`
+      : "без суттєвої зміни";
+    const currentPaceSignal = Number.isFinite(dynamics.paceDelta) && Math.abs(dynamics.paceDelta) >= 6 ? (dynamics.paceDelta > 0 ? "better" : "worse") : "neutral";
+    const currentHrSignal = Number.isFinite(dynamics.hrDelta) && Math.abs(dynamics.hrDelta) >= 3 ? (dynamics.hrDelta < 0 ? "better" : "worse") : "neutral";
+    let trendLabel;
+    if (dynamics.trend === "improved") trendLabel = t("historyEasyImproved");
+    else if (dynamics.trend === "declined") trendLabel = t("historyEasyDeclined");
+    else if ((currentPaceSignal === "better" && currentHrSignal === "worse") || (currentPaceSignal === "worse" && currentHrSignal === "better")) trendLabel = t("historyEasyMixed");
+    else if (currentPaceSignal === "better" && currentHrSignal === "better") trendLabel = t("historyEasyCurrentBetter");
+    else if (currentPaceSignal === "worse" && currentHrSignal === "worse") trendLabel = t("historyEasyCurrentWorse");
+    else if (currentPaceSignal !== "neutral" || currentHrSignal !== "neutral") trendLabel = t("historyEasyNearTypical");
+    else trendLabel = t("historyEasyStable");
+    const compared = t("historyEasyCompared").replace("{count}", String(dynamics.count));
+    const trendHint = dynamics.count < 4 ? t("historyEasyTrendHint") : t("historyEasyDynamicsHint");
+
+    easyHtml = `
+      <div class="history-dynamic-status"><strong>${escapeHtml(trendLabel)}</strong><span>${escapeHtml(compared)}</span></div>
+      <div class="history-dynamic-row"><span>${escapeHtml(t("historyEasyPaceAtHr"))}</span><strong>${escapeHtml(dynamics.paceBaseline != null ? formatPaceSeconds(dynamics.paceBaseline) : "—")} <small>${escapeHtml(paceDeltaText)}</small></strong></div>
+      <div class="history-dynamic-row"><span>${escapeHtml(t("historyEasyHrAtPace"))}</span><strong>${dynamics.hrBaseline != null ? `${Math.round(dynamics.hrBaseline)} уд/хв` : "—"} <small>${escapeHtml(hrDeltaText)}</small></strong></div>
+      <p>${escapeHtml(trendHint)}</p>`;
+  }
+
+  container.innerHTML = `
+    <div class="dynamics-tabs" role="tablist" aria-label="${escapeHtml(t("dynamicsTitle"))}">
+      <button class="dynamics-tab is-active" type="button">${escapeHtml(t("dynamicsEasy"))}</button>
+      <button class="dynamics-tab is-disabled" type="button" disabled>${escapeHtml(t("dynamicsTempo"))}<span>${escapeHtml(t("dynamicsComingSoon"))}</span></button>
+      <button class="dynamics-tab is-disabled" type="button" disabled>${escapeHtml(t("dynamicsIntervals"))}<span>${escapeHtml(t("dynamicsComingSoon"))}</span></button>
+      <button class="dynamics-tab is-disabled" type="button" disabled>${escapeHtml(t("dynamicsLong"))}<span>${escapeHtml(t("dynamicsComingSoon"))}</span></button>
+    </div>
+    <article class="dynamics-module">
+      <div class="dynamics-module-heading"><div><span class="eyebrow">${escapeHtml(t("dynamicsEasy"))}</span><h2>${escapeHtml(t("historyEasyDynamics"))}</h2></div></div>
+      ${easyHtml}
+    </article>`;
+}
+
+function renderHistoryControls() {
+  const controls = document.querySelector("#historyControls");
+  if (!controls) return;
+  const typeButtons = ["all", "run", "tempo", "intervals", "long"].map(type => `
+    <button type="button" class="history-filter ${historyTypeFilter === type ? "is-active" : ""}" data-history-type="${type}">${escapeHtml(historyFilterLabel(type))}</button>`).join("");
+  const periodButtons = ["7", "30", "all"].map(period => `
+    <button type="button" class="history-filter ${historyPeriodFilter === period ? "is-active" : ""}" data-history-period="${period}">${escapeHtml(t(period === "7" ? "historyPeriod7" : period === "30" ? "historyPeriod30" : "historyPeriodAll"))}</button>`).join("");
+  controls.innerHTML = `
+    <div class="history-filter-group"><span class="history-filter-label">${escapeHtml(currentLanguage === "uk" ? "Тип" : "Type")}</span><div class="history-filter-row">${typeButtons}</div></div>
+    <div class="history-filter-group"><span class="history-filter-label">${escapeHtml(currentLanguage === "uk" ? "Період" : "Period")}</span><div class="history-filter-row">${periodButtons}</div></div>`;
+}
+
+function renderHistoryList(workouts = historyFilteredWorkouts()) {
+  const container = document.querySelector("#historyList");
+  const status = document.querySelector("#historyStatus");
+  const stats = document.querySelector("#historyStats");
+  if (!container) return;
+
+  renderHistoryControls();
+  renderHistoryAnalytics(workouts);
+
+  if (!workouts.length) {
+    if (stats) stats.innerHTML = "";
+    container.innerHTML = `
+      <div class="history-empty">
+        <div class="history-empty-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 18.2c2.2 0 4-1.3 5-3.3l1.4-2.8c.7-1.5 2.2-2.5 3.9-2.5 1.2 0 2.3.4 3.2 1.1"></path><path d="M8.3 10.2 6.8 7.5a1.5 1.5 0 0 1 2.6-1.5l1.4 2.4"></path><path d="M15.8 8.7 17 6.3a1.5 1.5 0 0 1 2.8 1.1l-.8 2.3"></path></svg></div>
+        <strong>${escapeHtml(historyWorkouts.length ? (currentLanguage === "uk" ? "За цими фільтрами тренувань немає." : "No workouts match these filters.") : t("historyEmpty"))}</strong>
+        <p>${escapeHtml(historyWorkouts.length ? (currentLanguage === "uk" ? "Спробуй змінити тип або період." : "Try another type or period.") : t("historyCopy"))}</p>
+        ${historyWorkouts.length ? "" : `<button type="button" class="history-empty-button" data-view-target="analysis">${escapeHtml(t("historyEmptyAction"))}</button>`}
+      </div>`;
+    if (status) status.textContent = "";
+    return;
+  }
+
+  const totalDistance = workouts.reduce((sum, w) => sum + (Number(w.distance_km) || 0), 0);
+  const totalTime = workouts.reduce((sum, w) => sum + (Number(w.duration_sec) || 0), 0);
+  if (stats) {
+    stats.innerHTML = `
+      <article class="history-stat-card"><span class="history-stat-label">${escapeHtml(t("historyStatsWorkouts"))}</span><strong>${workouts.length}</strong></article>
+      <article class="history-stat-card"><span class="history-stat-label">${escapeHtml(t("historyStatsDistance"))}</span><strong>${escapeHtml(totalDistance.toFixed(1).replace(".", currentLanguage === "uk" ? "," : "."))} <small>${currentLanguage === "uk" ? "км" : "km"}</small></strong></article>
+      <article class="history-stat-card"><span class="history-stat-label">${escapeHtml(t("historyStatsTime"))}</span><strong>${escapeHtml(formatHistoryTotalTime(totalTime))}</strong></article>`;
+  }
+
+  container.innerHTML = workouts.map(workout => `
+    <article class="history-item" data-history-id="${escapeHtml(workout.id)}">
+      <div class="history-workout-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 4h7l3 3v13H7z"></path><path d="M14 4v4h4"></path><path d="M9.5 12h5M9.5 15h5"></path></svg></div>
+      <div class="history-item-main">
+        <div class="history-item-heading"><div><p class="eyebrow">${escapeHtml(formatHistoryDate(workout.workout_date))}</p><h3>${escapeHtml(workoutTypeLabel(derivedWorkoutType(workout)))}</h3></div><strong class="history-distance">${escapeHtml(formatHistoryDistance(workout.distance_km))}</strong></div>
+        <div class="history-metrics"><span><b>${escapeHtml(t("pace"))}</b> ${escapeHtml(workout.pace || "—")}</span><span><b>${escapeHtml(t("time"))}</b> ${escapeHtml(formatHistoryDuration(workout.duration_sec))}</span><span><b>${escapeHtml(t("heartRate"))}</b> ${workout.heart_rate != null ? `${Math.round(workout.heart_rate)} ${currentLanguage === "uk" ? "уд/хв" : "bpm"}` : "—"}</span><span><b>${escapeHtml(t("ascent"))}</b> ${workout.ascent_m != null ? `+${Math.round(workout.ascent_m)} ${currentLanguage === "uk" ? "м" : "m"}` : "—"}</span></div>
+      </div>
+      <div class="history-item-actions"><button type="button" class="history-view-button" data-history-view="${escapeHtml(workout.id)}">${escapeHtml(t("historyOpen"))}</button><button type="button" class="history-delete-button" data-history-delete="${escapeHtml(workout.id)}" aria-label="${escapeHtml(t("historyDelete"))}">×</button></div>
+    </article>`).join("");
+  if (status) status.textContent = `${workouts.length} ${currentLanguage === "uk" ? "тренувань" : "workouts"}`;
+}
+
+async function loadWorkoutHistory(force = false) {
+  const container = document.querySelector("#historyList");
+  const status = document.querySelector("#historyStatus");
+  if (!container) return;
+  if (!currentSession?.user) {
+    historyWorkouts = [];
+    renderHistoryControls();
+    renderHistoryAnalytics([]);
+    renderDynamics([]);
+    renderHome([]);
+    if (document.querySelector("#historyStats")) document.querySelector("#historyStats").innerHTML = "";
+    container.innerHTML = `<div class="history-empty"><strong>${escapeHtml(t("historyLoginHint"))}</strong></div>`;
+    if (status) status.textContent = "";
+    historyLoaded = false;
+    return;
+  }
+  if (historyLoaded && !force) return;
+
+  container.innerHTML = `<div class="history-empty">${escapeHtml(t("historyLoading"))}</div>`;
+
+  const { data, error } = await supabaseClient
+    .from("workouts")
+    .select("id, workout_date, distance_km, duration_sec, pace, heart_rate, cadence, calories, ascent_m, workout_type, splits, structure, ai_analysis, workout_key, created_at")
+    .eq("user_id", currentSession.user.id)
+    .order("workout_date", { ascending: false })
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.warn("Runory: could not load workout history.", error);
+    container.innerHTML = `<div class="history-empty"><strong>${escapeHtml(t("historyError"))}</strong><p>${escapeHtml(error.message || "")}</p></div>`;
+    historyLoaded = false;
+    return;
+  }
+
+  historyWorkouts = data || [];
+  renderHistoryList(historyFilteredWorkouts());
+  renderDynamics(historyWorkouts);
+  renderHome(historyWorkouts);
+  historyLoaded = true;
+  if (window.__runoryPendingWorkoutId) {
+    const pendingId = window.__runoryPendingWorkoutId;
+    window.__runoryPendingWorkoutId = null;
+    openWorkoutFromHistoryId(pendingId);
+  }
+}
+
+function historyRecordToWorkout(record) {
+  return {
+    distance: Number(record.distance_km).toFixed(2),
+    duration: formatHistoryDuration(record.duration_sec),
+    pace: record.pace || "—",
+    heartRate: record.heart_rate,
+    cadence: record.cadence,
+    calories: record.calories,
+    ascent: record.ascent_m,
+    splits: Array.isArray(record.splits) ? record.splits : [],
+    structure: Array.isArray(record.structure) ? record.structure : [],
+    date: record.workout_date ? new Date(record.workout_date) : null,
+    _historyId: record.id,
+    _aiAnalysis: record.ai_analysis || null
+  };
+}
+
+function openWorkoutFromHistory(record) {
+  currentHistoryId = record.id;
+  currentWorkout = historyRecordToWorkout(record);
+  renderSummary(currentWorkout);
+  if (record.ai_analysis) {
+    if (aiAnalysis) aiAnalysis.hidden = false;
+    if (aiAnalysisText) {
+      aiAnalysisText.innerHTML = renderAiAnalysis(record.ai_analysis);
+      aiAnalysis?.classList.remove("is-loading");
+    }
+  }
+  setActiveView("analysis", { updateRoute: false });
+  const target = `/workouts/${encodeURIComponent(record.id)}`;
+  if (window.location.pathname !== target) window.history.pushState({ view: "analysis", workoutId: record.id }, "", target);
+  if (results) results.hidden = false;
+  window.setTimeout(() => results?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
+}
+
+async function deleteWorkoutFromHistory(id) {
+  if (!supabaseClient || !currentSession?.user || !id) return;
+  const { error } = await supabaseClient
+    .from("workouts")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", currentSession.user.id);
+  if (error) {
+    setAuthMessage(error.message || t("historyDeleteError"), "error");
+    return;
+  }
+  if (currentHistoryId === id) {
+    currentHistoryId = null;
+    currentWorkout = null;
+    if (results) results.hidden = true;
+  }
+  setAuthMessage(t("historyDeleted"), "success");
+  await loadWorkoutHistory(true);
+}
+
+document.addEventListener("click", event => {
+  const typeButton = event.target.closest("[data-history-type]");
+  if (typeButton) {
+    historyTypeFilter = typeButton.dataset.historyType || "all";
+    renderHistoryList(historyFilteredWorkouts());
+    return;
+  }
+  const periodButton = event.target.closest("[data-history-period]");
+  if (periodButton) {
+    historyPeriodFilter = periodButton.dataset.historyPeriod || "all";
+    renderHistoryList(historyFilteredWorkouts());
+  }
+});
+
+document.addEventListener("click", async event => {
+  const viewButton = event.target.closest("[data-history-view]");
+  if (viewButton) {
+    const id = viewButton.dataset.historyView;
+    const { data, error } = await supabaseClient
+      .from("workouts")
+      .select("id, workout_date, distance_km, duration_sec, pace, heart_rate, cadence, calories, ascent_m, workout_type, splits, structure, ai_analysis, workout_key, created_at")
+      .eq("id", id)
+      .eq("user_id", currentSession?.user?.id || "")
+      .single();
+    if (!error && data) openWorkoutFromHistory(data);
+    return;
+  }
+
+  const deleteButton = event.target.closest("[data-history-delete]");
+  if (deleteButton) {
+    await deleteWorkoutFromHistory(deleteButton.dataset.historyDelete);
+  }
+});
+
+async function analyzeWithAI() {
+  if (!currentWorkout || !aiAnalyzeButton) return;
+
+  aiAnalyzeButton.disabled = true;
+  aiAnalyzeButton.classList.add("is-loading");
+  aiAnalyzeButton.innerHTML =
+    `<span class="ai-button-icon">✦</span><span>${escapeHtml(t("aiLoading"))}</span>`;
+
+  if (aiAnalysis) {
+    aiAnalysis.hidden = false;
+    aiAnalysis.classList.add("is-loading");
+  }
+
+  if (aiAnalysisText) {
+    aiAnalysisText.innerHTML =
+      '<div class="ai-loader"><span></span><span></span><span></span></div>';
+  }
+
+  try {
+    const response = await fetch("/api/analyze", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ ...currentWorkout, language: currentLanguage })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || t("errorAi"));
+    }
+
+    const analysisText = data.analysis || t("errorAiUnavailable");
+    currentWorkout._aiAnalysis = analysisText;
+
+    if (aiAnalysisText) {
+      aiAnalysisText.innerHTML =
+        renderAiAnalysis(analysisText);
+    }
+
+    if (aiAnalysis) {
+      aiAnalysis.classList.remove("is-loading");
+      aiAnalysis.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest"
+      });
+    }
+  } catch (error) {
+    if (aiAnalysisText) {
+      aiAnalysisText.innerHTML =
+        `<p class="ai-error">${escapeHtml(error.message || t("errorAiGeneric"))}</p>`;
+    }
+    if (aiAnalysis) aiAnalysis.classList.remove("is-loading");
+  } finally {
+    aiAnalyzeButton.disabled = false;
+    aiAnalyzeButton.classList.remove("is-loading");
+    aiAnalyzeButton.innerHTML =
+      `<span class="ai-button-icon">✦</span><span>${escapeHtml(t("aiButton"))}</span>`;
+  }
+}
+
+aiAnalyzeButton?.addEventListener("click", analyzeWithAI);
+
+function showWorkoutSavePanel() {
+  if (!workoutSavePanel) return;
+  workoutSavePanel.hidden = false;
+  if (workoutSaveStatus) workoutSaveStatus.textContent = "";
+  if (saveWorkoutButton) {
+    saveWorkoutButton.disabled = false;
+    saveWorkoutButton.hidden = false;
+    saveWorkoutButton.textContent = t("saveWorkout");
+  }
+  if (cancelWorkoutButton) {
+    cancelWorkoutButton.disabled = false;
+    cancelWorkoutButton.hidden = false;
+  }
+}
+
+function setWorkoutSaveBusy(isBusy) {
+  if (saveWorkoutButton) {
+    saveWorkoutButton.disabled = isBusy;
+    saveWorkoutButton.textContent = isBusy ? t("savingWorkout") : t("saveWorkout");
+  }
+  if (cancelWorkoutButton) cancelWorkoutButton.disabled = isBusy;
+}
+
+async function handleSaveWorkout() {
+  if (!currentWorkout || !currentSession?.user || !saveWorkoutButton) return;
+
+  setWorkoutSaveBusy(true);
+  saveWorkoutButton.hidden = true;
+  cancelWorkoutButton.hidden = true;
+  if (workoutSaveStatus) workoutSaveStatus.textContent = t("savingWorkout");
+
+  const saved = await saveWorkoutToHistory(currentWorkout, currentWorkout._aiAnalysis || null);
+  if (saved) {
+    if (workoutSaveStatus) workoutSaveStatus.textContent = t("workoutSaved");
+  } else {
+    saveWorkoutButton.hidden = false;
+    cancelWorkoutButton.hidden = false;
+    setWorkoutSaveBusy(false);
+    if (workoutSaveStatus) workoutSaveStatus.textContent = t("historySaveError");
+  }
+}
+
+function handleCancelWorkout() {
+  currentWorkout = null;
+  currentHistoryId = null;
+  if (workoutSavePanel) workoutSavePanel.hidden = true;
+  if (results) results.hidden = true;
+  if (aiAnalysis) aiAnalysis.hidden = true;
+  if (aiAnalysisText) aiAnalysisText.innerHTML = "";
+  if (input) input.value = "";
+  if (uploadState) uploadState.hidden = true;
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+saveWorkoutButton?.addEventListener("click", handleSaveWorkout);
+cancelWorkoutButton?.addEventListener("click", handleCancelWorkout);
+
+async function selectFile(file) {
+  if (!file) return;
+
+  if (!file.name.toLowerCase().endsWith(".fit")) {
+    uploadState.hidden = false;
+    uploadState.classList.add("has-error");
+    fileStatus.textContent = t("chooseFitError");
+    return;
+  }
+
+  uploadState.hidden = false;
+  uploadState.classList.remove("has-error");
+  results.hidden = true;
+
+  fileName.textContent = file.name;
+  fileStatus.textContent = t("preparing");
+  progressBar.style.width = "0%";
+  progressValue.textContent = "0%";
+
+  let percent = 0;
+  const timer = window.setInterval(() => {
+    percent = Math.min(percent + 8, 72);
+    progressBar.style.width = `${percent}%`;
+    progressValue.textContent = `${percent}%`;
+
+    if (percent >= 72) window.clearInterval(timer);
+  }, 85);
+
+  try {
+    const summary = await parseFitFile(file);
+
+    window.clearInterval(timer);
+    currentWorkout = summary;
+    currentHistoryId = null;
+
+    renderSummary(summary);
+    showWorkoutSavePanel();
+
+    progressBar.style.width = "100%";
+    progressValue.textContent = "100%";
+    fileStatus.textContent = t("readyToView");
+
+    window.setTimeout(() => {
+      results.hidden = false;
+      results.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+    }, 250);
+  } catch (error) {
+    window.clearInterval(timer);
+
+    uploadState.classList.add("has-error");
+    progressBar.style.width = "0%";
+    progressValue.textContent = "—";
+    fileStatus.textContent =
+      error.message || t("readFileError");
+  }
+}
+
+input?.addEventListener("change", event => {
+  selectFile(event.target.files[0]);
+});
+
+["dragenter", "dragover"].forEach(eventName => {
+  dropZone?.addEventListener(eventName, event => {
+    event.preventDefault();
+    dropZone.classList.add("is-dragging");
+  });
+});
+
+["dragleave", "drop"].forEach(eventName => {
+  dropZone?.addEventListener(eventName, event => {
+    event.preventDefault();
+    dropZone.classList.remove("is-dragging");
+  });
+});
+
+dropZone?.addEventListener("drop", event => {
+  selectFile(event.dataTransfer.files[0]);
+});
+
+resetButton?.addEventListener("click", () => {
+  input.value = "";
+  uploadState.hidden = true;
+  results.hidden = true;
+  currentWorkout = null;
+
+  progressBar.style.width = "0%";
+  progressValue.textContent = "0%";
+
+  if (aiAnalysis) aiAnalysis.hidden = true;
+  if (splitsBody) splitsBody.innerHTML = "";
+  if (structureBody) structureBody.innerHTML = "";
+  if (structureCard) structureCard.hidden = true;
+});
+
+
+document.querySelectorAll(".language-button").forEach(button => {
+  button.addEventListener("click", () => setLanguage(button.dataset.lang));
+});
+
+document.querySelector("#addWorkoutButton")?.addEventListener("click", () => {
+  navigateToView("analysis");
+  window.setTimeout(() => document.querySelector("#fileInput")?.click(), 0);
+});
+
+applyLanguage();
+
+
+// === Runory authentication (Supabase) ===
+const SUPABASE_URL = "https://vabzqqptpzcoguvuujaz.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_Jm_w-bNZJ8bnrGIbkzc5yw_IGZjneHN";
+const supabaseClient = window.supabase?.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    flowType: "pkce"
+  }
+});
+
+const authButton = document.querySelector("#authButton");
+const authButtonText = document.querySelector("#authButtonText");
+const authModal = document.querySelector("#authModal");
+const authModalBackdrop = document.querySelector("#authModalBackdrop");
+const authClose = document.querySelector("#authClose");
+const authFormView = document.querySelector("#authFormView");
+const authAccountView = document.querySelector("#authAccountView");
+const authAccountEmail = document.querySelector("#authAccountEmail");
+const authMessage = document.querySelector("#authMessage");
+const googleSignInButton = document.querySelector("#googleSignInButton");
+const emailAuthForm = document.querySelector("#emailAuthForm");
+const emailAuthSubmitText = document.querySelector("#emailAuthSubmitText");
+const authSwitchQuestion = document.querySelector("#authSwitchQuestion");
+const authSwitchButton = document.querySelector("#authSwitchButton");
+const authLogoutButton = document.querySelector("#authLogoutButton");
+const openProfileFromAccount = document.querySelector("#openProfileFromAccount");
+const profileForm = document.querySelector("#profileForm");
+const profileBirthDate = document.querySelector("#profileBirthDate");
+const profileBirthDatePicker = document.querySelector("#profileBirthDatePicker");
+const profileBirthDatePickerButton = document.querySelector("#profileBirthDatePickerButton");
+const profileGender = document.querySelector("#profileGender");
+const profileHeight = document.querySelector("#profileHeight");
+const profileWeight = document.querySelector("#profileWeight");
+const profileSaveButton = document.querySelector("#profileSaveButton");
+const profileMessage = document.querySelector("#profileMessage");
+
+let authMode = "signin";
+let currentSession = null;
+
+function setAuthMessage(message = "", type = "") {
+  if (!authMessage) return;
+  authMessage.textContent = message;
+  authMessage.className = `auth-message${type ? ` is-${type}` : ""}`;
+}
+
+function setAuthMode(mode) {
+  authMode = mode === "signup" ? "signup" : "signin";
+  if (emailAuthSubmitText) emailAuthSubmitText.textContent = t(authMode === "signup" ? "authSubmitSignUp" : "authSubmitSignIn");
+  if (authSwitchQuestion) authSwitchQuestion.textContent = t(authMode === "signup" ? "authHaveAccount" : "authNoAccount");
+  if (authSwitchButton) authSwitchButton.textContent = t(authMode === "signup" ? "authSwitchToSignIn" : "authCreateAccount");
+  if (emailAuthForm) {
+    const password = document.querySelector("#authPassword");
+    if (password) password.autocomplete = authMode === "signup" ? "new-password" : "current-password";
+  }
+  setAuthMessage("");
+}
+
+function updateAuthUI(session) {
+  currentSession = session || null;
+  const user = currentSession?.user;
+  const signedIn = Boolean(user);
+
+  if (authButton) authButton.classList.toggle("is-signed-in", signedIn);
+  if (authButtonText) {
+    authButtonText.textContent = signedIn
+      ? t("authAccount")
+      : t("authSignIn");
+  }
+
+  if (authAccountEmail) {
+    authAccountEmail.textContent = signedIn
+      ? `${t("authLoggedInAs")}: ${user.email || user.phone || "—"}`
+      : "";
+  }
+
+  if (authFormView) authFormView.hidden = signedIn;
+  if (authAccountView) authAccountView.hidden = !signedIn;
+
+  if (!signedIn) {
+    clearProfileForm();
+  }
+}
+
+function openAuthModal() {
+  if (!authModal) return;
+  authModal.hidden = false;
+  document.body.classList.add("auth-modal-open");
+  setAuthMode("signin");
+  updateAuthUI(currentSession);
+  window.setTimeout(() => {
+    const target = currentSession ? authLogoutButton : document.querySelector("#authEmail");
+    target?.focus();
+  }, 0);
+}
+
+function closeAuthModal() {
+  if (!authModal) return;
+  authModal.hidden = true;
+  document.body.classList.remove("auth-modal-open");
+  setAuthMessage("");
+}
+
+async function signInWithGoogle() {
+  if (!supabaseClient) {
+    setAuthMessage(t("authGoogleError"), "error");
+    return;
+  }
+
+  googleSignInButton?.setAttribute("disabled", "disabled");
+  setAuthMessage("");
+
+  const { error } = await supabaseClient.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: `${window.location.origin}/auth/callback.html`
+    }
+  });
+
+  if (error) {
+    setAuthMessage(error.message || t("authGoogleError"), "error");
+    googleSignInButton?.removeAttribute("disabled");
+  }
+}
+
+async function submitEmailAuth(event) {
+  event.preventDefault();
+  if (!supabaseClient) {
+    setAuthMessage(t("authError"), "error");
+    return;
+  }
+
+  const email = document.querySelector("#authEmail")?.value.trim();
+  const password = document.querySelector("#authPassword")?.value || "";
+  const submit = document.querySelector("#emailAuthSubmit");
+
+  if (!email || !password) return;
+
+  submit?.setAttribute("disabled", "disabled");
+  setAuthMessage("");
+
+  try {
+    if (authMode === "signup") {
+      const { data, error } = await supabaseClient.auth.signUp({
+        email,
+        password,
+        options: { emailRedirectTo: window.location.origin }
+      });
+      if (error) throw error;
+
+      if (data.session) {
+        updateAuthUI(data.session);
+        setAuthMessage(t("authSignedIn"), "success");
+      } else {
+        setAuthMessage(t("authSignedUp"), "success");
+      }
+    } else {
+      const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      updateAuthUI(data.session);
+      setAuthMessage(t("authSignedIn"), "success");
+      window.setTimeout(closeAuthModal, 500);
+    }
+  } catch (error) {
+    setAuthMessage(error.message || t("authError"), "error");
+  } finally {
+    submit?.removeAttribute("disabled");
+  }
+}
+
+
+function setProfileMessage(message = "", type = "") {
+  if (!profileMessage) return;
+  profileMessage.textContent = message;
+  profileMessage.className = `auth-message${type ? ` is-${type}` : ""}`;
+}
+
+function formatBirthDate(isoDate) {
+  if (!isoDate || !/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) return "";
+  const [year, month, day] = isoDate.split("-");
+  return `${day}.${month}.${year}`;
+}
+
+function parseBirthDate(value) {
+  const normalized = String(value || "").trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(normalized)) return normalized;
+  const match = normalized.match(/^(\d{2})[.\/](\d{2})[.\/](\d{4})$/);
+  if (!match) return "";
+  const [, day, month, year] = match;
+  const candidate = `${year}-${month}-${day}`;
+  const date = new Date(`${candidate}T00:00:00`);
+  if (Number.isNaN(date.getTime()) || date.getFullYear() !== Number(year) || date.getMonth() + 1 !== Number(month) || date.getDate() !== Number(day)) return "";
+  return candidate;
+}
+
+function clearProfileForm() {
+  if (profileBirthDate) profileBirthDate.value = "";
+  if (profileBirthDatePicker) profileBirthDatePicker.value = "";
+  if (profileGender) profileGender.value = "";
+  if (profileHeight) profileHeight.value = "";
+  if (profileWeight) profileWeight.value = "";
+  setProfileMessage("");
+}
+
+function fillProfileForm(profile) {
+  const isoDate = profile?.birth_date || "";
+  if (profileBirthDate) profileBirthDate.value = formatBirthDate(isoDate);
+  if (profileBirthDatePicker) profileBirthDatePicker.value = isoDate;
+  if (profileGender) profileGender.value = profile?.gender || "";
+  if (profileHeight) profileHeight.value = profile?.height_cm ?? "";
+  if (profileWeight) profileWeight.value = profile?.weight_kg ?? "";
+}
+
+async function ensureUserProfile(user) {
+  if (!supabaseClient || !user) return;
+
+  setProfileMessage("");
+
+  try {
+    // Do not upsert a partial row while opening the profile. Some profile
+    // columns may be required, so a read-only lookup must happen first.
+    const { data: profile, error } = await supabaseClient
+      .from("profiles")
+      .select("id, birth_date, gender, height_cm, weight_kg")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    fillProfileForm(profile || null);
+  } catch (error) {
+    console.warn("Runory: could not load profile.", error);
+    setProfileMessage(error?.message || t("profileLoadError"), "error");
+  }
+}
+
+async function saveUserProfile(event) {
+  event.preventDefault();
+
+  if (!supabaseClient || !currentSession?.user) return;
+
+  const userId = currentSession.user.id;
+  const birthDate = parseBirthDate(profileBirthDate?.value || "");
+  const gender = profileGender?.value || "";
+  const height = profileHeight?.value ? Number(profileHeight.value) : null;
+  const weight = profileWeight?.value ? Number(profileWeight.value) : null;
+
+  if (!birthDate || !gender || !Number.isFinite(height) || !Number.isFinite(weight)) {
+    setProfileMessage(!birthDate ? "Введи дату у форматі ДД.ММ.РРРР." : "Заповни всі поля профілю.", "error");
+    return;
+  }
+
+  const payload = {
+    birth_date: birthDate,
+    gender,
+    height_cm: height,
+    weight_kg: weight
+  };
+
+  profileSaveButton?.setAttribute("disabled", "disabled");
+  setProfileMessage("");
+
+  try {
+    const { data, error } = await supabaseClient
+      .from("profiles")
+      .upsert({ id: userId, ...payload }, { onConflict: "id" })
+      .select("id, birth_date, gender, height_cm, weight_kg")
+      .single();
+
+    if (error) throw error;
+
+    fillProfileForm(data);
+    setProfileMessage(t("profileSaved"), "success");
+  } catch (error) {
+    console.warn("Runory: could not save profile.", error);
+    setProfileMessage(error?.message || t("profileSaveError"), "error");
+  } finally {
+    profileSaveButton?.removeAttribute("disabled");
+  }
+}
+
+async function signOut() {
+  if (!supabaseClient) return;
+  const { error } = await supabaseClient.auth.signOut();
+  if (error) {
+    setAuthMessage(error.message || t("authError"), "error");
+    return;
+  }
+  updateAuthUI(null);
+  setAuthMessage(t("authSignedOut"), "success");
+  window.setTimeout(closeAuthModal, 350);
+}
+
+async function initAuth() {
+  if (!supabaseClient) {
+    console.warn("Runory: Supabase client could not be initialized.");
+    return;
+  }
+
+  const { data, error } = await supabaseClient.auth.getSession();
+  if (error) {
+    console.warn("Runory: could not restore auth session.", error);
+  }
+  updateAuthUI(data?.session || null);
+  historyLoaded = false;
+  if (data?.session?.user) {
+    await ensureUserProfile(data.session.user);
+    if (window.__runoryPendingWorkoutId) await loadWorkoutHistory(true);
+  } else if (window.__runoryPendingWorkoutId) {
+    openAuthModal();
+  }
+
+  supabaseClient.auth.onAuthStateChange((event, session) => {
+    window.setTimeout(async () => {
+      updateAuthUI(session);
+      historyLoaded = false;
+      if (session?.user) await ensureUserProfile(session.user);
+      if (window.__runoryPendingWorkoutId || document.querySelector("#home")?.classList.contains("is-active") || document.querySelector("#history")?.classList.contains("is-active") || document.querySelector("#dynamics")?.classList.contains("is-active")) loadWorkoutHistory(true);
+    }, 0);
+  });
+}
+
+authButton?.addEventListener("click", openAuthModal);
+authClose?.addEventListener("click", closeAuthModal);
+authModalBackdrop?.addEventListener("click", closeAuthModal);
+googleSignInButton?.addEventListener("click", signInWithGoogle);
+emailAuthForm?.addEventListener("submit", submitEmailAuth);
+authSwitchButton?.addEventListener("click", () => setAuthMode(authMode === "signin" ? "signup" : "signin"));
+authLogoutButton?.addEventListener("click", signOut);
+openProfileFromAccount?.addEventListener("click", () => { closeAuthModal(); navigateToView("profile"); });
+profileBirthDatePickerButton?.addEventListener("click", () => {
+  // iOS Safari may not support showPicker() and may ignore click() on a
+  // fully hidden date input. Keep the native input as a transparent overlay
+  // on the calendar button instead, while this handler remains a desktop fallback.
+  try {
+    if (typeof profileBirthDatePicker?.showPicker === "function") {
+      profileBirthDatePicker.showPicker();
+      return;
+    }
+  } catch (error) {
+    console.debug("Runory: native date picker fallback", error);
+  }
+  profileBirthDatePicker?.focus();
+});
+
+profileBirthDatePicker?.addEventListener("change", () => {
+  if (profileBirthDate) profileBirthDate.value = formatBirthDate(profileBirthDatePicker.value);
+});
+
+profileBirthDate?.addEventListener("input", () => {
+  // Format the date immediately while typing: 07051993 -> 07.05.1993.
+  // Keep the field fully editable on desktop and mobile.
+  const digits = profileBirthDate.value.replace(/\D/g, "").slice(0, 8);
+  let formatted = digits;
+  if (digits.length > 2) formatted = `${digits.slice(0, 2)}.${digits.slice(2)}`;
+  if (digits.length > 4) formatted = `${digits.slice(0, 2)}.${digits.slice(2, 4)}.${digits.slice(4)}`;
+  profileBirthDate.value = formatted;
+  profileBirthDate.setSelectionRange(formatted.length, formatted.length);
+});
+
+profileBirthDate?.addEventListener("blur", () => {
+  const digits = profileBirthDate.value.replace(/\D/g, "").slice(0, 8);
+  if (!digits) return;
+  let formatted = digits;
+  if (digits.length > 2) formatted = `${digits.slice(0, 2)}.${digits.slice(2)}`;
+  if (digits.length > 4) formatted = `${digits.slice(0, 2)}.${digits.slice(2, 4)}.${digits.slice(4)}`;
+  profileBirthDate.value = formatted;
+});
+
+profileForm?.addEventListener("submit", saveUserProfile);
+
+document.querySelectorAll(".language-button").forEach(button => {
+  button.addEventListener("click", () => {
+    window.setTimeout(() => {
+      setAuthMode(authMode);
+      updateAuthUI(currentSession);
+    }, 0);
+  });
+});
+
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape" && authModal && !authModal.hidden) closeAuthModal();
+});
+
+
+// ==================== Runory calculator (SPA) ====================
+let calculatorInitialized = false;
+let activeCalculator = "time";
+
+const calculatorConfigs = {
+  time: { eyebrow: "timeEyebrow", title: "timeTitle", description: "timeDescription", label: "timeLabel", fields: ["distance", "pace"] },
+  distance: { eyebrow: "distanceEyebrow", title: "distanceTitle", description: "distanceDescription", label: "distanceLabel", fields: ["time", "pace"] },
+  pace: { eyebrow: "paceEyebrow", title: "paceTitle", description: "paceDescription", label: "paceLabel", fields: ["distance", "time"] }
+};
+
+function calculatorReadNumber(data, name) {
+  const value = data.get(name);
+  return value === "" || value === null ? 0 : Number(value);
+}
+
+function calculatorFormatDuration(seconds) {
+  const total = Math.round(seconds);
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const rest = String(total % 60).padStart(2, "0");
+  return hours
+    ? `${hours}:${String(minutes).padStart(2, "0")}:${rest}`
+    : `${minutes}:${rest}`;
+}
+
+function renderCalculator(type = activeCalculator, { preserveResult = false } = {}) {
+  const panel = document.querySelector("#calculator");
+  const fields = document.querySelector("#calculatorFields");
+  if (!panel || !fields || !calculatorConfigs[type]) return;
+
+  activeCalculator = type;
+  const config = calculatorConfigs[type];
+
+  panel.querySelectorAll(".calc-tab").forEach(tab => {
+    const active = tab.dataset.calculator === type;
+    tab.classList.toggle("is-active", active);
+    tab.setAttribute("aria-selected", String(active));
+    const labelKey = tab.dataset.calculator === "time"
+      ? "tabTime"
+      : tab.dataset.calculator === "distance"
+        ? "tabDistance"
+        : "tabPace";
+    tab.textContent = t(labelKey);
+  });
+
+  const eyebrow = panel.querySelector("#calc-eyebrow");
+  const title = panel.querySelector("#calc-title");
+  const description = panel.querySelector("#calc-description");
+  if (eyebrow) eyebrow.textContent = t(config.eyebrow);
+  if (title) title.textContent = t(config.title);
+  if (description) description.textContent = t(config.description);
+
+  fields.innerHTML = config.fields.map(field => {
+    if (field === "distance") {
+      return `
+        <label class="calc-field">
+          <span>${escapeHtml(t("distance"))}</span>
+          <div>
+            <input name="distance" inputmode="decimal" autocomplete="off" placeholder="${escapeHtml(t("exampleDistance"))}" required />
+            <em>${escapeHtml(t("km"))}</em>
+          </div>
+        </label>`;
+    }
+
+    if (field === "time") {
+      return `
+        <fieldset class="calc-field time-field">
+          <legend>${escapeHtml(t("time"))}</legend>
+          <div class="split-inputs">
+            <label><input name="timeHours" type="number" min="0" inputmode="numeric" placeholder="0" /><span>${escapeHtml(t("hours"))}</span></label>
+            <label><input name="timeMinutes" type="number" min="0" max="59" inputmode="numeric" placeholder="00" /><span>${escapeHtml(t("minutesShort"))}</span></label>
+            <label><input name="timeSeconds" type="number" min="0" max="59" inputmode="numeric" placeholder="00" /><span>${escapeHtml(t("secondsShort"))}</span></label>
+          </div>
+        </fieldset>`;
+    }
+
+    return `
+      <fieldset class="calc-field time-field">
+        <legend>${escapeHtml(t("pace"))}</legend>
+        <div class="split-inputs">
+          <label><input name="paceMinutes" type="number" min="0" inputmode="numeric" placeholder="5" required /><span>${escapeHtml(t("minutesShort"))}</span></label>
+          <label><input name="paceSeconds" type="number" min="0" max="59" inputmode="numeric" placeholder="30" /><span>${escapeHtml(t("secondsShort"))}</span></label>
+        </div>
+      </fieldset>`;
+  }).join("");
+
+  const button = panel.querySelector(".calculate-button");
+  if (button) button.textContent = t("calculate");
+
+  const result = panel.querySelector("#calculationResult");
+  if (result && !preserveResult) result.hidden = true;
+}
+
+function calculatorSubmit(event) {
+  event.preventDefault();
+
+  const data = new FormData(event.currentTarget);
+  const distance = Number(String(data.get("distance") || "").replace(",", "."));
+  const hours = calculatorReadNumber(data, "timeHours");
+  const minutes = calculatorReadNumber(data, "timeMinutes");
+  const seconds = calculatorReadNumber(data, "timeSeconds");
+  const paceMinutes = calculatorReadNumber(data, "paceMinutes");
+  const paceSeconds = calculatorReadNumber(data, "paceSeconds");
+
+  const totalTime = hours * 3600 + minutes * 60 + seconds;
+  const pace = paceMinutes * 60 + paceSeconds;
+
+  let value = null;
+  if (activeCalculator === "time" && distance > 0 && pace > 0) {
+    value = calculatorFormatDuration(distance * pace);
+  } else if (activeCalculator === "distance" && totalTime > 0 && pace > 0) {
+    value = (totalTime / pace).toFixed(2);
+  } else if (activeCalculator === "pace" && distance > 0 && totalTime > 0) {
+    value = calculatorFormatDuration(totalTime / distance);
+  }
+
+  const panel = document.querySelector("#calculator");
+  const result = panel?.querySelector("#calculationResult");
+  const resultLabel = panel?.querySelector("#result-label");
+  const resultValue = panel?.querySelector("#result-value");
+  const resultDetail = panel?.querySelector("#result-detail");
+  if (!result || !resultLabel || !resultValue || !resultDetail) return;
+
+  const invalidRange =
+    minutes < 0 || minutes > 59 ||
+    seconds < 0 || seconds > 59 ||
+    paceSeconds < 0 || paceSeconds > 59;
+
+  if (!value || invalidRange) {
+    resultLabel.textContent = t("checkValues");
+    resultValue.textContent = "—";
+    resultDetail.textContent = t("rangeError");
+  } else {
+    resultLabel.textContent = t(calculatorConfigs[activeCalculator].label);
+    resultValue.textContent =
+      activeCalculator === "distance" ? `${value} ${t("km")}` :
+      activeCalculator === "pace" ? `${value} ${t("perKm")}` :
+      value;
+    resultDetail.textContent = "";
+  }
+
+  result.hidden = false;
+}
+
+function initCalculator() {
+  const panel = document.querySelector("#calculator");
+  const form = document.querySelector("#calculatorForm");
+  if (!panel || !form) return;
+
+  if (!calculatorInitialized) {
+    calculatorInitialized = true;
+
+    form.addEventListener("submit", calculatorSubmit);
+
+    // Tabs stay in the DOM; fields are rebuilt. Delegation keeps tab clicks working.
+    panel.addEventListener("click", event => {
+      const tab = event.target.closest(".calc-tab");
+      if (!tab) return;
+      event.preventDefault();
+      renderCalculator(tab.dataset.calculator);
+    });
+  }
+
+  renderCalculator(activeCalculator);
+}
+
+function refreshCalculatorLanguage() {
+  const panel = document.querySelector("#calculator");
+  if (!panel?.classList.contains("is-active")) return;
+
+  renderCalculator(activeCalculator, { preserveResult: true });
+
+  const result = panel.querySelector("#calculationResult");
+  if (result && !result.hidden) {
+    const label = panel.querySelector("#result-label");
+    if (label) label.textContent = t(calculatorConfigs[activeCalculator].label);
+  }
+}
+
+initializeRoute();
+initAuth();
