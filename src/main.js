@@ -219,7 +219,8 @@ const translations = {
     aiFallbackTitle: "Аналіз",
     workoutLong: "Довга пробіжка",
     workoutIntervals: "Інтервальне тренування",
-    workoutTempo: "Темповий / рівномірний біг",
+    workoutTempo: "Темповий біг",
+    workoutSteady: "Рівномірний біг",
     workoutFartlek: "Фартлек",
     fastSegment: "Швидкий відрізок",
     slowSegment: "Повільний відрізок",
@@ -485,7 +486,8 @@ const translations = {
     aiFallbackTitle: "Analysis",
     workoutLong: "Long run",
     workoutIntervals: "Interval workout",
-    workoutTempo: "Tempo / steady run",
+    workoutTempo: "Tempo run",
+    workoutSteady: "Steady run",
     workoutFartlek: "Fartlek",
     fastSegment: "Fast segment",
     slowSegment: "Slow segment",
@@ -1054,16 +1056,31 @@ function detectContinuousTempo(summary, paces) {
   const hrGap = averageHr - baseline.hr;
 
   // If the runner is now running much faster at essentially the same easy HR,
-  // that is more likely improved aerobic fitness than a tempo workout.
-  if (hrGap <= 7 && paceGain >= 25) return null;
+  // that is more likely improved aerobic fitness than a quality workout.
+  if (hrGap <= 5 && paceGain >= 20) return null;
 
-  // Personalized tempo signal. The 30–50 sec/km range is a strong heuristic,
-  // not a universal threshold: the heart-rate gap must also show that this is
-  // materially harder than the runner's normal easy running.
-  const minGain = 30;
-  const highConfidenceGain = 50;
-  if (paceGain < minGain) return null;
-  if (hrGap < 8 && paceGain < highConfidenceGain) return null;
+  // Continuous quality has two levels. A moderate step above easy is a
+  // steady run: harder than easy, but not yet a true tempo effort.
+  // A larger pace gain combined with a clear HR increase is classified as
+  // tempo. These are personalized ranges, not universal pace thresholds.
+  if (paceGain >= 20 && paceGain < 35 && hrGap >= 6) {
+    return {
+      type: "steady",
+      variant: "continuous",
+      tempoStart: 0,
+      tempoEnd: paces.length - 1,
+      baselinePace: baseline.pace,
+      baselineHr: baseline.hr,
+      paceGain,
+      hrGap
+    };
+  }
+
+  const tempoSignal =
+    (paceGain >= 35 && hrGap >= 8)
+    || (paceGain >= 50 && hrGap >= 5);
+
+  if (!tempoSignal) return null;
 
   return {
     type: "tempo",
@@ -1225,6 +1242,7 @@ function detectWorkoutType(summary) {
   if (pattern.type === "intervals") return t("workoutIntervals");
   if (pattern.type === "fartlek") return t("workoutFartlek");
   if (pattern.type === "tempo") return t("workoutTempo");
+  if (pattern.type === "steady") return t("workoutSteady");
   if (pattern.type === "long") return t("workoutLong");
   return t("workoutRun");
 }
@@ -2339,6 +2357,7 @@ function getWorkoutTypeKey(summary) {
 
   if (pattern?.type === "intervals") return "intervals";
   if (pattern?.type === "tempo") return "tempo";
+  if (pattern?.type === "steady") return "steady";
   if (pattern?.type === "fartlek") return "fartlek";
   if (Number(summary?.distance) >= 16) return "long";
   return "run";
@@ -2348,6 +2367,7 @@ function workoutTypeLabel(value) {
   const map = {
     intervals: "workoutIntervals",
     tempo: "workoutTempo",
+    steady: "workoutSteady",
     fartlek: "workoutFartlek",
     long: "workoutLong",
     run: "workoutRun"
