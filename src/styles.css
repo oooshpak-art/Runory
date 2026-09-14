@@ -2811,3 +2811,51 @@
 .account-sidebar-link-secondary[data-view-target="calculator"].is-active > span:last-child {
   color: #fff !important;
 }
+
+/* Sidebar calculator — use the exact same interaction states as the main navigation. */
+.account-sidebar-link-secondary[data-view-target="calculator"] {
+  background: transparent !important;
+  color: #69746e !important;
+  border: 0 !important;
+  outline: none;
+  box-shadow: none !important;
+}
+.account-sidebar-link-secondary[data-view-target="calculator"]:hover {
+  background: #eef2ed !important;
+  color: var(--ink) !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+.account-sidebar-link-secondary[data-view-target="calculator"]:focus {
+  outline: none !important;
+}
+.account-sidebar-link-secondary[data-view-target="calculator"]:focus-visible {
+  outline: 2px solid #0b6cff !important;
+  outline-offset: 0 !important;
+}
+.account-sidebar-link-secondary[data-view-target="calculator"].is-active,
+.account-sidebar-link-secondary[data-view-target="calculator"].is-active:hover {
+  background: var(--ink) !important;
+  color: #fff !important;
+  border: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+.account-sidebar-link-secondary[data-view-target="calculator"].is-active:focus-visible {
+  outline: 2px solid #0b6cff !important;
+  outline-offset: 0 !important;
+}
+.account-sidebar-link-secondary[data-view-target="calculator"] .account-sidebar-icon,
+.account-sidebar-link-secondary[data-view-target="calculator"]:hover .account-sidebar-icon {
+  background: transparent !important;
+  color: currentColor !important;
+  box-shadow: none !important;
+}
+.account-sidebar-link-secondary[data-view-target="calculator"].is-active .account-sidebar-icon,
+.account-sidebar-link-secondary[data-view-target="calculator"].is-active:hover .account-sidebar-icon {
+  background: transparent !important;
+  color: var(--lime) !important;
+}
+.account-sidebar-link-secondary[data-view-target="calculator"].is-active > span:last-child {
+  color: #fff !important;
+}
