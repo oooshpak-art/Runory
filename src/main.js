@@ -3389,7 +3389,14 @@ async function initAuth() {
   historyLoaded = false;
   if (data?.session?.user) {
     await ensureUserProfile(data.session.user);
-    if (window.__runoryPendingWorkoutId) await loadWorkoutHistory(true);
+
+    // The initial route is resolved before auth restoration. If the user
+    // opens Training/Dynamics directly, the first load sees no session and
+    // clears the history. Reload it after Supabase restores the session.
+    const activeDataView = document.querySelector("#home.is-active, #history.is-active, #dynamics.is-active");
+    if (window.__runoryPendingWorkoutId || activeDataView) {
+      await loadWorkoutHistory(true);
+    }
   } else if (window.__runoryPendingWorkoutId) {
     openAuthModal();
   }
