@@ -968,6 +968,115 @@ function renderAiAnalysis(text) {
   return parts.join("");
 }
 
+
+function weightedMedianByRecency(items, valueGetter) {
+  const rows = items
+    .map((item, index) => {
+      const value = valueGetter(item);
+      const date = item?.workout_date ? new Date(item.workout_date) : null;
+      const ageDays = date && !Number.isNaN(date.getTime())
+        ? Math.max(0, (Date.now() - date.getTime()) / 86400000)
+        : index * 7;
+      const weight = Math.exp(-ageDays / 45);
+      return { value, weight };
+    })
+    .filter(row => Number.isFinite(row.value) && Number.isFinite(row.weight) && row.weight > 0)
+    .sort((a, b) => a.value - b.value);
+  if (!rows.length) return null;
+  const totalWeight = rows.reduce((sum, row) => sum + row.weight, 0);
+  let cumulative = 0;
+  for (const row of rows) {
+    cumulative += row.weight;
+    if (cumulative >= totalWeight / 2) return row.value;
+  }
+  return rows.at(-1).value;
+}
+
+function getPersonalEasyBaseline(summary = null) {
+  const history = Array.isArray(historyWorkouts) ? historyWorkouts : [];
+  if (!history.length) return null;
+
+  // Use only workouts that are currently stored as ordinary runs. We do not
+  // call derivedWorkoutType() here because continuous-tempo detection itself
+  // depends on this baseline and would otherwise recurse.
+  const easy = history
+    .filter(workout => historyTypeClass(workout?.workout_type) === "run")
+    .filter(workout => Number.isFinite(Number(workout?.heart_rate)) && paceToSeconds(workout?.pace) != null)
+    .filter(workout => Number(workout?.distance_km) >= 5)
+    .sort((a, b) => new Date(b.workout_date || b.created_at || 0) - new Date(a.workout_date || a.created_at || 0))
+    .slice(0, 12);
+
+  if (easy.length < 3) return null;
+
+  return {
+    pace: weightedMedianByRecency(easy, workout => paceToSeconds(workout.pace)),
+    hr: weightedMedianByRecency(easy, workout => Number(workout.heart_rate)),
+    count: easy.length,
+    workouts: easy
+  };
+}
+
+function detectContinuousTempo(summary, paces) {
+  const distance = Number(summary?.distance);
+  if (!Number.isFinite(distance) || distance < 5 || paces.length < 5) return null;
+
+  // Explicit Garmin interval structure always wins over inferred continuous tempo.
+  const structure = Array.isArray(summary?.structure) ? summary.structure : [];
+  if (structure.some(block => block?.type === "intervals" && Array.isArray(block.repetitions) && block.repetitions.length)) {
+    return null;
+  }
+
+  const sorted = [...paces].sort((a, b) => a - b);
+  const medianPace = sorted.length % 2
+    ? sorted[Math.floor(sorted.length / 2)]
+    : (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2;
+  const spread = Math.max(...paces) - Math.min(...paces);
+  const mean = paces.reduce((sum, pace) => sum + pace, 0) / paces.length;
+  const meanAbsDeviation = paces.reduce((sum, pace) => sum + Math.abs(pace - mean), 0) / paces.length;
+
+  // A continuous tempo should look continuous: no pronounced warm-up/cool-down
+  // and no large pace swings between kilometres.
+  const edgeCount = Math.max(1, Math.min(2, Math.floor(paces.length / 4)));
+  const firstEdge = paces.slice(0, edgeCount).reduce((a, b) => a + b, 0) / edgeCount;
+  const lastEdge = paces.slice(-edgeCount).reduce((a, b) => a + b, 0) / edgeCount;
+  const edgeDeviation = Math.max(Math.abs(firstEdge - medianPace), Math.abs(lastEdge - medianPace));
+  const stableEnough = spread <= Math.max(15, medianPace * 0.055) && meanAbsDeviation <= medianPace * 0.022;
+  const continuousFromStart = edgeDeviation <= Math.max(8, medianPace * 0.045);
+  if (!stableEnough || !continuousFromStart) return null;
+
+  const baseline = getPersonalEasyBaseline(summary);
+  if (!baseline || !Number.isFinite(baseline.pace) || !Number.isFinite(baseline.hr)) return null;
+
+  const averageHr = Number(summary?.heartRate);
+  if (!Number.isFinite(averageHr)) return null;
+
+  const paceGain = baseline.pace - mean;
+  const hrGap = averageHr - baseline.hr;
+
+  // If the runner is now running much faster at essentially the same easy HR,
+  // that is more likely improved aerobic fitness than a tempo workout.
+  if (hrGap <= 7 && paceGain >= 25) return null;
+
+  // Personalized tempo signal. The 30–50 sec/km range is a strong heuristic,
+  // not a universal threshold: the heart-rate gap must also show that this is
+  // materially harder than the runner's normal easy running.
+  const minGain = 30;
+  const highConfidenceGain = 50;
+  if (paceGain < minGain) return null;
+  if (hrGap < 8 && paceGain < highConfidenceGain) return null;
+
+  return {
+    type: "tempo",
+    variant: "continuous",
+    tempoStart: 0,
+    tempoEnd: paces.length - 1,
+    baselinePace: baseline.pace,
+    baselineHr: baseline.hr,
+    paceGain,
+    hrGap
+  };
+}
+
 function getWorkoutPattern(summary) {
   const distance = Number(summary?.distance);
   const splits = Array.isArray(summary?.splits) ? summary.splits : [];
@@ -1016,6 +1125,10 @@ function getWorkoutPattern(summary) {
 
     return { type: "intervals" };
   }
+
+  const continuousTempo = detectContinuousTempo(summary, paces);
+  if (continuousTempo) return continuousTempo;
+
   if (paces.length < 4) {
     return distance >= 16 ? { type: "long" } : { type: "run" };
   }
