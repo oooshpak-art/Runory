@@ -2749,3 +2749,9 @@
   background: var(--ink) !important;
   color: var(--lime) !important;
 }
+
+/* Calculator sidebar item: same hover behavior as the other sidebar navigation items. */
+.account-sidebar-link[data-view-target="calculator"]:hover {
+  background: transparent;
+  color: inherit;
+}
