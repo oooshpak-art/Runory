@@ -2594,6 +2594,34 @@ function renderHome(workouts = historyWorkouts) {
 
   document.querySelector("#homeDynamicsButton")?.addEventListener("click", () => navigateToView("dynamics"));
   document.querySelector("#homeHistoryButton")?.addEventListener("click", () => navigateToView("history"));
+  document.querySelector("#homeAddWorkoutButton")?.addEventListener("click", () => document.querySelector("#addWorkoutButton")?.click());
+  document.querySelectorAll("[data-home-workout]").forEach(button => button.addEventListener("click", () => {
+    const id = button.dataset.homeWorkout;
+    window.history.pushState({ view: "analysis", workoutId: id }, "", `/workouts/${encodeURIComponent(id)}`);
+    openWorkoutFromHistoryId(id);
+  }));
+}
+
+function openWorkoutFromHistoryId(id) {
+  const record = historyWorkouts.find(item => String(item.id) === String(id));
+  if (!record) return;
+  openWorkoutFromHistory(record);
+}
+
+function renderHistoryAnalytics(workouts) {
+  const analytics = document.querySelector("#historyAnalytics");
+  if (!analytics) return;
+  if (!workouts.length) { analytics.innerHTML = ""; return; }
+
+  const byWeek = new Map();
+  workouts.forEach(workout => {
+    const date = workout.workout_date ? new Date(workout.workout_date) : null;
+    if (!date || Number.isNaN(date.getTime())) return;
+    const key = getWeekStart(date).toISOString().slice(0, 10);
+    if (!byWeek.has(key)) byWeek.set(key, { date: getWeekStart(date), distance: 0 });
+    const row = byWeek.get(key);
+    row.distance += Number(workout.distance_km) || 0;
+  });
 
   const weeks = [...byWeek.values()].sort((a, b) => a.date - b.date).slice(-8);
   const maxDistance = Math.max(...weeks.map(w => w.distance), 1);
@@ -3388,15 +3416,11 @@ async function initAuth() {
   updateAuthUI(data?.session || null);
   historyLoaded = false;
   if (data?.session?.user) {
-    // Profile loading must never block workout history.
     try {
       await ensureUserProfile(data.session.user);
     } catch (error) {
       console.warn("Runory: profile restore skipped.", error);
     }
-
-    // The route is resolved before auth restoration. Once Supabase restores
-    // the session, explicitly load the data for the currently visible view.
     const activeDataView = document.querySelector("#home.is-active, #history.is-active, #dynamics.is-active");
     if (window.__runoryPendingWorkoutId || activeDataView) {
       await loadWorkoutHistory(true);
@@ -3484,7 +3508,6 @@ document.querySelectorAll(".language-button").forEach(button => {
 document.addEventListener("keydown", event => {
   if (event.key === "Escape" && authModal && !authModal.hidden) closeAuthModal();
 });
-
 
 // ==================== Runory calculator (SPA) ====================
 let calculatorInitialized = false;
