@@ -967,7 +967,7 @@ function getWorkoutPattern(summary) {
     }, 0) / 1000;
 
     const isLongWithWork =
-      distance >= 18
+      distance >= 16
       && preWorkDistance >= 12
       && preWorkDistance / Math.max(distance, 1) >= 0.45;
 
@@ -1069,7 +1069,7 @@ function getWorkoutPattern(summary) {
     }
   }
 
-  if (distance >= 15) return { type: "long" };
+  if (distance >= 16) return { type: "long" };
   return { type: "run" };
 }
 
