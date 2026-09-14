@@ -62,6 +62,35 @@ const translations = {
     homeIntervals: "Інтервали",
     homeLong: "Довгі",
     navCalculator: "Калькулятор бігу",
+    calcPageTitle: "Runory — калькулятор бігу",
+    calcHeroTitle: "Плануй забіг<br />у цифрах.",
+    calcHeroCopy: "Введи два значення — Runory одразу порахує третє.",
+    calculatorEyebrow: "ІНСТРУМЕНТ БІГУНА",
+    calculatorType: "Тип розрахунку",
+    tabTime: "Знайти час",
+    tabDistance: "Знайти дистанцію",
+    tabPace: "Знайти темп",
+    timeEyebrow: "ДИСТАНЦІЯ + ТЕМП",
+    timeTitle: "Який буде час?",
+    timeDescription: "Вкажи дистанцію та бажаний темп.",
+    timeLabel: "Твій орієнтовний час",
+    distanceEyebrow: "ЧАС + ТЕМП",
+    distanceTitle: "Яка буде дистанція?",
+    distanceDescription: "Вкажи час, який маєш, і свій темп.",
+    distanceLabel: "Твоя орієнтовна дистанція",
+    paceEyebrow: "ДИСТАНЦІЯ + ЧАС",
+    paceTitle: "Який потрібен темп?",
+    paceDescription: "Вкажи дистанцію та бажаний фінішний час.",
+    paceLabel: "Твій потрібний темп",
+    exampleDistance: "Наприклад, 21.1",
+    hours: "год",
+    minutesShort: "хв",
+    secondsShort: "сек",
+    calculate: "Розрахувати",
+    resultTime: "Твій орієнтовний час",
+    checkValues: "Перевір введені значення",
+    rangeError: "Хвилини та секунди мають бути від 0 до 59.",
+    perKm: "/ км",
     heroEyebrow: "РОЗУМНИЙ ПІДХІД ДО ТВОЇХ ТРЕНУВАНЬ",
     heroTitle: "Кожен кілометр<br />має значення.",
     heroCopy: "Runory — аналіз твоїх тренувань у цифрах.<br />Завантаж тренування з Garmin та дізнайся,<br />що насправді відбулося під час пробіжки.",
@@ -282,6 +311,35 @@ const translations = {
     homeIntervals: "Intervals",
     homeLong: "Long",
     navCalculator: "Running calculator",
+    calcPageTitle: "Runory — running calculator",
+    calcHeroTitle: "Plan your run<br />with numbers.",
+    calcHeroCopy: "Enter two values — Runory will calculate the third instantly.",
+    calculatorEyebrow: "RUNNER'S TOOL",
+    calculatorType: "Calculation type",
+    tabTime: "Find time",
+    tabDistance: "Find distance",
+    tabPace: "Find pace",
+    timeEyebrow: "DISTANCE + PACE",
+    timeTitle: "What will the time be?",
+    timeDescription: "Enter the distance and target pace.",
+    timeLabel: "Your estimated time",
+    distanceEyebrow: "TIME + PACE",
+    distanceTitle: "What will the distance be?",
+    distanceDescription: "Enter the time you have and your pace.",
+    distanceLabel: "Your estimated distance",
+    paceEyebrow: "DISTANCE + TIME",
+    paceTitle: "What pace do you need?",
+    paceDescription: "Enter the distance and target finish time.",
+    paceLabel: "Your required pace",
+    exampleDistance: "For example, 21.1",
+    hours: "hr",
+    minutesShort: "min",
+    secondsShort: "sec",
+    calculate: "Calculate",
+    resultTime: "Your estimated time",
+    checkValues: "Check the entered values",
+    rangeError: "Minutes and seconds must be between 0 and 59.",
+    perKm: "/ km",
     heroEyebrow: "A SMARTER APPROACH TO YOUR TRAINING",
     heroTitle: "Every kilometer<br />matters.",
     heroCopy: "Runory — your training, analyzed through data.<br />Upload a Garmin workout and find out<br />what really happened during your run.",
@@ -504,9 +562,9 @@ function applyLanguage() {
     element.setAttribute("aria-label", t(element.dataset.i18nAria));
   });
 
-  const title = currentLanguage === "uk"
-    ? "Runory — аналіз тренувань"
-    : "Runory — workout analysis";
+  const title = document.querySelector("#calculator")?.classList.contains("is-active")
+    ? t("calcPageTitle")
+    : (currentLanguage === "uk" ? "Runory — аналіз тренувань" : "Runory — workout analysis");
   document.title = title;
 
   const home = document.querySelector(".brand");
@@ -541,11 +599,12 @@ function setLanguage(language) {
   currentLanguage = language;
   localStorage.setItem("runory-language", currentLanguage);
   applyLanguage();
+  refreshCalculatorLanguage();
 }
 
 
 function routeForView(viewName) {
-  const map = { home: "/", history: "/workouts", dynamics: "/progress", profile: "/account" };
+  const map = { home: "/", history: "/workouts", dynamics: "/progress", profile: "/account", calculator: "/calculator" };
   return map[viewName] || "/";
 }
 
@@ -582,6 +641,10 @@ function setActiveView(viewName, { updateRoute = true } = {}) {
     loadWorkoutHistory();
   }
 
+  if (viewName === "calculator") {
+    initCalculator();
+  }
+
   if (viewName === "profile") {
     if (currentSession?.user) {
       ensureUserProfile(currentSession.user);
@@ -606,7 +669,7 @@ function initializeRoute() {
     return;
   }
   const path = window.location.pathname.replace(/\/$/, "") || "/";
-  const view = path === "/workouts" ? "history" : path === "/progress" ? "dynamics" : path === "/account" ? "profile" : "home";
+  const view = path === "/workouts" ? "history" : path === "/progress" ? "dynamics" : path === "/account" ? "profile" : path === "/calculator" ? "calculator" : "home";
   setActiveView(view, { updateRoute: false });
 }
 
@@ -2524,12 +2587,6 @@ function renderHome(workouts = historyWorkouts) {
       </div>
     </div>
 
-    <section class="home-tools" aria-label="Інструменти бігу">
-      <button class="home-tool-card" type="button" data-home-tool="time"><span class="home-tool-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"></circle><path d="M12 7v5l3 2"></path></svg></span><span><strong>Знайти час</strong><small>Розрахуй свій фінішний час на будь-яку дистанцію.</small></span><b>→</b></button>
-      <button class="home-tool-card" type="button" data-home-tool="distance"><span class="home-tool-icon"><svg viewBox="0 0 24 24"><path d="M5 18c2.2-3.4 3.9-6.5 6.6-8.2C14.2 8.1 16.6 7.8 19 5.5"></path><circle cx="5" cy="18" r="2"></circle><path d="M19 5.5v5M19 5.5h-4"></path></svg></span><span><strong>Знайти дистанцію</strong><small>Дізнайся, яку відстань ти подолаєш за свій час.</small></span><b>→</b></button>
-      <button class="home-tool-card" type="button" data-home-tool="pace"><span class="home-tool-icon"><svg viewBox="0 0 24 24"><path d="M4 15h4l2-6 3 10 2-6h5"></path></svg></span><span><strong>Знайти темп</strong><small>Підбери оптимальний темп для своїх цілей.</small></span><b>→</b></button>
-    </section>
-
     <section class="home-recent-section">
       <div class="home-section-heading"><h2>Останні тренування</h2><button class="home-outline-button" type="button" id="homeHistoryButton">Всі тренування&nbsp; →</button></div>
       <div class="home-recent-list">${recentHtml}</div>
@@ -2537,37 +2594,6 @@ function renderHome(workouts = historyWorkouts) {
 
   document.querySelector("#homeDynamicsButton")?.addEventListener("click", () => navigateToView("dynamics"));
   document.querySelector("#homeHistoryButton")?.addEventListener("click", () => navigateToView("history"));
-  document.querySelectorAll("[data-home-tool]").forEach(button => button.addEventListener("click", () => {
-    window.location.href = "/calculator";
-  }));
-  document.querySelector("#homeAddWorkoutButton")?.addEventListener("click", () => document.querySelector("#addWorkoutButton")?.click());
-  document.querySelectorAll("[data-home-workout]").forEach(button => button.addEventListener("click", () => {
-    const id = button.dataset.homeWorkout;
-    window.history.pushState({ view: "analysis", workoutId: id }, "", `/workouts/${encodeURIComponent(id)}`);
-    openWorkoutFromHistoryId(id);
-  }));
-}
-
-function openWorkoutFromHistoryId(id) {
-  const record = historyWorkouts.find(item => String(item.id) === String(id));
-  if (!record) return;
-  openWorkoutFromHistory(record);
-}
-
-function renderHistoryAnalytics(workouts) {
-  const analytics = document.querySelector("#historyAnalytics");
-  if (!analytics) return;
-  if (!workouts.length) { analytics.innerHTML = ""; return; }
-
-  const byWeek = new Map();
-  workouts.forEach(workout => {
-    const date = workout.workout_date ? new Date(workout.workout_date) : null;
-    if (!date || Number.isNaN(date.getTime())) return;
-    const key = getWeekStart(date).toISOString().slice(0, 10);
-    if (!byWeek.has(key)) byWeek.set(key, { date: getWeekStart(date), distance: 0 });
-    const row = byWeek.get(key);
-    row.distance += Number(workout.distance_km) || 0;
-  });
 
   const weeks = [...byWeek.values()].sort((a, b) => a.date - b.date).slice(-8);
   const maxDistance = Math.max(...weeks.map(w => w.distance), 1);
@@ -3439,6 +3465,181 @@ document.querySelectorAll(".language-button").forEach(button => {
 document.addEventListener("keydown", event => {
   if (event.key === "Escape" && authModal && !authModal.hidden) closeAuthModal();
 });
+
+
+// ==================== Runory calculator (SPA) ====================
+let calculatorInitialized = false;
+let activeCalculator = "time";
+
+const calculatorConfigs = {
+  time: { eyebrow: "timeEyebrow", title: "timeTitle", description: "timeDescription", label: "timeLabel", fields: ["distance", "pace"] },
+  distance: { eyebrow: "distanceEyebrow", title: "distanceTitle", description: "distanceDescription", label: "distanceLabel", fields: ["time", "pace"] },
+  pace: { eyebrow: "paceEyebrow", title: "paceTitle", description: "paceDescription", label: "paceLabel", fields: ["distance", "time"] }
+};
+
+function calculatorReadNumber(data, name) {
+  const value = data.get(name);
+  return value === "" || value === null ? 0 : Number(value);
+}
+
+function calculatorFormatDuration(seconds) {
+  const total = Math.round(seconds);
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const rest = String(total % 60).padStart(2, "0");
+  return hours
+    ? `${hours}:${String(minutes).padStart(2, "0")}:${rest}`
+    : `${minutes}:${rest}`;
+}
+
+function renderCalculator(type = activeCalculator, { preserveResult = false } = {}) {
+  const panel = document.querySelector("#calculator");
+  const fields = document.querySelector("#calculatorFields");
+  if (!panel || !fields || !calculatorConfigs[type]) return;
+
+  activeCalculator = type;
+  const config = calculatorConfigs[type];
+
+  panel.querySelectorAll(".calc-tab").forEach(tab => {
+    const active = tab.dataset.calculator === type;
+    tab.classList.toggle("is-active", active);
+    tab.setAttribute("aria-selected", String(active));
+    tab.textContent = t(type === "time" ? "tabTime" : type === "distance" ? "tabDistance" : "tabPace");
+  });
+
+  const eyebrow = panel.querySelector("#calc-eyebrow");
+  const title = panel.querySelector("#calc-title");
+  const description = panel.querySelector("#calc-description");
+  if (eyebrow) eyebrow.textContent = t(config.eyebrow);
+  if (title) title.textContent = t(config.title);
+  if (description) description.textContent = t(config.description);
+
+  fields.innerHTML = config.fields.map(field => {
+    if (field === "distance") {
+      return `
+        <label class="calc-field">
+          <span>${escapeHtml(t("distance"))}</span>
+          <div>
+            <input name="distance" inputmode="decimal" autocomplete="off" placeholder="${escapeHtml(t("exampleDistance"))}" required />
+            <em>${escapeHtml(t("km"))}</em>
+          </div>
+        </label>`;
+    }
+
+    if (field === "time") {
+      return `
+        <fieldset class="calc-field time-field">
+          <legend>${escapeHtml(t("time"))}</legend>
+          <div class="split-inputs">
+            <label><input name="timeHours" type="number" min="0" inputmode="numeric" placeholder="0" /><span>${escapeHtml(t("hours"))}</span></label>
+            <label><input name="timeMinutes" type="number" min="0" max="59" inputmode="numeric" placeholder="00" /><span>${escapeHtml(t("minutesShort"))}</span></label>
+            <label><input name="timeSeconds" type="number" min="0" max="59" inputmode="numeric" placeholder="00" /><span>${escapeHtml(t("secondsShort"))}</span></label>
+          </div>
+        </fieldset>`;
+    }
+
+    return `
+      <fieldset class="calc-field time-field">
+        <legend>${escapeHtml(t("pace"))}</legend>
+        <div class="split-inputs">
+          <label><input name="paceMinutes" type="number" min="0" inputmode="numeric" placeholder="5" required /><span>${escapeHtml(t("minutesShort"))}</span></label>
+          <label><input name="paceSeconds" type="number" min="0" max="59" inputmode="numeric" placeholder="30" /><span>${escapeHtml(t("secondsShort"))}</span></label>
+        </div>
+      </fieldset>`;
+  }).join("");
+
+  const button = panel.querySelector(".calculate-button");
+  if (button) button.textContent = t("calculate");
+
+  const result = panel.querySelector("#calculationResult");
+  if (result && !preserveResult) result.hidden = true;
+}
+
+function calculatorSubmit(event) {
+  event.preventDefault();
+
+  const data = new FormData(event.currentTarget);
+  const distance = Number(String(data.get("distance") || "").replace(",", "."));
+  const hours = calculatorReadNumber(data, "timeHours");
+  const minutes = calculatorReadNumber(data, "timeMinutes");
+  const seconds = calculatorReadNumber(data, "timeSeconds");
+  const paceMinutes = calculatorReadNumber(data, "paceMinutes");
+  const paceSeconds = calculatorReadNumber(data, "paceSeconds");
+
+  const totalTime = hours * 3600 + minutes * 60 + seconds;
+  const pace = paceMinutes * 60 + paceSeconds;
+
+  let value = null;
+  if (activeCalculator === "time" && distance > 0 && pace > 0) {
+    value = calculatorFormatDuration(distance * pace);
+  } else if (activeCalculator === "distance" && totalTime > 0 && pace > 0) {
+    value = (totalTime / pace).toFixed(2);
+  } else if (activeCalculator === "pace" && distance > 0 && totalTime > 0) {
+    value = calculatorFormatDuration(totalTime / distance);
+  }
+
+  const panel = document.querySelector("#calculator");
+  const result = panel?.querySelector("#calculationResult");
+  const resultLabel = panel?.querySelector("#result-label");
+  const resultValue = panel?.querySelector("#result-value");
+  const resultDetail = panel?.querySelector("#result-detail");
+  if (!result || !resultLabel || !resultValue || !resultDetail) return;
+
+  const invalidRange =
+    minutes < 0 || minutes > 59 ||
+    seconds < 0 || seconds > 59 ||
+    paceSeconds < 0 || paceSeconds > 59;
+
+  if (!value || invalidRange) {
+    resultLabel.textContent = t("checkValues");
+    resultValue.textContent = "—";
+    resultDetail.textContent = t("rangeError");
+  } else {
+    resultLabel.textContent = t(calculatorConfigs[activeCalculator].label);
+    resultValue.textContent =
+      activeCalculator === "distance" ? `${value} ${t("km")}` :
+      activeCalculator === "pace" ? `${value} ${t("perKm")}` :
+      value;
+    resultDetail.textContent = "";
+  }
+
+  result.hidden = false;
+}
+
+function initCalculator() {
+  const panel = document.querySelector("#calculator");
+  const form = document.querySelector("#calculatorForm");
+  if (!panel || !form) return;
+
+  if (!calculatorInitialized) {
+    calculatorInitialized = true;
+
+    form.addEventListener("submit", calculatorSubmit);
+
+    // Tabs stay in the DOM; fields are rebuilt. Delegation keeps tab clicks working.
+    panel.addEventListener("click", event => {
+      const tab = event.target.closest(".calc-tab");
+      if (!tab) return;
+      event.preventDefault();
+      renderCalculator(tab.dataset.calculator);
+    });
+  }
+
+  renderCalculator(activeCalculator);
+}
+
+function refreshCalculatorLanguage() {
+  const panel = document.querySelector("#calculator");
+  if (!panel?.classList.contains("is-active")) return;
+
+  renderCalculator(activeCalculator, { preserveResult: true });
+
+  const result = panel.querySelector("#calculationResult");
+  if (result && !result.hidden) {
+    const label = panel.querySelector("#result-label");
+    if (label) label.textContent = t(calculatorConfigs[activeCalculator].label);
+  }
+}
 
 initializeRoute();
 initAuth();
