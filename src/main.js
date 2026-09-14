@@ -2644,6 +2644,8 @@ function derivedWorkoutType(record) {
   // filters in sync with the current workout-classification logic.
   const summary = {
     distance: Number(record.distance_km) || 0,
+    pace: record.pace || null,
+    heartRate: Number.isFinite(Number(record.heart_rate)) ? Number(record.heart_rate) : null,
     splits: Array.isArray(record.splits) ? record.splits : [],
     structure
   };
