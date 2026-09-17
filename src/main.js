@@ -3253,7 +3253,7 @@ function buildIntervalDynamics(workouts) {
 
 
 function longRunProfile(workout) {
-  if (!workout || derivedWorkoutType(workout) !== "long") return null;
+  if (!workout) return null;
   const structure = Array.isArray(workout.structure) ? workout.structure : [];
   const intervalIndex = structure.findIndex(block =>
     block?.type === "intervals" && Array.isArray(block.repetitions) && block.repetitions.length > 0
@@ -3265,6 +3265,7 @@ function longRunProfile(workout) {
 
   const hasWork = intervalIndex >= 0;
   if (!hasWork) {
+    if (derivedWorkoutType(workout) !== "long") return null;
     return {
       kind: "simple",
       distance,
@@ -3280,6 +3281,12 @@ function longRunProfile(workout) {
     if (!block || ["intervals", "recovery", "cooldown"].includes(block.type)) return sum;
     return sum + (Number(block.distance) || 0);
   }, 0) / 1000;
+  // Dynamics should not depend on the stored/derived type here: older
+  // workouts may have been classified differently even though their actual
+  // structure is clearly a long run with work. Use the same long-run shape
+  // rule directly for the dynamics profile.
+  if (distance < 16 || preWorkDistance < 10 || preWorkDistance / Math.max(distance, 0.1) < 0.30) return null;
+
   const workProfile = intervalWorkoutProfile(workout);
   if (!workProfile) return null;
 
