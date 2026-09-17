@@ -1110,9 +1110,9 @@ function getWorkoutPattern(summary) {
     }, 0) / 1000;
 
     const isLongWithWork =
-      distance >= 16
-      && preWorkDistance >= 12
-      && preWorkDistance / Math.max(distance, 1) >= 0.45;
+      distance >= 20
+      && preWorkDistance >= 10
+      && preWorkDistance / Math.max(distance, 1) >= 0.30;
 
     if (isLongWithWork) {
       return {
@@ -2333,7 +2333,7 @@ function getWorkoutTypeKey(summary) {
         .slice(0, intervalIndex)
         .filter(block => ["easy", "warmup"].includes(block?.type))
         .reduce((sum, block) => sum + (Number(block?.distance) || 0), 0);
-      if (preWorkDistance >= 12000) return "long";
+      if (preWorkDistance >= 10000 && Number(summary?.distance) >= 20) return "long";
     }
   }
 
