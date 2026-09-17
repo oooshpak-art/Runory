@@ -220,7 +220,6 @@ const translations = {
     workoutLong: "Довга пробіжка",
     workoutIntervals: "Інтервальне тренування",
     workoutTempo: "Темповий біг",
-    workoutSteady: "Рівномірний біг",
     workoutFartlek: "Фартлек",
     fastSegment: "Швидкий відрізок",
     slowSegment: "Повільний відрізок",
@@ -487,7 +486,6 @@ const translations = {
     workoutLong: "Long run",
     workoutIntervals: "Interval workout",
     workoutTempo: "Tempo run",
-    workoutSteady: "Steady run",
     workoutFartlek: "Fartlek",
     fastSegment: "Fast segment",
     slowSegment: "Slow segment",
@@ -1020,7 +1018,7 @@ function getPersonalEasyBaseline(summary = null) {
 
 function detectContinuousTempo(summary, paces) {
   const distance = Number(summary?.distance);
-  if (!Number.isFinite(distance) || distance < 6 || paces.length < 6) return null;
+  if (!Number.isFinite(distance) || distance < 5 || paces.length < 5) return null;
 
   // Explicit Garmin interval structure always wins over inferred continuous tempo.
   const structure = Array.isArray(summary?.structure) ? summary.structure : [];
@@ -1036,14 +1034,14 @@ function detectContinuousTempo(summary, paces) {
   const mean = paces.reduce((sum, pace) => sum + pace, 0) / paces.length;
   const meanAbsDeviation = paces.reduce((sum, pace) => sum + Math.abs(pace - mean), 0) / paces.length;
 
-  // Continuous tempo must be genuinely continuous: stable pace from the start,
-  // without a pronounced warm-up/cool-down or large kilometre-to-kilometre swings.
+  // A continuous tempo should look continuous: no pronounced warm-up/cool-down
+  // and no large pace swings between kilometres.
   const edgeCount = Math.max(1, Math.min(2, Math.floor(paces.length / 4)));
   const firstEdge = paces.slice(0, edgeCount).reduce((a, b) => a + b, 0) / edgeCount;
   const lastEdge = paces.slice(-edgeCount).reduce((a, b) => a + b, 0) / edgeCount;
   const edgeDeviation = Math.max(Math.abs(firstEdge - medianPace), Math.abs(lastEdge - medianPace));
-  const stableEnough = spread <= Math.max(15, medianPace * 0.05) && meanAbsDeviation <= medianPace * 0.02;
-  const continuousFromStart = edgeDeviation <= Math.max(8, medianPace * 0.04);
+  const stableEnough = spread <= Math.max(15, medianPace * 0.055) && meanAbsDeviation <= medianPace * 0.022;
+  const continuousFromStart = edgeDeviation <= Math.max(8, medianPace * 0.045);
   if (!stableEnough || !continuousFromStart) return null;
 
   const baseline = getPersonalEasyBaseline(summary);
@@ -1055,17 +1053,16 @@ function detectContinuousTempo(summary, paces) {
   const paceGain = baseline.pace - mean;
   const hrGap = averageHr - baseline.hr;
 
-  // A faster pace at nearly the same easy HR is not tempo. The easy baseline
-  // should be allowed to move with improving fitness and changing conditions.
-  if (hrGap < 7) return null;
+  // A faster pace at roughly the same easy HR is not enough for tempo.
+  // It may simply reflect improved fitness, terrain, weather, or a good day.
+  // Keep it as an ordinary easy run so the personal baseline can adapt over time.
+  if (hrGap < 15) return null;
 
-  // Tempo requires a clearly meaningful step above the current easy pace and
-  // a corresponding rise in heart rate. No separate "steady" category exists:
-  // everything below this bar remains an ordinary run.
-  const tempoSignal =
-    (paceGain >= 45 && hrGap >= 10)
-    || (paceGain >= 55 && hrGap >= 7);
-
+  // Continuous tempo requires both a substantial pace separation from the
+  // runner's current easy baseline and a clearly higher cardiovascular load.
+  // There is intentionally no separate "steady" category: anything below
+  // this threshold remains an easy run.
+  const tempoSignal = paceGain >= 45;
   if (!tempoSignal) return null;
 
   return {
@@ -1228,7 +1225,6 @@ function detectWorkoutType(summary) {
   if (pattern.type === "intervals") return t("workoutIntervals");
   if (pattern.type === "fartlek") return t("workoutFartlek");
   if (pattern.type === "tempo") return t("workoutTempo");
-  if (pattern.type === "steady") return t("workoutSteady");
   if (pattern.type === "long") return t("workoutLong");
   return t("workoutRun");
 }
@@ -2343,7 +2339,6 @@ function getWorkoutTypeKey(summary) {
 
   if (pattern?.type === "intervals") return "intervals";
   if (pattern?.type === "tempo") return "tempo";
-  if (pattern?.type === "steady") return "steady";
   if (pattern?.type === "fartlek") return "fartlek";
   if (Number(summary?.distance) >= 16) return "long";
   return "run";
