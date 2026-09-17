@@ -1091,7 +1091,32 @@ function getWorkoutPattern(summary) {
     && block.repetitions.length > 0
   );
 
-  const hasIntervals = intervalIndex >= 0;
+  const intervalBlock = intervalIndex >= 0 ? structure[intervalIndex] : null;
+  const intervalReps = Array.isArray(intervalBlock?.repetitions) ? intervalBlock.repetitions : [];
+  const workDistances = intervalReps
+    .map(rep => Number(rep?.work?.distance))
+    .filter(Number.isFinite);
+  const workDurations = intervalReps
+    .map(rep => Number(rep?.work?.duration))
+    .filter(Number.isFinite);
+
+  // Garmin can use the same interval structure for short strides and for a
+  // real interval session. Treat a block as a true interval workout only
+  // when the work itself is substantial. Two long repetitions (e.g. 2×2 km)
+  // still count; several very short accelerations do not.
+  const substantialIntervalWork =
+    (intervalReps.length >= 3
+      && workDistances.length === intervalReps.length
+      && Math.min(...workDistances) >= 300)
+    || (intervalReps.length >= 3
+      && workDurations.length === intervalReps.length
+      && Math.min(...workDurations) >= 60)
+    || (workDistances.length === intervalReps.length
+      && workDistances.reduce((sum, value) => sum + value, 0) >= 3000)
+    || (workDurations.length === intervalReps.length
+      && workDurations.reduce((sum, value) => sum + value, 0) >= 480);
+
+  const hasIntervals = intervalIndex >= 0 && substantialIntervalWork;
 
   /*
    * A long run with a fast block at the end is still primarily a long run.
@@ -1102,8 +1127,9 @@ function getWorkoutPattern(summary) {
    * 12 km and at least ~45% of the whole activity. This keeps workouts such as
    * 2 km warm-up + 5×2 km as interval sessions.
    */
-  if (hasIntervals) {
-    const beforeInterval = structure.slice(0, intervalIndex);
+  if (intervalIndex >= 0) {
+    if (hasIntervals) {
+      const beforeInterval = structure.slice(0, intervalIndex);
     const preWorkDistance = beforeInterval.reduce((sum, block) => {
       if (!block || block.type === "intervals" || block.type === "recovery") return sum;
       return sum + (Number(block.distance) || 0);
@@ -1122,16 +1148,13 @@ function getWorkoutPattern(summary) {
         intervalIndex
       };
     }
+    }
 
     // Short strides before a long continuous block are not a true interval
     // session. Example: warm-up → 5×90 m accelerations → ~50 min steady/tempo
     // work → 5 min faster → recovery/cooldown. In that case the main purpose
     // is continuous tempo, not intervals.
-    const intervalBlock = structure[intervalIndex];
-    const reps = Array.isArray(intervalBlock?.repetitions) ? intervalBlock.repetitions : [];
-    const workDistances = reps
-      .map(rep => Number(rep?.work?.distance))
-      .filter(Number.isFinite);
+    const reps = intervalReps;
     const shortStrideBlock =
       reps.length >= 3
       && reps.length <= 8
@@ -1182,7 +1205,12 @@ function getWorkoutPattern(summary) {
       }
     }
 
-    return { type: "intervals" };
+    if (hasIntervals) return { type: "intervals" };
+
+    // A Garmin interval block made only of short accelerations is not a
+    // standalone interval workout. If it did not form a continuous tempo
+    // session above, fall through to ordinary run/long classification.
+    return distance >= 16 ? { type: "long" } : { type: "run" };
   }
 
   const continuousTempo = detectContinuousTempo(summary, paces);
