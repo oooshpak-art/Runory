@@ -3004,25 +3004,73 @@ function intervalWorkoutProfile(workout) {
   const analysis = getIntervalAnalysis(summary);
   if (!analysis || !analysis.reps.length) return null;
 
-  const workDistances = analysis.reps
+  const reps = analysis.reps;
+  const workDistances = reps
     .map(rep => Number(rep?.work?.distance))
     .filter(value => Number.isFinite(value) && value > 0);
-  const workDurations = analysis.reps
+  const workDurations = reps
     .map(rep => Number(rep?.work?.duration))
     .filter(value => Number.isFinite(value) && value > 0);
 
+  const medianDistance = workDistances.length ? median(workDistances) : null;
+  const medianDuration = workDurations.length ? median(workDurations) : null;
+  const distanceSpread = medianDistance ? (Math.max(...workDistances) - Math.min(...workDistances)) / medianDistance : Infinity;
+  const durationSpread = medianDuration ? (Math.max(...workDurations) - Math.min(...workDurations)) / medianDuration : Infinity;
+
+  // A workout with equal work durations is a time-based interval session.
+  // Do not turn 5:00 reps into an approximate distance (e.g. 1.1 km).
+  const isTimeBased = workDurations.length === reps.length && durationSpread <= 0.05;
+
+  // Distance-based sessions can have one or several distinct consecutive sets.
+  // Example: 4×1600 + 4×800 must remain exactly that, not 8×1200.
+  const distanceGroups = [];
+  if (!isTimeBased && workDistances.length === reps.length) {
+    for (const rep of reps) {
+      const distance = Number(rep?.work?.distance);
+      const last = distanceGroups.at(-1);
+      if (last && last.distance > 0 && Math.abs(distance - last.distance) / last.distance <= 0.05) {
+        last.count += 1;
+        last.distances.push(distance);
+      } else {
+        distanceGroups.push({ count: 1, distance, distances: [distance] });
+      }
+    }
+  }
+
+  const singleDistance = !isTimeBased && distanceGroups.length === 1;
+  const mixedDistance = !isTimeBased && distanceGroups.length > 1;
+
+  const setLabel = isTimeBased
+    ? `${reps.length} × ${formatIntervalDuration(medianDuration)}`
+    : mixedDistance
+      ? distanceGroups.map(group => `${group.count} × ${formatIntervalRepDistance(median(group.distances))}`).join(" + ")
+      : singleDistance
+        ? `${reps.length} × ${formatIntervalRepDistance(medianDistance)}`
+        : `${reps.length} × ${formatIntervalRepDistance(medianDistance)}`;
+
   return {
     analysis,
-    reps: analysis.reps.length,
-    repDistance: workDistances.length ? median(workDistances) : null,
-    repDuration: workDurations.length ? median(workDurations) : null,
+    reps: reps.length,
+    mode: isTimeBased ? "time" : mixedDistance ? "mixed-distance" : "distance",
+    repDistance: singleDistance ? medianDistance : null,
+    repDuration: isTimeBased ? medianDuration : null,
+    groups: distanceGroups,
+    setLabel,
     averagePace: analysis.average,
-    averageHr: analysis.reps
+    averageHr: reps
       .map(rep => Number(rep?.work?.heartRate))
       .filter(value => Number.isFinite(value) && value > 0)
       .reduce((sum, value, _, arr) => sum + value / arr.length, 0) || null,
     totalWorkDistance: analysis.totalWorkDistance
   };
+}
+
+function formatIntervalDuration(seconds) {
+  if (!Number.isFinite(seconds) || seconds <= 0) return "—";
+  const total = Math.round(seconds);
+  const minutes = Math.floor(total / 60);
+  const secs = String(total % 60).padStart(2, "0");
+  return `${minutes}:${secs}`;
 }
 
 function formatIntervalRepDistance(meters) {
@@ -3039,17 +3087,37 @@ function intervalComparable(current, candidate) {
   const candidateProfile = intervalWorkoutProfile(candidate);
   if (!currentProfile || !candidateProfile) return false;
 
-  // The main similarity axis is the length of one work repetition.
-  // The number of repetitions may differ: 7×1 km can be compared with 10×1 km.
-  if (currentProfile.repDistance != null && candidateProfile.repDistance != null) {
-    const ratio = candidateProfile.repDistance / currentProfile.repDistance;
-    if (ratio >= 0.85 && ratio <= 1.15) return true;
-    return false;
-  }
-
-  if (currentProfile.repDuration != null && candidateProfile.repDuration != null) {
+  // Time-based intervals compare only with time-based intervals of the same
+  // duration. Distance covered during the work rep is deliberately ignored.
+  if (currentProfile.mode === "time" || candidateProfile.mode === "time") {
+    if (currentProfile.mode !== "time" || candidateProfile.mode !== "time") return false;
+    if (currentProfile.repDuration == null || candidateProfile.repDuration == null) return false;
     const ratio = candidateProfile.repDuration / currentProfile.repDuration;
     return ratio >= 0.85 && ratio <= 1.15;
+  }
+
+  // A single-distance set (7×1 km, 10×1 km, 15×400 m, etc.) compares by the
+  // distance of one work repetition. The number of reps may differ.
+  if (currentProfile.mode === "distance" || candidateProfile.mode === "distance") {
+    if (currentProfile.mode !== "distance" || candidateProfile.mode !== "distance") return false;
+    if (currentProfile.repDistance == null || candidateProfile.repDistance == null) return false;
+    const ratio = candidateProfile.repDistance / currentProfile.repDistance;
+    return ratio >= 0.85 && ratio <= 1.15;
+  }
+
+  // Mixed-distance sessions must preserve their multi-part structure. A
+  // 4×1600 + 4×800 session is comparable only with another two-part session
+  // with the same order of work distances (within ±15%). Counts may differ.
+  if (currentProfile.mode === "mixed-distance" && candidateProfile.mode === "mixed-distance") {
+    const a = currentProfile.groups || [];
+    const b = candidateProfile.groups || [];
+    if (a.length !== b.length || !a.length) return false;
+    return a.every((group, index) => {
+      const other = b[index];
+      if (!other || !Number.isFinite(group.distance) || !Number.isFinite(other.distance)) return false;
+      const ratio = other.distance / group.distance;
+      return ratio >= 0.85 && ratio <= 1.15;
+    });
   }
 
   return false;
@@ -3154,7 +3222,7 @@ function renderIntervalDynamics(workouts) {
 
   const compared = t("historyIntervalCompared").replace("{count}", String(dynamics.count));
   const profile = dynamics.currentProfile;
-  const setText = `${profile.reps} × ${formatIntervalRepDistance(profile.repDistance)}`;
+  const setText = profile.setLabel || `${profile.reps} × ${formatIntervalRepDistance(profile.repDistance)}`;
   const workVolume = profile.totalWorkDistance / 1000;
   const volumeText = `${Number(workVolume.toFixed(2)).toString().replace(".", currentLanguage === "uk" ? "," : ".")} ${currentLanguage === "uk" ? "км" : "km"}`;
   const previous = dynamics.previous && dynamics.previousProfile
