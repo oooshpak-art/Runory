@@ -1059,24 +1059,7 @@ function detectContinuousTempo(summary, paces) {
   // that is more likely improved aerobic fitness than a quality workout.
   if (hrGap <= 5 && paceGain >= 20) return null;
 
-  // Continuous quality has two levels. A moderate step above easy is a
-  // steady run: harder than easy, but not yet a true tempo effort.
-  // A larger pace gain combined with a clear HR increase is classified as
-  // tempo. These are personalized ranges, not universal pace thresholds.
-  if (paceGain >= 20 && paceGain < 35 && hrGap >= 6) {
-    return {
-      type: "steady",
-      variant: "continuous",
-      tempoStart: 0,
-      tempoEnd: paces.length - 1,
-      baselinePace: baseline.pace,
-      baselineHr: baseline.hr,
-      paceGain,
-      hrGap
-    };
-  }
-
-  const tempoSignal =
+    const tempoSignal =
     (paceGain >= 35 && hrGap >= 8)
     || (paceGain >= 50 && hrGap >= 5);
 
@@ -1242,7 +1225,6 @@ function detectWorkoutType(summary) {
   if (pattern.type === "intervals") return t("workoutIntervals");
   if (pattern.type === "fartlek") return t("workoutFartlek");
   if (pattern.type === "tempo") return t("workoutTempo");
-  if (pattern.type === "steady") return t("workoutSteady");
   if (pattern.type === "long") return t("workoutLong");
   return t("workoutRun");
 }
@@ -2357,7 +2339,6 @@ function getWorkoutTypeKey(summary) {
 
   if (pattern?.type === "intervals") return "intervals";
   if (pattern?.type === "tempo") return "tempo";
-  if (pattern?.type === "steady") return "steady";
   if (pattern?.type === "fartlek") return "fartlek";
   if (Number(summary?.distance) >= 16) return "long";
   return "run";
@@ -2367,7 +2348,6 @@ function workoutTypeLabel(value) {
   const map = {
     intervals: "workoutIntervals",
     tempo: "workoutTempo",
-    steady: "workoutSteady",
     fartlek: "workoutFartlek",
     long: "workoutLong",
     run: "workoutRun"
