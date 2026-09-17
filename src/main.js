@@ -3058,9 +3058,16 @@ function intervalWorkoutProfile(workout) {
   const distanceSpread = medianDistance ? (Math.max(...workDistances) - Math.min(...workDistances)) / medianDistance : Infinity;
   const durationSpread = medianDuration ? (Math.max(...workDurations) - Math.min(...workDurations)) / medianDuration : Infinity;
 
-  // A workout with equal work durations is a time-based interval session.
-  // Do not turn 5:00 reps into an approximate distance (e.g. 1.1 km).
-  const isTimeBased = workDurations.length === reps.length && durationSpread <= 0.05;
+  // Distinguish time-based reps (e.g. 10×5:00) from distance-based reps.
+  // Garmin records duration for both, so duration alone is not enough:
+  // a 2 km rep can also take almost exactly the same time every repetition.
+  // Prefer distance when it matches a recognizable distance target (400/600/800/1000/1600/2000/3000 m).
+  const standardDistances = [200, 300, 400, 600, 800, 1000, 1200, 1600, 2000, 3000, 5000];
+  const hasRecognizableDistanceTarget = workDistances.length === reps.length && workDistances.length > 0
+    && workDistances.every(distance => standardDistances.some(target => Math.abs(distance - target) / target <= 0.05));
+  const isTimeBased = !hasRecognizableDistanceTarget
+    && workDurations.length === reps.length
+    && durationSpread <= 0.05;
 
   // Distance-based sessions can have one or several distinct consecutive sets.
   // Example: 4×1600 + 4×800 must remain exactly that, not 8×1200.
@@ -3406,7 +3413,7 @@ function buildLongDynamics(workouts) {
 function renderLongDynamics(workouts) {
   const dynamics = buildLongDynamics(workouts);
   const subtab = longDynamicsSubtab === "with_work" ? t("historyLongWithWork") : t("historyLongSimple");
-  if (!dynamics) {
+  if (!dynamics || dynamics.count < 2) {
     return `<div class="dynamics-empty"><strong>${escapeHtml(t("historyLongNoTrend"))}</strong><p>${escapeHtml(t("historyLongHint"))}</p></div>`;
   }
 
@@ -3558,7 +3565,7 @@ function renderDynamics(workouts) {
       <button class="dynamics-tab ${dynamicsActiveTab === "long" ? "is-active" : ""}" type="button" data-dynamics-tab="long">${escapeHtml(t("dynamicsLong"))}</button>
     </div>
     <article class="dynamics-module">
-      <div class="dynamics-module-heading"><div><span class="eyebrow">${escapeHtml(dynamicsActiveTab === "tempo" ? t("dynamicsTempo") : dynamicsActiveTab === "intervals" ? t("dynamicsIntervals") : t("dynamicsEasy"))}</span><h2>${escapeHtml(dynamicsActiveTab === "tempo" ? t("historyTempoDynamics") : dynamicsActiveTab === "intervals" ? t("historyIntervalDynamics") : dynamicsActiveTab === "long" ? t("historyLongDynamics") : t("historyEasyDynamics"))}</h2></div></div>
+      <div class="dynamics-module-heading"><div><span class="eyebrow">${escapeHtml(dynamicsActiveTab === "tempo" ? t("dynamicsTempo") : dynamicsActiveTab === "intervals" ? t("dynamicsIntervals") : dynamicsActiveTab === "long" ? (longDynamicsSubtab === "with_work" ? t("historyLongWithWork") : t("historyLongSimple")) : t("dynamicsEasy"))}</span><h2>${escapeHtml(dynamicsActiveTab === "tempo" ? t("historyTempoDynamics") : dynamicsActiveTab === "intervals" ? t("historyIntervalDynamics") : dynamicsActiveTab === "long" ? t("historyLongDynamics") : t("historyEasyDynamics"))}</h2></div></div>
       ${dynamicsActiveTab === "long" ? `<div class="dynamics-tabs" role="tablist" aria-label="${escapeHtml(t("historyLongDynamics"))}">
         <button class="dynamics-tab ${longDynamicsSubtab === "simple" ? "is-active" : ""}" type="button" data-long-dynamics-tab="simple">${escapeHtml(t("historyLongSimple"))}</button>
         <button class="dynamics-tab ${longDynamicsSubtab === "with_work" ? "is-active" : ""}" type="button" data-long-dynamics-tab="with_work">${escapeHtml(t("historyLongWithWork"))}</button>
