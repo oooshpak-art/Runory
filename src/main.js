@@ -187,6 +187,7 @@ const translations = {
     historyEasyNearTypical: "Результат близький до типового рівня",
     historyEasyTrendHint: "Для впевненого висновку про тренд потрібно більше схожих тренувань.",
     historyEasyCompared: "На основі {count} схожих тренувань",
+    historyEasyComparisonOnly: "Є одне попереднє схоже тренування — доступне пряме порівняння.",
     historyTempoDynamics: "Динаміка темпових тренувань",
     historyTempoHint: "Порівнюємо лише безперервні темпові тренування зі схожим обсягом роботи.",
     historyTempoNoTrend: "Поки недостатньо схожих темпових тренувань для надійного висновку.",
@@ -199,6 +200,7 @@ const translations = {
     historyTempoStable: "Темпова форма стабільна",
     historyTempoDeclined: "Є ознаки погіршення темпової форми",
     historyTempoCompared: "На основі {count} схожих темпових тренувань",
+    historyTempoComparisonOnly: "Є одне попереднє схоже тренування — доступне пряме порівняння.",
     historyTempoFaster: "швидше на {value} с/км",
     historyTempoSlower: "повільніше на {value} с/км",
     historyTempoHrLower: "нижче на {value} уд/хв",
@@ -217,6 +219,7 @@ const translations = {
     historyIntervalStable: "Інтервальна форма стабільна",
     historyIntervalDeclined: "Є ознаки погіршення інтервальної форми",
     historyIntervalCompared: "На основі {count} схожих інтервальних тренувань",
+    historyIntervalComparisonOnly: "Є одне попереднє схоже тренування — доступне пряме порівняння.",
     historyIntervalFaster: "швидше на {value} с/км",
     historyIntervalSlower: "повільніше на {value} с/км",
     historyIntervalHrLower: "нижче на {value} уд/хв",
@@ -235,6 +238,7 @@ const translations = {
     historyLongStable: "Динаміка стабільна",
     historyLongDeclined: "Є ознаки погіршення",
     historyLongCompared: "На основі {count} схожих довгих тренувань",
+    historyLongComparisonOnly: "Є одне попереднє схоже тренування — доступне пряме порівняння.",
     historyLongFaster: "швидше на {value} с/км",
     historyLongSlower: "повільніше на {value} с/км",
     historyLongHrLower: "нижче на {value} уд/хв",
@@ -491,6 +495,7 @@ const translations = {
     historyEasyNearTypical: "The result is close to the typical level",
     historyEasyTrendHint: "More similar workouts are needed for a confident trend conclusion.",
     historyEasyCompared: "Based on {count} similar workouts",
+    historyEasyComparisonOnly: "One previous similar workout is available — direct comparison is available.",
     historyTempoDynamics: "Tempo workout dynamics",
     historyTempoHint: "We compare only continuous tempo workouts with a similar work volume.",
     historyTempoNoTrend: "Not enough similar tempo workouts for a reliable conclusion yet.",
@@ -503,6 +508,7 @@ const translations = {
     historyTempoStable: "Tempo fitness is stable",
     historyTempoDeclined: "Signs of declining tempo fitness",
     historyTempoCompared: "Based on {count} similar tempo workouts",
+    historyTempoComparisonOnly: "One previous similar workout is available — direct comparison is available.",
     historyTempoFaster: "{value} sec/km faster",
     historyTempoSlower: "{value} sec/km slower",
     historyTempoHrLower: "{value} bpm lower",
@@ -521,6 +527,7 @@ const translations = {
     historyIntervalStable: "Interval fitness is stable",
     historyIntervalDeclined: "Signs of declining interval fitness",
     historyIntervalCompared: "Based on {count} similar interval workouts",
+    historyIntervalComparisonOnly: "One previous similar workout is available — direct comparison is available.",
     historyIntervalFaster: "{value} sec/km faster",
     historyIntervalSlower: "{value} sec/km slower",
     historyIntervalHrLower: "{value} bpm lower",
@@ -539,6 +546,7 @@ const translations = {
     historyLongStable: "Long-run dynamics are stable",
     historyLongDeclined: "Signs of declining dynamics",
     historyLongCompared: "Based on {count} similar long runs",
+    historyLongComparisonOnly: "One previous similar workout is available — direct comparison is available.",
     historyLongFaster: "{value} sec/km faster",
     historyLongSlower: "{value} sec/km slower",
     historyLongHrLower: "{value} bpm lower",
@@ -3420,7 +3428,7 @@ function buildLongDynamics(workouts) {
 function renderLongDynamics(workouts) {
   const dynamics = buildLongDynamics(workouts);
   const subtab = longDynamicsSubtab === "with_work" ? t("historyLongWithWork") : t("historyLongSimple");
-  if (!dynamics || dynamics.count < 2) {
+  if (!dynamics) {
     return `<div class="dynamics-empty"><strong>${escapeHtml(t("historyLongNoTrend"))}</strong><p>${escapeHtml(t("historyLongHint"))}</p></div>`;
   }
 
@@ -3430,9 +3438,9 @@ function renderLongDynamics(workouts) {
   const hrText = Number.isFinite(dynamics.hrDelta) && Math.abs(dynamics.hrDelta) >= 2
     ? t(dynamics.hrDelta < 0 ? "historyLongHrLower" : "historyLongHrHigher", { value: Math.abs(Math.round(dynamics.hrDelta)) })
     : t("historyLongNoChange");
-  let trendLabel = t("historyLongStable");
-  if (dynamics.trend === "improved") trendLabel = t("historyLongImproved");
-  else if (dynamics.trend === "declined") trendLabel = t("historyLongDeclined");
+  let trendLabel = dynamics.count === 1 ? t("historyLongComparisonOnly") : t("historyLongStable");
+  if (dynamics.count > 1 && dynamics.trend === "improved") trendLabel = t("historyLongImproved");
+  else if (dynamics.count > 1 && dynamics.trend === "declined") trendLabel = t("historyLongDeclined");
 
   const profile = dynamics.currentProfile;
   const workText = profile.kind === "with_work" && profile.workProfile
@@ -3467,9 +3475,9 @@ function renderIntervalDynamics(workouts) {
     ? t(dynamics.hrDelta < 0 ? "historyIntervalHrLower" : "historyIntervalHrHigher", { value: Math.abs(Math.round(dynamics.hrDelta)) })
     : t("historyIntervalNoChange");
 
-  let trendLabel = t("historyIntervalStable");
-  if (dynamics.trend === "improved") trendLabel = t("historyIntervalImproved");
-  else if (dynamics.trend === "declined") trendLabel = t("historyIntervalDeclined");
+  let trendLabel = dynamics.count === 1 ? t("historyIntervalComparisonOnly") : t("historyIntervalStable");
+  if (dynamics.count > 1 && dynamics.trend === "improved") trendLabel = t("historyIntervalImproved");
+  else if (dynamics.count > 1 && dynamics.trend === "declined") trendLabel = t("historyIntervalDeclined");
 
   const compared = t("historyIntervalCompared").replace("{count}", String(dynamics.count));
   const profile = dynamics.currentProfile;
@@ -3502,9 +3510,9 @@ function renderTempoDynamics(workouts) {
     ? t(dynamics.hrDelta < 0 ? "historyTempoHrLower" : "historyTempoHrHigher", { value: Math.abs(Math.round(dynamics.hrDelta)) })
     : t("historyTempoNoChange");
 
-  let trendLabel = t("historyTempoStable");
-  if (dynamics.trend === "improved") trendLabel = t("historyTempoImproved");
-  else if (dynamics.trend === "declined") trendLabel = t("historyTempoDeclined");
+  let trendLabel = dynamics.count === 1 ? t("historyTempoComparisonOnly") : t("historyTempoStable");
+  if (dynamics.count > 1 && dynamics.trend === "improved") trendLabel = t("historyTempoImproved");
+  else if (dynamics.count > 1 && dynamics.trend === "declined") trendLabel = t("historyTempoDeclined");
 
   const compared = t("historyTempoCompared").replace("{count}", String(dynamics.count));
   const volume = `${dynamics.currentVolume} км`;
@@ -3545,7 +3553,8 @@ function renderDynamics(workouts) {
       const currentPaceSignal = Number.isFinite(dynamics.paceDelta) && Math.abs(dynamics.paceDelta) >= 6 ? (dynamics.paceDelta > 0 ? "better" : "worse") : "neutral";
       const currentHrSignal = Number.isFinite(dynamics.hrDelta) && Math.abs(dynamics.hrDelta) >= 3 ? (dynamics.hrDelta < 0 ? "better" : "worse") : "neutral";
       let trendLabel;
-      if (dynamics.trend === "improved") trendLabel = t("historyEasyImproved");
+      if (dynamics.count === 1) trendLabel = t("historyEasyComparisonOnly");
+      else if (dynamics.trend === "improved") trendLabel = t("historyEasyImproved");
       else if (dynamics.trend === "declined") trendLabel = t("historyEasyDeclined");
       else if ((currentPaceSignal === "better" && currentHrSignal === "worse") || (currentPaceSignal === "worse" && currentHrSignal === "better")) trendLabel = t("historyEasyMixed");
       else if (currentPaceSignal === "better" && currentHrSignal === "better") trendLabel = t("historyEasyCurrentBetter");
