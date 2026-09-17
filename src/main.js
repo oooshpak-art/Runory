@@ -204,6 +204,24 @@ const translations = {
     historyTempoHrLower: "нижче на {value} уд/хв",
     historyTempoHrHigher: "вище на {value} уд/хв",
     historyTempoNoChange: "без суттєвої зміни",
+    historyIntervalDynamics: "Динаміка інтервальних тренувань",
+    historyIntervalHint: "Порівнюємо інтервальні тренування з робочими відрізками однакової довжини.",
+    historyIntervalNoTrend: "Поки недостатньо схожих інтервальних тренувань для надійного висновку.",
+    historyIntervalPace: "Середній темп робочих відрізків",
+    historyIntervalHr: "Середній пульс робочих відрізків",
+    historyIntervalVolume: "Обсяг швидкої роботи",
+    historyIntervalStructure: "Серія",
+    historyIntervalLatest: "Останні інтервали",
+    historyIntervalPrevious: "Попередні схожі",
+    historyIntervalImproved: "Інтервальна форма покращується",
+    historyIntervalStable: "Інтервальна форма стабільна",
+    historyIntervalDeclined: "Є ознаки погіршення інтервальної форми",
+    historyIntervalCompared: "На основі {count} схожих інтервальних тренувань",
+    historyIntervalFaster: "швидше на {value} с/км",
+    historyIntervalSlower: "повільніше на {value} с/км",
+    historyIntervalHrLower: "нижче на {value} уд/хв",
+    historyIntervalHrHigher: "вище на {value} уд/хв",
+    historyIntervalNoChange: "без суттєвої зміни",
     historyAvgPace: "Середній темп",
     historyAvgHr: "Середній пульс",
     historyNoData: "Недостатньо даних для графіка",
@@ -470,6 +488,24 @@ const translations = {
     historyTempoHrLower: "{value} bpm lower",
     historyTempoHrHigher: "{value} bpm higher",
     historyTempoNoChange: "no meaningful change",
+    historyIntervalDynamics: "Interval workout dynamics",
+    historyIntervalHint: "We compare interval workouts with work repetitions of the same distance.",
+    historyIntervalNoTrend: "Not enough similar interval workouts for a reliable conclusion yet.",
+    historyIntervalPace: "Average work-repetition pace",
+    historyIntervalHr: "Average work-repetition heart rate",
+    historyIntervalVolume: "Fast-work volume",
+    historyIntervalStructure: "Set",
+    historyIntervalLatest: "Latest intervals",
+    historyIntervalPrevious: "Previous similar",
+    historyIntervalImproved: "Interval fitness is improving",
+    historyIntervalStable: "Interval fitness is stable",
+    historyIntervalDeclined: "Signs of declining interval fitness",
+    historyIntervalCompared: "Based on {count} similar interval workouts",
+    historyIntervalFaster: "{value} sec/km faster",
+    historyIntervalSlower: "{value} sec/km slower",
+    historyIntervalHrLower: "{value} bpm lower",
+    historyIntervalHrHigher: "{value} bpm higher",
+    historyIntervalNoChange: "no meaningful change",
     historyAvgPace: "Average pace",
     historyAvgHr: "Average heart rate",
     historyNoData: "Not enough data for a chart",
@@ -2958,6 +2994,182 @@ function buildTempoDynamics(workouts) {
   return { current, previous: similar.at(-1), count: similar.length, currentVolume, paceBaseline, hrBaseline, paceDelta, hrDelta, trend };
 }
 
+
+function intervalWorkoutProfile(workout) {
+  const summary = {
+    distance: Number(workout?.distance_km) || 0,
+    splits: Array.isArray(workout?.splits) ? workout.splits : [],
+    structure: Array.isArray(workout?.structure) ? workout.structure : []
+  };
+  const analysis = getIntervalAnalysis(summary);
+  if (!analysis || !analysis.reps.length) return null;
+
+  const workDistances = analysis.reps
+    .map(rep => Number(rep?.work?.distance))
+    .filter(value => Number.isFinite(value) && value > 0);
+  const workDurations = analysis.reps
+    .map(rep => Number(rep?.work?.duration))
+    .filter(value => Number.isFinite(value) && value > 0);
+
+  return {
+    analysis,
+    reps: analysis.reps.length,
+    repDistance: workDistances.length ? median(workDistances) : null,
+    repDuration: workDurations.length ? median(workDurations) : null,
+    averagePace: analysis.average,
+    averageHr: analysis.reps
+      .map(rep => Number(rep?.work?.heartRate))
+      .filter(value => Number.isFinite(value) && value > 0)
+      .reduce((sum, value, _, arr) => sum + value / arr.length, 0) || null,
+    totalWorkDistance: analysis.totalWorkDistance
+  };
+}
+
+function formatIntervalRepDistance(meters) {
+  if (!Number.isFinite(meters) || meters <= 0) return "—";
+  if (meters >= 1000) {
+    const km = meters / 1000;
+    return `${Number(km.toFixed(2)).toString().replace(".", currentLanguage === "uk" ? "," : ".")} ${currentLanguage === "uk" ? "км" : "km"}`;
+  }
+  return `${Math.round(meters)} ${currentLanguage === "uk" ? "м" : "m"}`;
+}
+
+function intervalComparable(current, candidate) {
+  const currentProfile = intervalWorkoutProfile(current);
+  const candidateProfile = intervalWorkoutProfile(candidate);
+  if (!currentProfile || !candidateProfile) return false;
+
+  // The main similarity axis is the length of one work repetition.
+  // The number of repetitions may differ: 7×1 km can be compared with 10×1 km.
+  if (currentProfile.repDistance != null && candidateProfile.repDistance != null) {
+    const ratio = candidateProfile.repDistance / currentProfile.repDistance;
+    if (ratio >= 0.85 && ratio <= 1.15) return true;
+    return false;
+  }
+
+  if (currentProfile.repDuration != null && candidateProfile.repDuration != null) {
+    const ratio = candidateProfile.repDuration / currentProfile.repDuration;
+    return ratio >= 0.85 && ratio <= 1.15;
+  }
+
+  return false;
+}
+
+function buildIntervalDynamics(workouts) {
+  const intervals = workouts
+    .filter(w => derivedWorkoutType(w) === "intervals")
+    .map(workout => ({ workout, profile: intervalWorkoutProfile(workout) }))
+    .filter(item => item.profile && Number.isFinite(item.profile.averagePace))
+    .sort((a, b) => new Date(a.workout.workout_date) - new Date(b.workout.workout_date));
+
+  if (intervals.length < 2) return null;
+
+  const currentItem = intervals.at(-1);
+  const candidates = intervals
+    .slice(0, -1)
+    .filter(item => intervalComparable(currentItem.workout, item.workout));
+
+  if (!candidates.length) return null;
+
+  const current = currentItem.workout;
+  const currentProfile = currentItem.profile;
+  const ranked = candidates
+    .map(item => ({
+      ...item,
+      distanceDifference: currentProfile.repDistance != null && item.profile.repDistance != null
+        ? Math.abs(item.profile.repDistance - currentProfile.repDistance)
+        : Infinity,
+      durationDifference: currentProfile.repDuration != null && item.profile.repDuration != null
+        ? Math.abs(item.profile.repDuration - currentProfile.repDuration)
+        : Infinity
+    }))
+    .sort((a, b) =>
+      (a.distanceDifference - b.distanceDifference) ||
+      (a.durationDifference - b.durationDifference) ||
+      (new Date(b.workout.workout_date) - new Date(a.workout.workout_date))
+    );
+
+  const similar = ranked.slice(0, Math.min(5, ranked.length));
+  const paceBaseline = median(similar.map(item => item.profile.averagePace));
+  const hrValues = similar.map(item => item.profile.averageHr).filter(Number.isFinite);
+  const hrBaseline = hrValues.length ? median(hrValues) : null;
+  const paceDelta = paceBaseline != null ? paceBaseline - currentProfile.averagePace : null;
+  const hrDelta = Number.isFinite(currentProfile.averageHr) && hrBaseline != null
+    ? currentProfile.averageHr - hrBaseline
+    : null;
+
+  const ordered = similar.slice().sort((a, b) => new Date(a.workout.workout_date) - new Date(b.workout.workout_date));
+  const split = Math.floor(ordered.length / 2);
+  const older = ordered.slice(0, split);
+  const recent = ordered.slice(split);
+  const olderPace = median(older.map(item => item.profile.averagePace));
+  const recentPace = median(recent.map(item => item.profile.averagePace));
+  const olderHr = median(older.map(item => item.profile.averageHr).filter(Number.isFinite));
+  const recentHr = median(recent.map(item => item.profile.averageHr).filter(Number.isFinite));
+
+  let trend = "stable";
+  if (ordered.length >= 4) {
+    const paceTrend = olderPace != null && recentPace != null
+      ? (olderPace - recentPace >= 4 ? "improved" : olderPace - recentPace <= -4 ? "declined" : "stable")
+      : null;
+    const hrTrend = olderHr != null && recentHr != null
+      ? (recentHr - olderHr <= -2 ? "improved" : recentHr - olderHr >= 2 ? "declined" : "stable")
+      : null;
+    if (paceTrend === "improved" && (hrTrend === "improved" || hrTrend === "stable" || hrTrend == null)) trend = "improved";
+    else if (paceTrend === "declined" && (hrTrend === "declined" || hrTrend === "stable" || hrTrend == null)) trend = "declined";
+    else if (hrTrend === "improved" && paceTrend === "stable") trend = "improved";
+    else if (hrTrend === "declined" && paceTrend === "stable") trend = "declined";
+  }
+
+  return {
+    current,
+    currentProfile,
+    previous: similar.at(-1)?.workout || null,
+    previousProfile: similar.at(-1)?.profile || null,
+    count: similar.length,
+    paceBaseline,
+    hrBaseline,
+    paceDelta,
+    hrDelta,
+    trend
+  };
+}
+
+function renderIntervalDynamics(workouts) {
+  const dynamics = buildIntervalDynamics(workouts);
+  if (!dynamics) {
+    return `<div class="dynamics-empty"><strong>${escapeHtml(t("historyIntervalNoTrend"))}</strong><p>${escapeHtml(t("historyIntervalHint"))}</p></div>`;
+  }
+
+  const paceText = Number.isFinite(dynamics.paceDelta) && Math.abs(dynamics.paceDelta) >= 2
+    ? t(dynamics.paceDelta > 0 ? "historyIntervalFaster" : "historyIntervalSlower", { value: Math.abs(Math.round(dynamics.paceDelta)) })
+    : t("historyIntervalNoChange");
+  const hrText = Number.isFinite(dynamics.hrDelta) && Math.abs(dynamics.hrDelta) >= 2
+    ? t(dynamics.hrDelta < 0 ? "historyIntervalHrLower" : "historyIntervalHrHigher", { value: Math.abs(Math.round(dynamics.hrDelta)) })
+    : t("historyIntervalNoChange");
+
+  let trendLabel = t("historyIntervalStable");
+  if (dynamics.trend === "improved") trendLabel = t("historyIntervalImproved");
+  else if (dynamics.trend === "declined") trendLabel = t("historyIntervalDeclined");
+
+  const compared = t("historyIntervalCompared").replace("{count}", String(dynamics.count));
+  const profile = dynamics.currentProfile;
+  const setText = `${profile.reps} × ${formatIntervalRepDistance(profile.repDistance)}`;
+  const workVolume = profile.totalWorkDistance / 1000;
+  const volumeText = `${Number(workVolume.toFixed(2)).toString().replace(".", currentLanguage === "uk" ? "," : ".")} ${currentLanguage === "uk" ? "км" : "km"}`;
+  const previous = dynamics.previous && dynamics.previousProfile
+    ? `${formatHistoryDate(dynamics.previous.workout_date)} · ${dynamics.previousProfile.reps} × ${formatIntervalRepDistance(dynamics.previousProfile.repDistance)} · ${formatInsightPace(dynamics.previousProfile.averagePace)}/км`
+    : "—";
+
+  return `
+    <div class="history-dynamic-status"><strong>${escapeHtml(trendLabel)}</strong><span>${escapeHtml(compared)}</span></div>
+    <div class="history-dynamic-row"><span>${escapeHtml(t("historyIntervalPace"))}</span><strong>${escapeHtml(formatInsightPace(profile.averagePace))}/км <small>${escapeHtml(paceText)}</small></strong></div>
+    <div class="history-dynamic-row"><span>${escapeHtml(t("historyIntervalHr"))}</span><strong>${Number.isFinite(profile.averageHr) ? `${Math.round(profile.averageHr)} уд/хв` : "—"} <small>${escapeHtml(hrText)}</small></strong></div>
+    <div class="history-dynamic-row"><span>${escapeHtml(t("historyIntervalStructure"))}</span><strong>${escapeHtml(setText)}</strong></div>
+    <div class="history-dynamic-row"><span>${escapeHtml(t("historyIntervalVolume"))}</span><strong>${escapeHtml(volumeText)}</strong></div>
+    <p>${escapeHtml(t("historyIntervalLatest"))}: ${escapeHtml(formatHistoryDate(dynamics.current.workout_date))} · ${escapeHtml(t("historyIntervalPrevious"))}: ${escapeHtml(previous)}</p>`;
+}
+
 function renderTempoDynamics(workouts) {
   const dynamics = buildTempoDynamics(workouts);
   if (!dynamics) {
@@ -2996,6 +3208,8 @@ function renderDynamics(workouts) {
 
   if (dynamicsActiveTab === "tempo") {
     contentHtml = renderTempoDynamics(workouts);
+  } else if (dynamicsActiveTab === "intervals") {
+    contentHtml = renderIntervalDynamics(workouts);
   } else {
     let easyHtml;
     if (!dynamics) {
@@ -3033,11 +3247,11 @@ function renderDynamics(workouts) {
     <div class="dynamics-tabs" role="tablist" aria-label="${escapeHtml(t("dynamicsTitle"))}">
       <button class="dynamics-tab ${dynamicsActiveTab === "easy" ? "is-active" : ""}" type="button" data-dynamics-tab="easy">${escapeHtml(t("dynamicsEasy"))}</button>
       <button class="dynamics-tab ${dynamicsActiveTab === "tempo" ? "is-active" : ""}" type="button" data-dynamics-tab="tempo">${escapeHtml(t("dynamicsTempo"))}</button>
-      <button class="dynamics-tab is-disabled" type="button" disabled>${escapeHtml(t("dynamicsIntervals"))}<span>${escapeHtml(t("dynamicsComingSoon"))}</span></button>
+      <button class="dynamics-tab ${dynamicsActiveTab === "intervals" ? "is-active" : ""}" type="button" data-dynamics-tab="intervals">${escapeHtml(t("dynamicsIntervals"))}</button>
       <button class="dynamics-tab is-disabled" type="button" disabled>${escapeHtml(t("dynamicsLong"))}<span>${escapeHtml(t("dynamicsComingSoon"))}</span></button>
     </div>
     <article class="dynamics-module">
-      <div class="dynamics-module-heading"><div><span class="eyebrow">${escapeHtml(dynamicsActiveTab === "tempo" ? t("dynamicsTempo") : t("dynamicsEasy"))}</span><h2>${escapeHtml(dynamicsActiveTab === "tempo" ? t("historyTempoDynamics") : t("historyEasyDynamics"))}</h2></div></div>
+      <div class="dynamics-module-heading"><div><span class="eyebrow">${escapeHtml(dynamicsActiveTab === "tempo" ? t("dynamicsTempo") : dynamicsActiveTab === "intervals" ? t("dynamicsIntervals") : t("dynamicsEasy"))}</span><h2>${escapeHtml(dynamicsActiveTab === "tempo" ? t("historyTempoDynamics") : dynamicsActiveTab === "intervals" ? t("historyIntervalDynamics") : t("historyEasyDynamics"))}</h2></div></div>
       ${contentHtml}
     </article>`;
 
