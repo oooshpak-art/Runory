@@ -1110,7 +1110,7 @@ function getWorkoutPattern(summary) {
     }, 0) / 1000;
 
     const isLongWithWork =
-      distance >= 20
+      distance >= 16
       && preWorkDistance >= 10
       && preWorkDistance / Math.max(distance, 1) >= 0.30;
 
@@ -1121,6 +1121,65 @@ function getWorkoutPattern(summary) {
         preWorkDistance,
         intervalIndex
       };
+    }
+
+    // Short strides before a long continuous block are not a true interval
+    // session. Example: warm-up → 5×90 m accelerations → ~50 min steady/tempo
+    // work → 5 min faster → recovery/cooldown. In that case the main purpose
+    // is continuous tempo, not intervals.
+    const intervalBlock = structure[intervalIndex];
+    const reps = Array.isArray(intervalBlock?.repetitions) ? intervalBlock.repetitions : [];
+    const workDistances = reps
+      .map(rep => Number(rep?.work?.distance))
+      .filter(Number.isFinite);
+    const shortStrideBlock =
+      reps.length >= 3
+      && reps.length <= 8
+      && workDistances.length === reps.length
+      && Math.max(...workDistances) <= 200
+      && workDistances.reduce((sum, value) => sum + value, 0) <= 1200;
+
+    if (shortStrideBlock) {
+      const following = [];
+      for (const block of structure.slice(intervalIndex + 1)) {
+        if (!block) continue;
+        if (["recovery", "cooldown", "intervals"].includes(block.type)) break;
+        if (block.type !== "easy") continue;
+        const blockDistance = Number(block.distance) || 0;
+        const blockPace = paceToSeconds(block.pace);
+        if (blockDistance > 0 && Number.isFinite(blockPace)) following.push(block);
+      }
+
+      const mainDistance = following.reduce((sum, block) => sum + (Number(block.distance) || 0), 0) / 1000;
+      const mainDuration = following.reduce((sum, block) => sum + (Number(block.duration) || 0), 0);
+      const mainPace = mainDistance > 0 && mainDuration > 0
+        ? mainDuration / mainDistance
+        : null;
+      const mainHr = mainDistance > 0
+        ? following.reduce((sum, block) => sum + (Number(block.heartRate) || 0) * ((Number(block.distance) || 0) / 1000), 0) / mainDistance
+        : null;
+
+      const baseline = getPersonalEasyBaseline(summary);
+      const paceGain = baseline && Number.isFinite(mainPace) ? baseline.pace - mainPace : null;
+      const hrGap = baseline && Number.isFinite(mainHr) ? mainHr - baseline.hr : null;
+
+      // Require a genuinely long continuous block plus a meaningful HR rise.
+      // The pace separation can be smaller than the generic continuous-tempo
+      // threshold because the Garmin structure explicitly tells us that the
+      // short accelerations were only preparation for the sustained work.
+      if (mainDistance >= 7 && Number.isFinite(paceGain) && Number.isFinite(hrGap)
+          && paceGain >= 10 && hrGap >= 10) {
+        return {
+          type: "tempo",
+          variant: "after_strides",
+          tempoStart: intervalIndex + 1,
+          tempoEnd: intervalIndex + following.length,
+          baselinePace: baseline.pace,
+          baselineHr: baseline.hr,
+          paceGain,
+          hrGap
+        };
+      }
     }
 
     return { type: "intervals" };
@@ -2333,7 +2392,7 @@ function getWorkoutTypeKey(summary) {
         .slice(0, intervalIndex)
         .filter(block => ["easy", "warmup"].includes(block?.type))
         .reduce((sum, block) => sum + (Number(block?.distance) || 0), 0);
-      if (preWorkDistance >= 10000 && Number(summary?.distance) >= 20) return "long";
+      if (preWorkDistance >= 12000) return "long";
     }
   }
 
