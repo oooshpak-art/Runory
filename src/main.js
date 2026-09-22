@@ -3075,9 +3075,21 @@ function tempoComparable(current, candidate) {
   return false;
 }
 
+function formatTempoDuration(seconds) {
+  if (!Number.isFinite(Number(seconds)) || Number(seconds) <= 0) return "—";
+  const total = Math.round(Number(seconds));
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  if (hours) return `${hours} год ${String(minutes).padStart(2, "0")} хв`;
+  return `${minutes} хв`;
+}
+
 function buildTempoDynamics(workouts) {
   const tempo = workouts
-    .filter(w => derivedWorkoutType(w) === "tempo")
+    .filter(w =>
+      historyTypeClass(w?.workout_type) === "tempo"
+      || derivedWorkoutType(w) === "tempo"
+    )
     .filter(w => paceToSeconds(w.pace) != null)
     .sort((a, b) => new Date(a.workout_date) - new Date(b.workout_date));
   if (tempo.length < 2) return null;
@@ -3614,8 +3626,10 @@ function renderTempoDynamics(workouts) {
   else if (dynamics.count > 1 && dynamics.trend === "declined") trendLabel = t("historyTempoDeclined");
 
   const compared = t("historyTempoCompared").replace("{count}", String(dynamics.count));
-  const volume = `${dynamics.currentVolume} км`;
-  const previous = dynamics.previous ? `${formatHistoryDate(dynamics.previous.workout_date)} · ${dynamics.previous.pace || "—"}/км · ${tempoWorkDistanceKm(dynamics.previous)} км` : "—";
+  const volume = formatTempoDuration(dynamics.currentVolume);
+  const previous = dynamics.previous
+    ? `${formatHistoryDate(dynamics.previous.workout_date)} · ${dynamics.previous.pace || "—"}/км · ${formatTempoDuration(tempoWorkDurationSec(dynamics.previous))}`
+    : "—";
 
   return `
     <div class="history-dynamic-status"><strong>${escapeHtml(trendLabel)}</strong><span>${escapeHtml(compared)}</span></div>
