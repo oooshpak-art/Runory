@@ -2766,25 +2766,43 @@ function buildEasyRunDynamics(workouts) {
   const paceDelta = paceBaseline != null ? paceBaseline - currentPace : null;
   const hrDelta = hrBaseline != null ? currentHr - hrBaseline : null;
 
-  // Trend is based on the latest workout versus its historical baseline.
-  // This keeps the headline aligned with the actual current result instead of
-  // reporting a decline that happened only inside older workouts.
+  // Trend is calculated from several historical matches, split into older and
+  // newer halves. We do not call a single workout "progress".
   const matches = intensityMatches.slice().sort((a, b) => new Date(a.workout_date) - new Date(b.workout_date));
+  const splitIndex = Math.floor(matches.length / 2);
+  const older = matches.slice(0, splitIndex);
+  const recent = matches.slice(splitIndex);
+  const olderPace = median(older.map(w => paceToSeconds(w.pace)));
+  const recentPace = median(recent.map(w => paceToSeconds(w.pace)));
+
+  const paceMatches = samePace.slice(0, Math.max(3, Math.min(5, samePace.length)));
+  const paceMatchesSorted = paceMatches.slice().sort((a, b) => new Date(a.workout_date) - new Date(b.workout_date));
+  const paceSplit = Math.floor(paceMatchesSorted.length / 2);
+  const olderHr = median(paceMatchesSorted.slice(0, paceSplit).map(w => Number(w.heart_rate)));
+  const recentHr = median(paceMatchesSorted.slice(paceSplit).map(w => Number(w.heart_rate)));
+
   let trend = "stable";
-  if (matches.length >= 2) {
-    const paceTrend = paceDelta != null
-      ? (paceDelta >= 6 ? "improved" : paceDelta <= -6 ? "declined" : "stable")
+  if (matches.length >= 4) {
+    const paceTrend = olderPace != null && recentPace != null
+      ? (olderPace - recentPace >= 6 ? "improved" : olderPace - recentPace <= -6 ? "declined" : "stable")
       : null;
-    const hrTrend = hrDelta != null
-      ? (hrDelta <= -3 ? "improved" : hrDelta >= 3 ? "declined" : "stable")
+    const hrTrend = olderHr != null && recentHr != null
+      ? (recentHr - olderHr <= -3 ? "improved" : recentHr - olderHr >= 3 ? "declined" : "stable")
       : null;
 
-    // Pace and HR must agree. If they point in opposite directions, do not
-    // label the easy-run dynamics as a decline or improvement.
+    // Only call a long-term trend when the available signals agree. If pace
+    // and HR point in opposite directions, keep the result neutral rather
+    // than turning one good metric into a false progress/decline claim.
     if (paceTrend === "improved" && (hrTrend === "improved" || hrTrend === "stable" || hrTrend == null)) trend = "improved";
     else if (paceTrend === "declined" && (hrTrend === "declined" || hrTrend === "stable" || hrTrend == null)) trend = "declined";
     else if (hrTrend === "improved" && paceTrend === "stable") trend = "improved";
     else if (hrTrend === "declined" && paceTrend === "stable") trend = "declined";
+
+    // Do not report a decline unless the latest run itself is also worse
+    // against the current easy-run baseline in both pace and HR.
+    const currentPaceWorse = Number.isFinite(paceDelta) && paceDelta <= -6;
+    const currentHrWorse = Number.isFinite(hrDelta) && hrDelta >= 3;
+    if (trend === "declined" && !(currentPaceWorse && currentHrWorse)) trend = "stable";
   }
 
   return {
@@ -2842,6 +2860,32 @@ function homeTrendState(workouts, type) {
 
   if (!dynamics) return { label: t("homeNoTrend"), tone: "neutral" };
   if (dynamics.count === 1) return { label: t("homeComparisonOnly"), tone: "neutral" };
+
+  // For easy runs, the latest workout's result versus the personal baseline
+  // is more relevant on the home page than the historical trend of older runs.
+  if (type === "easy") {
+    const paceSignal = Number.isFinite(dynamics.paceDelta) && Math.abs(dynamics.paceDelta) >= 6
+      ? (dynamics.paceDelta > 0 ? "better" : "worse")
+      : "neutral";
+    const hrSignal = Number.isFinite(dynamics.hrDelta) && Math.abs(dynamics.hrDelta) >= 3
+      ? (dynamics.hrDelta < 0 ? "better" : "worse")
+      : "neutral";
+
+    if (paceSignal === "better" && hrSignal === "better") {
+      return { label: t("historyEasyCurrentBetter"), tone: "positive" };
+    }
+    if (paceSignal === "worse" && hrSignal === "worse") {
+      return { label: t("historyEasyCurrentWorse"), tone: "negative" };
+    }
+    if ((paceSignal === "better" && hrSignal === "worse")
+        || (paceSignal === "worse" && hrSignal === "better")) {
+      return { label: t("historyEasyMixed"), tone: "neutral" };
+    }
+    if (paceSignal !== "neutral" || hrSignal !== "neutral") {
+      return { label: t("historyEasyNearTypical"), tone: "neutral" };
+    }
+  }
+
   if (dynamics.trend === "improved") {
     return { label: type === "easy" ? t("historyEasyImproved") : type === "tempo" ? t("historyTempoImproved") : type === "intervals" ? t("historyIntervalImproved") : t("historyLongImproved"), tone: "positive" };
   }
@@ -2979,68 +3023,57 @@ function renderHistoryAnalytics(workouts) {
 let dynamicsActiveTab = "easy";
 let longDynamicsSubtab = "simple";
 
-function tempoWorkDurationSec(workout) {
-  if (!workout) return 0;
+function hasExplicitTempoStructure(workout) {
+  const structure = Array.isArray(workout?.structure) ? workout.structure : [];
+  return structure.some(block => {
+    if (!block) return false;
+    if (block.type === "tempo") return true;
+    const label = String(block.label || "").toLowerCase();
+    return label.includes("tempo") || label.includes("темп");
+  });
+}
 
-  const splits = Array.isArray(workout.splits) ? workout.splits : [];
-  const structure = Array.isArray(workout.structure) ? workout.structure : [];
+function tempoWorkDurationSec(workout) {
   const summary = {
-    distance: Number(workout.distance_km) || 0,
-    splits,
-    structure
+    distance: Number(workout?.distance_km) || 0,
+    heartRate: Number.isFinite(Number(workout?.heart_rate)) ? Number(workout.heart_rate) : null,
+    splits: Array.isArray(workout?.splits) ? workout.splits : [],
+    structure: Array.isArray(workout?.structure) ? workout.structure : []
   };
 
-  // First try to reconstruct the actual continuous tempo block.
-  // Historical workouts can be re-evaluated differently as the easy-run
-  // baseline changes, so this is only the first source of truth.
   const pattern = getWorkoutPattern(summary);
   if (pattern?.type === "tempo") {
-    const startIndex = Number(pattern.tempoStart);
-    const endIndex = Number(pattern.tempoEnd);
+    const start = Number(pattern.tempoStart);
+    const end = Number(pattern.tempoEnd);
+    if (Number.isInteger(start) && Number.isInteger(end) && end >= start) {
+      const tempoSplits = summary.splits.slice(start, end + 1);
+      const splitDurations = tempoSplits
+        .map(split => Number(split?.duration_sec ?? split?.duration))
+        .filter(value => Number.isFinite(value) && value > 0);
+      if (splitDurations.length === tempoSplits.length && splitDurations.length) {
+        return splitDurations.reduce((sum, value) => sum + value, 0);
+      }
 
-    if (Number.isInteger(startIndex) && Number.isInteger(endIndex) && endIndex >= startIndex) {
-      const duration = splits.slice(startIndex, endIndex + 1).reduce((sum, split) => {
-        const pace = paceToSeconds(split?.pace);
-        return sum + (Number.isFinite(pace) && pace > 0 ? pace : 0);
-      }, 0);
-
-      if (duration > 0) return duration;
+      const tempoDistance = tempoSplits.reduce((sum, split) => sum + (Number(split?.distance_km) || 0), 0);
+      const paceSeconds = tempoSplits
+        .map(split => paceToSeconds(split?.pace))
+        .filter(Number.isFinite);
+      if (tempoDistance > 0 && paceSeconds.length === tempoSplits.length) {
+        const averagePace = paceSeconds.reduce((sum, value) => sum + value, 0) / paceSeconds.length;
+        return tempoDistance * averagePace;
+      }
     }
   }
 
-  // If an explicit tempo block was stored, use it.
-  const tempoBlocks = structure.filter(block => block?.type === "tempo");
-  if (tempoBlocks.length) {
-    const duration = tempoBlocks.reduce((sum, block) => {
-      if (Array.isArray(block.items) && block.items.length) {
-        return sum + block.items.reduce((itemSum, item) => {
-          const pace = paceToSeconds(item?.pace);
-          const distanceKm = Number(item?.distance) / 1000;
-          return itemSum + (Number.isFinite(pace) && pace > 0 && Number.isFinite(distanceKm) && distanceKm > 0
-            ? pace * distanceKm
-            : 0);
-        }, 0);
-      }
+  const savedType = historyTypeClass(workout?.workout_type);
+  if (savedType === "tempo") {
+    const duration = Number(workout?.duration_sec);
+    if (Number.isFinite(duration) && duration > 0) return duration;
 
-      const blockDuration = Number(block?.duration);
-      return sum + (Number.isFinite(blockDuration) && blockDuration > 0 ? blockDuration : 0);
-    }, 0);
-
-    if (duration > 0) return duration;
-  }
-
-  // Finally, trust a workout that was saved as tempo. This is important for
-  // older history records whose exact tempo block can no longer be reconstructed.
-  const savedType = historyTypeClass(workout.workout_type);
-  const derivedType = derivedWorkoutType(workout);
-  if (savedType === "tempo" || derivedType === "tempo") {
-    const totalDuration = Number(workout.duration_sec);
-    if (Number.isFinite(totalDuration) && totalDuration > 0) return totalDuration;
-
-    const pace = paceToSeconds(workout.pace);
-    const distance = Number(workout.distance_km);
-    if (Number.isFinite(pace) && pace > 0 && Number.isFinite(distance) && distance > 0) {
-      return pace * distance;
+    const distance = Number(workout?.distance_km);
+    const pace = paceToSeconds(workout?.pace);
+    if (Number.isFinite(distance) && distance > 0 && Number.isFinite(pace) && pace > 0) {
+      return distance * pace;
     }
   }
 
@@ -3050,28 +3083,14 @@ function tempoWorkDurationSec(workout) {
 function tempoComparable(current, candidate) {
   const currentDuration = tempoWorkDurationSec(current);
   const candidateDuration = tempoWorkDurationSec(candidate);
-
-  if (currentDuration <= 0 || candidateDuration <= 0) return false;
-
+  if (!currentDuration || !candidateDuration) return false;
   const ratio = candidateDuration / currentDuration;
   return ratio >= 0.70 && ratio <= 1.30;
 }
 
-function formatTempoDuration(seconds) {
-  if (!Number.isFinite(Number(seconds)) || Number(seconds) <= 0) return "—";
-  const total = Math.round(Number(seconds));
-  const hours = Math.floor(total / 3600);
-  const minutes = Math.floor((total % 3600) / 60);
-  if (hours) return `${hours} год ${String(minutes).padStart(2, "0")} хв`;
-  return `${minutes} хв`;
-}
-
 function buildTempoDynamics(workouts) {
   const tempo = workouts
-    .filter(w =>
-      historyTypeClass(w?.workout_type) === "tempo"
-      || derivedWorkoutType(w) === "tempo"
-    )
+    .filter(w => historyTypeClass(w?.workout_type) === "tempo" || hasExplicitTempoStructure(w) || derivedWorkoutType(w) === "tempo")
     .filter(w => paceToSeconds(w.pace) != null)
     .sort((a, b) => new Date(a.workout_date) - new Date(b.workout_date));
   if (tempo.length < 2) return null;
@@ -3080,13 +3099,13 @@ function buildTempoDynamics(workouts) {
   const candidates = tempo.slice(0, -1).filter(w => tempoComparable(current, w));
   if (!candidates.length) return null;
 
-  const currentVolume = tempoWorkDurationSec(current);
+  const currentDuration = tempoWorkDurationSec(current);
   const ranked = candidates
     .map(w => ({
       workout: w,
-      volumeDistance: Math.abs(tempoWorkDurationSec(w) - currentVolume)
+      durationDistance: Math.abs(tempoWorkDurationSec(w) - currentDuration)
     }))
-    .sort((a, b) => a.volumeDistance - b.volumeDistance || new Date(b.workout.workout_date) - new Date(a.workout.workout_date));
+    .sort((a, b) => a.durationDistance - b.durationDistance || new Date(b.workout.workout_date) - new Date(a.workout.workout_date));
 
   const similar = ranked.slice(0, Math.min(5, ranked.length)).map(item => item.workout);
   const paceBaseline = median(similar.map(w => paceToSeconds(w.pace)));
@@ -3122,9 +3141,8 @@ function buildTempoDynamics(workouts) {
     else if (hrTrend === "declined" && paceTrend === "stable") trend = "declined";
   }
 
-  return { current, previous: similar.at(-1), count: similar.length, currentVolume, paceBaseline, hrBaseline, paceDelta, hrDelta, trend };
+  return { current, previous: similar.at(-1), count: similar.length, currentDuration, paceBaseline, hrBaseline, paceDelta, hrDelta, trend };
 }
-
 
 function intervalWorkoutProfile(workout) {
   const summary = {
@@ -3225,27 +3243,31 @@ function intervalComparable(current, candidate) {
   const candidateProfile = intervalWorkoutProfile(candidate);
   if (!currentProfile || !candidateProfile) return false;
 
-  // Time-based intervals compare only with time-based intervals of the same
-  // duration. Distance covered during the work rep is deliberately ignored.
   if (currentProfile.mode === "time" || candidateProfile.mode === "time") {
     if (currentProfile.mode !== "time" || candidateProfile.mode !== "time") return false;
     if (currentProfile.repDuration == null || candidateProfile.repDuration == null) return false;
     const ratio = candidateProfile.repDuration / currentProfile.repDuration;
-    return ratio >= 0.85 && ratio <= 1.15;
+    return ratio >= 0.80 && ratio <= 1.25;
   }
 
-  // A single-distance set (7×1 km, 10×1 km, 15×400 m, etc.) compares by the
-  // distance of one work repetition. The number of reps may differ.
   if (currentProfile.mode === "distance" || candidateProfile.mode === "distance") {
     if (currentProfile.mode !== "distance" || candidateProfile.mode !== "distance") return false;
     if (currentProfile.repDistance == null || candidateProfile.repDistance == null) return false;
-    const ratio = candidateProfile.repDistance / currentProfile.repDistance;
-    return ratio >= 0.85 && ratio <= 1.15;
+
+    const repRatio = candidateProfile.repDistance / currentProfile.repDistance;
+    if (repRatio < 0.67 || repRatio > 1.50) return false;
+
+    const currentVolume = Number(currentProfile.totalWorkDistance);
+    const candidateVolume = Number(candidateProfile.totalWorkDistance);
+    if (Number.isFinite(currentVolume) && Number.isFinite(candidateVolume)
+        && currentVolume > 0 && candidateVolume > 0) {
+      const volumeRatio = candidateVolume / currentVolume;
+      if (volumeRatio < 0.70 || volumeRatio > 1.30) return false;
+    }
+
+    return true;
   }
 
-  // Mixed-distance sessions must preserve their multi-part structure. A
-  // 4×1600 + 4×800 session is comparable only with another two-part session
-  // with the same order of work distances (within ±15%). Counts may differ.
   if (currentProfile.mode === "mixed-distance" && candidateProfile.mode === "mixed-distance") {
     const a = currentProfile.groups || [];
     const b = candidateProfile.groups || [];
@@ -3604,10 +3626,8 @@ function renderTempoDynamics(workouts) {
   else if (dynamics.count > 1 && dynamics.trend === "declined") trendLabel = t("historyTempoDeclined");
 
   const compared = t("historyTempoCompared").replace("{count}", String(dynamics.count));
-  const volume = formatTempoDuration(dynamics.currentVolume);
-  const previous = dynamics.previous
-    ? `${formatHistoryDate(dynamics.previous.workout_date)} · ${dynamics.previous.pace || "—"}/км · ${formatTempoDuration(tempoWorkDurationSec(dynamics.previous))}`
-    : "—";
+  const volume = formatHistoryDuration(dynamics.currentDuration);
+  const previous = dynamics.previous ? `${formatHistoryDate(dynamics.previous.workout_date)} · ${dynamics.previous.pace || "—"}/км · ${formatHistoryDuration(tempoWorkDurationSec(dynamics.previous))}` : "—";
 
   return `
     <div class="history-dynamic-status"><strong>${escapeHtml(trendLabel)}</strong><span>${escapeHtml(compared)}</span></div>
