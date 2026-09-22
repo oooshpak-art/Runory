@@ -2893,3 +2893,42 @@
     white-space: nowrap;
   }
 }
+
+
+/* === Mobile metric cards: keep values inside their cards === */
+@media (max-width: 680px) {
+  .home-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .home-metrics > div:last-child {
+    grid-column: auto;
+  }
+
+  .home-metrics > div:nth-child(3) strong {
+    white-space: nowrap;
+    font-size: 14px !important;
+    letter-spacing: -0.3px !important;
+    line-height: 1 !important;
+  }
+
+  .history-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .history-stats .history-stat-card {
+    min-width: 0 !important;
+    overflow: hidden;
+  }
+
+  .history-stats .history-stat-card:nth-child(3) strong {
+    white-space: nowrap;
+    font-size: 14px !important;
+    letter-spacing: -0.5px !important;
+    line-height: 1 !important;
+  }
+
+  .history-stats .history-stat-card:nth-child(3) small {
+    display: none;
+  }
+}
