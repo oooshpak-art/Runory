@@ -2797,12 +2797,6 @@ function buildEasyRunDynamics(workouts) {
     else if (paceTrend === "declined" && (hrTrend === "declined" || hrTrend === "stable" || hrTrend == null)) trend = "declined";
     else if (hrTrend === "improved" && paceTrend === "stable") trend = "improved";
     else if (hrTrend === "declined" && paceTrend === "stable") trend = "declined";
-
-    // Do not report a decline unless the latest run itself is also worse
-    // against the current easy-run baseline in both pace and HR.
-    const currentPaceWorse = Number.isFinite(paceDelta) && paceDelta <= -6;
-    const currentHrWorse = Number.isFinite(hrDelta) && hrDelta >= 3;
-    if (trend === "declined" && !(currentPaceWorse && currentHrWorse)) trend = "stable";
   }
 
   return {
@@ -2860,32 +2854,6 @@ function homeTrendState(workouts, type) {
 
   if (!dynamics) return { label: t("homeNoTrend"), tone: "neutral" };
   if (dynamics.count === 1) return { label: t("homeComparisonOnly"), tone: "neutral" };
-
-  // For easy runs, the latest workout's result versus the personal baseline
-  // is more relevant on the home page than the historical trend of older runs.
-  if (type === "easy") {
-    const paceSignal = Number.isFinite(dynamics.paceDelta) && Math.abs(dynamics.paceDelta) >= 6
-      ? (dynamics.paceDelta > 0 ? "better" : "worse")
-      : "neutral";
-    const hrSignal = Number.isFinite(dynamics.hrDelta) && Math.abs(dynamics.hrDelta) >= 3
-      ? (dynamics.hrDelta < 0 ? "better" : "worse")
-      : "neutral";
-
-    if (paceSignal === "better" && hrSignal === "better") {
-      return { label: t("historyEasyCurrentBetter"), tone: "positive" };
-    }
-    if (paceSignal === "worse" && hrSignal === "worse") {
-      return { label: t("historyEasyCurrentWorse"), tone: "negative" };
-    }
-    if ((paceSignal === "better" && hrSignal === "worse")
-        || (paceSignal === "worse" && hrSignal === "better")) {
-      return { label: t("historyEasyMixed"), tone: "neutral" };
-    }
-    if (paceSignal !== "neutral" || hrSignal !== "neutral") {
-      return { label: t("historyEasyNearTypical"), tone: "neutral" };
-    }
-  }
-
   if (dynamics.trend === "improved") {
     return { label: type === "easy" ? t("historyEasyImproved") : type === "tempo" ? t("historyTempoImproved") : type === "intervals" ? t("historyIntervalImproved") : t("historyLongImproved"), tone: "positive" };
   }
@@ -3307,7 +3275,7 @@ function intervalComparable(current, candidate) {
 
 function buildIntervalDynamics(workouts) {
   const intervals = workouts
-    .filter(w => derivedWorkoutType(w) === "intervals")
+    .filter(w => historyTypeClass(w?.workout_type) === "intervals" || derivedWorkoutType(w) === "intervals")
     .map(workout => ({ workout, profile: intervalWorkoutProfile(workout) }))
     .filter(item => item.profile && Number.isFinite(item.profile.averagePace))
     .sort((a, b) => new Date(a.workout.workout_date) - new Date(b.workout.workout_date));
