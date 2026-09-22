@@ -2867,3 +2867,29 @@
     margin-top: 52px !important;
   }
 }
+
+
+/* === Mobile: keep the requested metric values on one line === */
+@media (max-width: 680px) {
+  /* Home: average heart rate */
+  .home-metrics > div:nth-child(3) strong {
+    white-space: nowrap;
+    font-size: 17px;
+    letter-spacing: -0.4px;
+  }
+
+  /* History: total time (e.g. 66 год 43 хв) */
+  .history-stat-card:nth-child(3) strong,
+  .history-stat-card:nth-child(3) small {
+    white-space: nowrap;
+  }
+
+  .history-stat-card:nth-child(3) small {
+    display: inline;
+    margin-left: 4px;
+  }
+
+  .history-stat-card:nth-child(3) {
+    white-space: nowrap;
+  }
+}
