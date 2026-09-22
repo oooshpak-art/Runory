@@ -2992,33 +2992,71 @@ let dynamicsActiveTab = "easy";
 let longDynamicsSubtab = "simple";
 
 function tempoWorkDistanceKm(workout) {
+  const splits = Array.isArray(workout?.splits) ? workout.splits : [];
+  const structure = Array.isArray(workout?.structure) ? workout.structure : [];
+
   const summary = {
     distance: Number(workout?.distance_km) || 0,
-    splits: Array.isArray(workout?.splits) ? workout.splits : [],
-    structure: Array.isArray(workout?.structure) ? workout.structure : []
+    splits,
+    structure
   };
+
   const pattern = getWorkoutPattern(summary);
   if (pattern?.type !== "tempo") return 0;
+
   const start = Number(pattern.tempoStart);
   const end = Number(pattern.tempoEnd);
-  if (!Number.isInteger(start) || !Number.isInteger(end) || end < start) return 0;
-  return (end - start + 1);
+
+  if (Number.isInteger(start) && Number.isInteger(end) && end >= start) {
+    // Prefer the actual split distances when available.
+    const tempoSplits = splits.slice(start, end + 1);
+    const splitDistance = tempoSplits.reduce((sum, split) => {
+      const value = Number(split?.distance);
+      return sum + (Number.isFinite(value) && value > 0 ? value : 0);
+    }, 0);
+
+    if (splitDistance > 0) return splitDistance / 1000;
+
+    // Garmin's normal kilometer splits do not always contain distance.
+    // In that case each complete split represents approximately 1 km.
+    if (tempoSplits.length > 0) return tempoSplits.length;
+  }
+
+  // Fallback for tempo structures that store explicit tempo blocks.
+  const tempoBlocks = structure.filter(block => block?.type === "tempo");
+  const structureDistance = tempoBlocks.reduce((sum, block) => {
+    const value = Number(block?.distance);
+    return sum + (Number.isFinite(value) && value > 0 ? value : 0);
+  }, 0);
+
+  if (structureDistance > 0) {
+    return structureDistance > 100 ? structureDistance / 1000 : structureDistance;
+  }
+
+  return 0;
 }
 
 function tempoComparable(current, candidate) {
   const currentVolume = tempoWorkDistanceKm(current);
   const candidateVolume = tempoWorkDistanceKm(candidate);
 
-  if (!Number.isFinite(currentVolume) || !Number.isFinite(candidateVolume)) return false;
-  if (currentVolume <= 0 || candidateVolume <= 0) return false;
+  if (currentVolume > 0 && candidateVolume > 0) {
+    const ratio = candidateVolume / currentVolume;
+    return ratio >= 0.70 && ratio <= 1.30;
+  }
 
-  // Continuous tempo sessions can have noticeably different work volumes
-  // and still be useful for form comparison. Keep the comparison focused
-  // on the same workout type while allowing a wider volume range.
-  const ratio = candidateVolume / currentVolume;
+  // If one workout has no recoverable tempo-block volume, use total distance
+  // as a conservative fallback instead of rejecting it immediately.
+  const currentDistance = Number(current?.distance_km);
+  const candidateDistance = Number(candidate?.distance_km);
 
-  // Allow roughly ±30% in continuous tempo-work volume.
-  return ratio >= 0.70 && ratio <= 1.30;
+  if (!Number.isFinite(currentDistance) || !Number.isFinite(candidateDistance)
+      || currentDistance <= 0 || candidateDistance <= 0) {
+    return false;
+  }
+
+  const distanceRatio = candidateDistance / currentDistance;
+  return distanceRatio >= 0.85 && distanceRatio <= 1.15;
 }
 
 function buildTempoDynamics(workouts) {
