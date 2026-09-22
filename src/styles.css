@@ -2959,3 +2959,48 @@
     line-height: 1.15 !important;
   }
 }
+
+
+/* === Final mobile history metric polish === */
+@media (max-width: 680px) {
+  .history-stats .history-stat-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    text-align: center;
+    padding-top: 14px !important;
+  }
+
+  .history-stats .history-stat-card > span,
+  .history-stats .history-stat-card > small {
+    height: 20px;
+    min-height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 !important;
+  }
+
+  .history-stats .history-stat-card > strong {
+    height: 34px;
+    min-height: 34px;
+    margin: 8px 0 0 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    text-align: center;
+    white-space: nowrap;
+    line-height: 1 !important;
+    font-size: 17px !important;
+    letter-spacing: -0.35px !important;
+  }
+
+  .history-stats .history-stat-card > strong small,
+  .history-stats .history-stat-card > strong .unit {
+    display: inline;
+    margin-left: 3px;
+    vertical-align: baseline;
+  }
+}
