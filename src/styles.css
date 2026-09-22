@@ -2932,3 +2932,19 @@
     display: none;
   }
 }
+
+
+/* === Mobile metric typography: match the surrounding values === */
+@media (max-width: 680px) {
+  /* Home: same value size as 5:28 and 1:22:08 */
+  .home-metrics > div:nth-child(3) strong {
+    font-size: 18px !important;
+    letter-spacing: -0.5px !important;
+  }
+
+  /* History: same value size as 49 and 757,3 */
+  .history-stats .history-stat-card:nth-child(3) strong {
+    font-size: 24px !important;
+    letter-spacing: -1px !important;
+  }
+}
