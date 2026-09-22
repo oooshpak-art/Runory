@@ -2992,45 +2992,26 @@ let dynamicsActiveTab = "easy";
 let longDynamicsSubtab = "simple";
 
 function tempoWorkDistanceKm(workout) {
-  const splits = Array.isArray(workout?.splits) ? workout.splits : [];
-  const structure = Array.isArray(workout?.structure) ? workout.structure : [];
-
   const summary = {
     distance: Number(workout?.distance_km) || 0,
-    splits,
-    structure
+    splits: Array.isArray(workout?.splits) ? workout.splits : [],
+    structure: Array.isArray(workout?.structure) ? workout.structure : []
   };
 
   const pattern = getWorkoutPattern(summary);
-  if (pattern?.type !== "tempo") return 0;
-
-  const start = Number(pattern.tempoStart);
-  const end = Number(pattern.tempoEnd);
-
-  if (Number.isInteger(start) && Number.isInteger(end) && end >= start) {
-    // Prefer the actual split distances when available.
-    const tempoSplits = splits.slice(start, end + 1);
-    const splitDistance = tempoSplits.reduce((sum, split) => {
-      const value = Number(split?.distance);
-      return sum + (Number.isFinite(value) && value > 0 ? value : 0);
-    }, 0);
-
-    if (splitDistance > 0) return splitDistance / 1000;
-
-    // Garmin's normal kilometer splits do not always contain distance.
-    // In that case each complete split represents approximately 1 km.
-    if (tempoSplits.length > 0) return tempoSplits.length;
+  if (pattern?.type === "tempo") {
+    const start = Number(pattern.tempoStart);
+    const end = Number(pattern.tempoEnd);
+    if (Number.isInteger(start) && Number.isInteger(end) && end >= start) {
+      return end - start + 1;
+    }
   }
 
-  // Fallback for tempo structures that store explicit tempo blocks.
-  const tempoBlocks = structure.filter(block => block?.type === "tempo");
-  const structureDistance = tempoBlocks.reduce((sum, block) => {
-    const value = Number(block?.distance);
-    return sum + (Number.isFinite(value) && value > 0 ? value : 0);
-  }, 0);
-
-  if (structureDistance > 0) {
-    return structureDistance > 100 ? structureDistance / 1000 : structureDistance;
+  // Historical tempo workouts can keep the "tempo" type even when the
+  // current pattern detector cannot reconstruct the exact tempo block.
+  if (historyTypeClass(workout?.workout_type) === "tempo") {
+    const totalDistance = Number(workout?.distance_km);
+    if (Number.isFinite(totalDistance) && totalDistance > 0) return totalDistance;
   }
 
   return 0;
@@ -3045,18 +3026,17 @@ function tempoComparable(current, candidate) {
     return ratio >= 0.70 && ratio <= 1.30;
   }
 
-  // If one workout has no recoverable tempo-block volume, use total distance
-  // as a conservative fallback instead of rejecting it immediately.
+  // Last-resort fallback when one historical workout has no recoverable
+  // tempo-block volume.
   const currentDistance = Number(current?.distance_km);
   const candidateDistance = Number(candidate?.distance_km);
-
-  if (!Number.isFinite(currentDistance) || !Number.isFinite(candidateDistance)
+  if (![currentDistance, candidateDistance].every(Number.isFinite)
       || currentDistance <= 0 || candidateDistance <= 0) {
     return false;
   }
 
-  const distanceRatio = candidateDistance / currentDistance;
-  return distanceRatio >= 0.85 && distanceRatio <= 1.15;
+  const ratio = candidateDistance / currentDistance;
+  return ratio >= 0.85 && ratio <= 1.15;
 }
 
 function buildTempoDynamics(workouts) {
@@ -3215,63 +3195,42 @@ function intervalComparable(current, candidate) {
   const candidateProfile = intervalWorkoutProfile(candidate);
   if (!currentProfile || !candidateProfile) return false;
 
-  // Time-based intervals compare only with time-based intervals.
-  // Allow a moderate difference in repetition duration.
+  // Time-based intervals: compare repetition duration, not distance covered.
   if (currentProfile.mode === "time" || candidateProfile.mode === "time") {
     if (currentProfile.mode !== "time" || candidateProfile.mode !== "time") return false;
     if (currentProfile.repDuration == null || candidateProfile.repDuration == null) return false;
-
-    const durationRatio = candidateProfile.repDuration / currentProfile.repDuration;
-
-    // 20% tolerance for work-repetition duration.
-    return durationRatio >= 0.80 && durationRatio <= 1.25;
+    const ratio = candidateProfile.repDuration / currentProfile.repDuration;
+    return ratio >= 0.80 && ratio <= 1.25;
   }
 
-  // Simple distance-based interval sessions:
-  // compare both repetition distance and total fast-work volume.
-  //
-  // Examples that should be comparable:
-  // 10×1 km ↔ 8×1 km
-  // 6×1 km ↔ 5×1.2 km
-  // 15×400 m ↔ 10×600 m
-  //
-  // The number of repetitions itself is not important.
+  // Simple distance-based intervals: allow a different rep count when the
+  // repetition distance and total fast-work volume remain reasonably close.
   if (currentProfile.mode === "distance" || candidateProfile.mode === "distance") {
     if (currentProfile.mode !== "distance" || candidateProfile.mode !== "distance") return false;
     if (currentProfile.repDistance == null || candidateProfile.repDistance == null) return false;
 
     const repRatio = candidateProfile.repDistance / currentProfile.repDistance;
+    if (repRatio < 0.67 || repRatio > 1.50) return false;
 
-    // Do not compare fundamentally different repetition lengths.
-    if (repRatio < 0.75 || repRatio > 1.33) return false;
-
-    const currentVolume = Number(currentProfile.workDistance);
-    const candidateVolume = Number(candidateProfile.workDistance);
-
-    // If total work volume is available, use it as a second criterion.
-    if (Number.isFinite(currentVolume) && Number.isFinite(candidateVolume) && currentVolume > 0) {
+    const currentVolume = Number(currentProfile.totalWorkDistance);
+    const candidateVolume = Number(candidateProfile.totalWorkDistance);
+    if (Number.isFinite(currentVolume) && Number.isFinite(candidateVolume)
+        && currentVolume > 0 && candidateVolume > 0) {
       const volumeRatio = candidateVolume / currentVolume;
-
-      // Allow roughly ±30% in total fast-work volume.
-      return volumeRatio >= 0.70 && volumeRatio <= 1.30;
+      if (volumeRatio < 0.70 || volumeRatio > 1.30) return false;
     }
 
-    // Fallback for older/incomplete workout data.
     return true;
   }
 
   // Mixed-distance sessions must preserve their multi-part structure.
-  // A 4×1600 + 4×800 session is comparable only with another two-part
-  // session with the same order of work distances. Counts may differ.
   if (currentProfile.mode === "mixed-distance" && candidateProfile.mode === "mixed-distance") {
     const a = currentProfile.groups || [];
     const b = candidateProfile.groups || [];
     if (a.length !== b.length || !a.length) return false;
-
     return a.every((group, index) => {
       const other = b[index];
       if (!other || !Number.isFinite(group.distance) || !Number.isFinite(other.distance)) return false;
-
       const ratio = other.distance / group.distance;
       return ratio >= 0.85 && ratio <= 1.15;
     });
@@ -3662,12 +3621,12 @@ function renderDynamics(workouts) {
       const currentHrSignal = Number.isFinite(dynamics.hrDelta) && Math.abs(dynamics.hrDelta) >= 3 ? (dynamics.hrDelta < 0 ? "better" : "worse") : "neutral";
       let trendLabel;
       if (dynamics.count === 1) trendLabel = t("historyEasyComparisonOnly");
-      else if (dynamics.trend === "improved") trendLabel = t("historyEasyImproved");
-      else if (dynamics.trend === "declined") trendLabel = t("historyEasyDeclined");
-      else if ((currentPaceSignal === "better" && currentHrSignal === "worse") || (currentPaceSignal === "worse" && currentHrSignal === "better")) trendLabel = t("historyEasyMixed");
       else if (currentPaceSignal === "better" && currentHrSignal === "better") trendLabel = t("historyEasyCurrentBetter");
       else if (currentPaceSignal === "worse" && currentHrSignal === "worse") trendLabel = t("historyEasyCurrentWorse");
+      else if ((currentPaceSignal === "better" && currentHrSignal === "worse") || (currentPaceSignal === "worse" && currentHrSignal === "better")) trendLabel = t("historyEasyMixed");
       else if (currentPaceSignal !== "neutral" || currentHrSignal !== "neutral") trendLabel = t("historyEasyNearTypical");
+      else if (dynamics.trend === "improved") trendLabel = t("historyEasyImproved");
+      else if (dynamics.trend === "declined") trendLabel = t("historyEasyDeclined");
       else trendLabel = t("historyEasyStable");
       const compared = t("historyEasyCompared").replace("{count}", String(dynamics.count));
       const trendHint = dynamics.count < 4 ? t("historyEasyTrendHint") : t("historyEasyDynamicsHint");
