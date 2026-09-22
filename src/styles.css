@@ -2869,39 +2869,40 @@
 }
 
 
-/* === Final mobile metric alignment === */
+/* === Simple mobile metric values === */
 @media (max-width: 680px) {
-  /* Home: all three values use the same type size. */
+  .home-metrics > div {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+
   .home-metrics > div strong {
-    font-size: 18px !important;
-    line-height: 1 !important;
-    letter-spacing: -0.5px !important;
+    font-size: 15px !important;
+    line-height: 1.15 !important;
+    letter-spacing: -0.3px !important;
     white-space: nowrap;
+    margin-top: 7px;
   }
 
-  /* History: all three values use the same type size.
-     The long time value is horizontally compressed, not made smaller,
-     so its visual height matches the other values while staying on one line. */
+  .history-stats .history-stat-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+
   .history-stats .history-stat-card strong {
-    font-size: 24px !important;
-    line-height: 1 !important;
-    letter-spacing: -1px !important;
-  }
-
-  .history-stats .history-stat-card:nth-child(3) {
-    min-width: 0 !important;
-    overflow: hidden;
-  }
-
-  .history-stats .history-stat-card:nth-child(3) strong {
-    display: block;
-    width: 145%;
+    font-size: 17px !important;
+    line-height: 1.15 !important;
+    letter-spacing: -0.4px !important;
     white-space: nowrap;
-    transform: scaleX(0.69);
-    transform-origin: left center;
   }
 
-  .history-stats .history-stat-card:nth-child(3) small {
-    display: none;
+  .history-stats .history-stat-card small {
+    font-size: 8px !important;
   }
 }
