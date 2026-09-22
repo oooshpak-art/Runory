@@ -3375,8 +3375,15 @@ function longComparable(current, candidate) {
   if (a.kind === "simple") return true;
 
   const preRatio = b.preWorkDistance / Math.max(a.preWorkDistance, 0.1);
-  if (preRatio < 0.75 || preRatio > 1.33) return false;
-  return longWorkStructureComparable(a, b);
+  if (preRatio < 0.70 || preRatio > 1.43) return false;
+
+  // Long runs with work are a separate family, but the work block itself
+  // does not have to be identical to count as a useful comparison. For
+  // example, 4×2 km and 5×~9 min can still be comparable long-with-work
+  // sessions when total distance and distance before the work are similar.
+  // Keep the exact work structure for display, but don't let it suppress
+  // the higher-level long-run comparison.
+  return true;
 }
 
 function buildLongDynamics(workouts) {
