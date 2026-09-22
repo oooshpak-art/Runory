@@ -3017,6 +3017,16 @@ function renderHistoryAnalytics(workouts) {
 let dynamicsActiveTab = "easy";
 let longDynamicsSubtab = "simple";
 
+function hasExplicitTempoStructure(workout) {
+  const structure = Array.isArray(workout?.structure) ? workout.structure : [];
+  return structure.some(block => {
+    if (!block) return false;
+    if (block.type === "tempo") return true;
+    const label = String(block.label || "").toLowerCase();
+    return label.includes("tempo") || label.includes("темп");
+  });
+}
+
 function tempoWorkDurationSec(workout) {
   const summary = {
     distance: Number(workout?.distance_km) || 0,
@@ -3074,7 +3084,7 @@ function tempoComparable(current, candidate) {
 
 function buildTempoDynamics(workouts) {
   const tempo = workouts
-    .filter(w => historyTypeClass(w?.workout_type) === "tempo" || derivedWorkoutType(w) === "tempo")
+    .filter(w => historyTypeClass(w?.workout_type) === "tempo" || hasExplicitTempoStructure(w) || derivedWorkoutType(w) === "tempo")
     .filter(w => paceToSeconds(w.pace) != null)
     .sort((a, b) => new Date(a.workout_date) - new Date(b.workout_date));
   if (tempo.length < 2) return null;
