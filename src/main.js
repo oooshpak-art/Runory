@@ -61,6 +61,7 @@ const translations = {
     homeTempo: "Темпові",
     homeIntervals: "Інтервали",
     homeLong: "Довгі",
+    homeComparisonOnly: "Є пряме порівняння",
     navCalculator: "Калькулятор бігу",
     calcPageTitle: "Runory — калькулятор бігу",
     calcHeroTitle: "Плануй забіг<br />у цифрах.",
@@ -369,6 +370,7 @@ const translations = {
     homeTempo: "Tempo",
     homeIntervals: "Intervals",
     homeLong: "Long",
+    homeComparisonOnly: "Direct comparison available",
     navCalculator: "Running calculator",
     calcPageTitle: "Runory — running calculator",
     calcHeroTitle: "Plan your run<br />with numbers.",
@@ -2839,12 +2841,26 @@ function homeWorkoutLabel(workout) {
   return workoutTypeLabel(derivedWorkoutType(workout));
 }
 
-function homeTrendState(workouts) {
-  const dynamics = buildEasyRunDynamics(workouts);
+function homeTrendState(workouts, type) {
+  let dynamics = null;
+  if (type === "easy") dynamics = buildEasyRunDynamics(workouts);
+  else if (type === "tempo") dynamics = buildTempoDynamics(workouts);
+  else if (type === "intervals") dynamics = buildIntervalDynamics(workouts);
+  else if (type === "long") {
+    const simple = longDynamicsSubtab === "simple" ? buildLongDynamics(workouts) : null;
+    const withWork = longDynamicsSubtab === "with_work" ? buildLongDynamics(workouts) : null;
+    dynamics = simple || withWork;
+  }
+
   if (!dynamics) return { label: t("homeNoTrend"), tone: "neutral" };
-  if (dynamics.trend === "improved") return { label: t("historyEasyImproved"), tone: "positive" };
-  if (dynamics.trend === "declined") return { label: t("historyEasyDeclined"), tone: "negative" };
-  return { label: t("historyEasyStable"), tone: "neutral" };
+  if (dynamics.count === 1) return { label: t("homeComparisonOnly"), tone: "neutral" };
+  if (dynamics.trend === "improved") {
+    return { label: type === "easy" ? t("historyEasyImproved") : type === "tempo" ? t("historyTempoImproved") : type === "intervals" ? t("historyIntervalImproved") : t("historyLongImproved"), tone: "positive" };
+  }
+  if (dynamics.trend === "declined") {
+    return { label: type === "easy" ? t("historyEasyDeclined") : type === "tempo" ? t("historyTempoDeclined") : type === "intervals" ? t("historyIntervalDeclined") : t("historyLongDeclined"), tone: "negative" };
+  }
+  return { label: type === "easy" ? t("historyEasyStable") : type === "tempo" ? t("historyTempoStable") : type === "intervals" ? t("historyIntervalStable") : t("historyLongStable"), tone: "neutral" };
 }
 
 function renderHome(workouts = historyWorkouts) {
@@ -2890,10 +2906,10 @@ function renderHome(workouts = historyWorkouts) {
     <article class="home-card home-empty-card"><div><strong>${escapeHtml(t("homeLatestEmpty"))}</strong><p>${escapeHtml(t("homeLatestEmptyCopy"))}</p></div><button class="home-primary-button" type="button" id="homeAddWorkoutButton">＋</button></article>`;
 
   const trendRows = [
-    [t("homeEasy"), historyTypeClass("run") === "run" ? trend.label : t("homeNoTrend"), trend.tone],
-    [t("homeTempo"), t("homeNoTrend"), "neutral"],
-    [t("homeIntervals"), t("homeNoTrend"), "neutral"],
-    [t("homeLong"), t("homeNoTrend"), "neutral"]
+    (() => { const state = homeTrendState(workouts, "easy"); return [t("homeEasy"), state.label, state.tone]; })(),
+    (() => { const state = homeTrendState(workouts, "tempo"); return [t("homeTempo"), state.label, state.tone]; })(),
+    (() => { const state = homeTrendState(workouts, "intervals"); return [t("homeIntervals"), state.label, state.tone]; })(),
+    (() => { const state = homeTrendState(workouts, "long"); return [t("homeLong"), state.label, state.tone]; })()
   ];
 
   const recentWorkouts = sorted.slice(0, 3);
