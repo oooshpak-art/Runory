@@ -3017,48 +3017,62 @@ function renderHistoryAnalytics(workouts) {
 let dynamicsActiveTab = "easy";
 let longDynamicsSubtab = "simple";
 
-function tempoWorkDistanceKm(workout) {
+function tempoWorkDurationSec(workout) {
+  const splits = Array.isArray(workout?.splits) ? workout.splits : [];
+  const structure = Array.isArray(workout?.structure) ? workout.structure : [];
   const summary = {
     distance: Number(workout?.distance_km) || 0,
-    splits: Array.isArray(workout?.splits) ? workout.splits : [],
-    structure: Array.isArray(workout?.structure) ? workout.structure : []
+    splits,
+    structure
   };
 
   const pattern = getWorkoutPattern(summary);
+
+  // For a detected continuous tempo block, calculate the actual work time
+  // from the paces of its kilometer splits. This makes 9 km, 10 km, 12 km
+  // and e.g. 50 + 5 minutes of tempo comparable on the same time axis.
   if (pattern?.type === "tempo") {
     const start = Number(pattern.tempoStart);
     const end = Number(pattern.tempoEnd);
+
     if (Number.isInteger(start) && Number.isInteger(end) && end >= start) {
-      return end - start + 1;
+      const tempoSplits = splits.slice(start, end + 1);
+      const duration = tempoSplits.reduce((sum, split) => {
+        const pace = paceToSeconds(split?.pace);
+        return sum + (Number.isFinite(pace) && pace > 0 ? pace : 0);
+      }, 0);
+
+      if (duration > 0) return duration;
     }
   }
 
+  // Some historical tempo records keep the workout type but no longer have
+  // enough structure/splits to reconstruct the exact block. In that case the
+  // total workout duration is the safest available fallback.
   if (historyTypeClass(workout?.workout_type) === "tempo") {
-    const totalDistance = Number(workout?.distance_km);
-    if (Number.isFinite(totalDistance) && totalDistance > 0) return totalDistance;
+    const totalDuration = Number(workout?.duration_sec);
+    if (Number.isFinite(totalDuration) && totalDuration > 0) return totalDuration;
+
+    const pace = paceToSeconds(workout?.pace);
+    const distance = Number(workout?.distance_km);
+    if (Number.isFinite(pace) && pace > 0 && Number.isFinite(distance) && distance > 0) {
+      return pace * distance;
+    }
   }
 
   return 0;
 }
 
 function tempoComparable(current, candidate) {
-  const currentVolume = tempoWorkDistanceKm(current);
-  const candidateVolume = tempoWorkDistanceKm(candidate);
+  const currentDuration = tempoWorkDurationSec(current);
+  const candidateDuration = tempoWorkDurationSec(candidate);
 
-  if (currentVolume > 0 && candidateVolume > 0) {
-    const ratio = candidateVolume / currentVolume;
+  if (currentDuration > 0 && candidateDuration > 0) {
+    const ratio = candidateDuration / currentDuration;
     return ratio >= 0.70 && ratio <= 1.30;
   }
 
-  const currentDistance = Number(current?.distance_km);
-  const candidateDistance = Number(candidate?.distance_km);
-  if (![currentDistance, candidateDistance].every(Number.isFinite)
-      || currentDistance <= 0 || candidateDistance <= 0) {
-    return false;
-  }
-
-  const ratio = candidateDistance / currentDistance;
-  return ratio >= 0.85 && ratio <= 1.15;
+  return false;
 }
 
 function buildTempoDynamics(workouts) {
@@ -3072,11 +3086,11 @@ function buildTempoDynamics(workouts) {
   const candidates = tempo.slice(0, -1).filter(w => tempoComparable(current, w));
   if (!candidates.length) return null;
 
-  const currentVolume = tempoWorkDistanceKm(current);
+  const currentVolume = tempoWorkDurationSec(current);
   const ranked = candidates
     .map(w => ({
       workout: w,
-      volumeDistance: Math.abs(tempoWorkDistanceKm(w) - currentVolume)
+      volumeDistance: Math.abs(tempoWorkDurationSec(w) - currentVolume)
     }))
     .sort((a, b) => a.volumeDistance - b.volumeDistance || new Date(b.workout.workout_date) - new Date(a.workout.workout_date));
 
