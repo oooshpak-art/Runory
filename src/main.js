@@ -3008,9 +3008,17 @@ function tempoWorkDistanceKm(workout) {
 function tempoComparable(current, candidate) {
   const currentVolume = tempoWorkDistanceKm(current);
   const candidateVolume = tempoWorkDistanceKm(candidate);
-  if (!currentVolume || !candidateVolume) return false;
+
+  if (!Number.isFinite(currentVolume) || !Number.isFinite(candidateVolume)) return false;
+  if (currentVolume <= 0 || candidateVolume <= 0) return false;
+
+  // Continuous tempo sessions can have noticeably different work volumes
+  // and still be useful for form comparison. Keep the comparison focused
+  // on the same workout type while allowing a wider volume range.
   const ratio = candidateVolume / currentVolume;
-  return ratio >= 0.75 && ratio <= 1.33;
+
+  // Allow roughly ±30% in continuous tempo-work volume.
+  return ratio >= 0.70 && ratio <= 1.30;
 }
 
 function buildTempoDynamics(workouts) {
@@ -3169,34 +3177,63 @@ function intervalComparable(current, candidate) {
   const candidateProfile = intervalWorkoutProfile(candidate);
   if (!currentProfile || !candidateProfile) return false;
 
-  // Time-based intervals compare only with time-based intervals of the same
-  // duration. Distance covered during the work rep is deliberately ignored.
+  // Time-based intervals compare only with time-based intervals.
+  // Allow a moderate difference in repetition duration.
   if (currentProfile.mode === "time" || candidateProfile.mode === "time") {
     if (currentProfile.mode !== "time" || candidateProfile.mode !== "time") return false;
     if (currentProfile.repDuration == null || candidateProfile.repDuration == null) return false;
-    const ratio = candidateProfile.repDuration / currentProfile.repDuration;
-    return ratio >= 0.85 && ratio <= 1.15;
+
+    const durationRatio = candidateProfile.repDuration / currentProfile.repDuration;
+
+    // 20% tolerance for work-repetition duration.
+    return durationRatio >= 0.80 && durationRatio <= 1.25;
   }
 
-  // A single-distance set (7×1 km, 10×1 km, 15×400 m, etc.) compares by the
-  // distance of one work repetition. The number of reps may differ.
+  // Simple distance-based interval sessions:
+  // compare both repetition distance and total fast-work volume.
+  //
+  // Examples that should be comparable:
+  // 10×1 km ↔ 8×1 km
+  // 6×1 km ↔ 5×1.2 km
+  // 15×400 m ↔ 10×600 m
+  //
+  // The number of repetitions itself is not important.
   if (currentProfile.mode === "distance" || candidateProfile.mode === "distance") {
     if (currentProfile.mode !== "distance" || candidateProfile.mode !== "distance") return false;
     if (currentProfile.repDistance == null || candidateProfile.repDistance == null) return false;
-    const ratio = candidateProfile.repDistance / currentProfile.repDistance;
-    return ratio >= 0.85 && ratio <= 1.15;
+
+    const repRatio = candidateProfile.repDistance / currentProfile.repDistance;
+
+    // Do not compare fundamentally different repetition lengths.
+    if (repRatio < 0.75 || repRatio > 1.33) return false;
+
+    const currentVolume = Number(currentProfile.workDistance);
+    const candidateVolume = Number(candidateProfile.workDistance);
+
+    // If total work volume is available, use it as a second criterion.
+    if (Number.isFinite(currentVolume) && Number.isFinite(candidateVolume) && currentVolume > 0) {
+      const volumeRatio = candidateVolume / currentVolume;
+
+      // Allow roughly ±30% in total fast-work volume.
+      return volumeRatio >= 0.70 && volumeRatio <= 1.30;
+    }
+
+    // Fallback for older/incomplete workout data.
+    return true;
   }
 
-  // Mixed-distance sessions must preserve their multi-part structure. A
-  // 4×1600 + 4×800 session is comparable only with another two-part session
-  // with the same order of work distances (within ±15%). Counts may differ.
+  // Mixed-distance sessions must preserve their multi-part structure.
+  // A 4×1600 + 4×800 session is comparable only with another two-part
+  // session with the same order of work distances. Counts may differ.
   if (currentProfile.mode === "mixed-distance" && candidateProfile.mode === "mixed-distance") {
     const a = currentProfile.groups || [];
     const b = candidateProfile.groups || [];
     if (a.length !== b.length || !a.length) return false;
+
     return a.every((group, index) => {
       const other = b[index];
       if (!other || !Number.isFinite(group.distance) || !Number.isFinite(other.distance)) return false;
+
       const ratio = other.distance / group.distance;
       return ratio >= 0.85 && ratio <= 1.15;
     });
