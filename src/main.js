@@ -2854,6 +2854,32 @@ function homeTrendState(workouts, type) {
 
   if (!dynamics) return { label: t("homeNoTrend"), tone: "neutral" };
   if (dynamics.count === 1) return { label: t("homeComparisonOnly"), tone: "neutral" };
+
+  // For easy runs, the latest workout's result versus the personal baseline
+  // is more relevant on the home page than the historical trend of older runs.
+  if (type === "easy") {
+    const paceSignal = Number.isFinite(dynamics.paceDelta) && Math.abs(dynamics.paceDelta) >= 6
+      ? (dynamics.paceDelta > 0 ? "better" : "worse")
+      : "neutral";
+    const hrSignal = Number.isFinite(dynamics.hrDelta) && Math.abs(dynamics.hrDelta) >= 3
+      ? (dynamics.hrDelta < 0 ? "better" : "worse")
+      : "neutral";
+
+    if (paceSignal === "better" && hrSignal === "better") {
+      return { label: t("historyEasyCurrentBetter"), tone: "positive" };
+    }
+    if (paceSignal === "worse" && hrSignal === "worse") {
+      return { label: t("historyEasyCurrentWorse"), tone: "negative" };
+    }
+    if ((paceSignal === "better" && hrSignal === "worse")
+        || (paceSignal === "worse" && hrSignal === "better")) {
+      return { label: t("historyEasyMixed"), tone: "neutral" };
+    }
+    if (paceSignal !== "neutral" || hrSignal !== "neutral") {
+      return { label: t("historyEasyNearTypical"), tone: "neutral" };
+    }
+  }
+
   if (dynamics.trend === "improved") {
     return { label: type === "easy" ? t("historyEasyImproved") : type === "tempo" ? t("historyTempoImproved") : type === "intervals" ? t("historyIntervalImproved") : t("historyLongImproved"), tone: "positive" };
   }
@@ -3007,8 +3033,6 @@ function tempoWorkDistanceKm(workout) {
     }
   }
 
-  // Historical tempo workouts can keep the "tempo" type even when the
-  // current pattern detector cannot reconstruct the exact tempo block.
   if (historyTypeClass(workout?.workout_type) === "tempo") {
     const totalDistance = Number(workout?.distance_km);
     if (Number.isFinite(totalDistance) && totalDistance > 0) return totalDistance;
@@ -3026,8 +3050,6 @@ function tempoComparable(current, candidate) {
     return ratio >= 0.70 && ratio <= 1.30;
   }
 
-  // Last-resort fallback when one historical workout has no recoverable
-  // tempo-block volume.
   const currentDistance = Number(current?.distance_km);
   const candidateDistance = Number(candidate?.distance_km);
   if (![currentDistance, candidateDistance].every(Number.isFinite)
@@ -3195,7 +3217,6 @@ function intervalComparable(current, candidate) {
   const candidateProfile = intervalWorkoutProfile(candidate);
   if (!currentProfile || !candidateProfile) return false;
 
-  // Time-based intervals: compare repetition duration, not distance covered.
   if (currentProfile.mode === "time" || candidateProfile.mode === "time") {
     if (currentProfile.mode !== "time" || candidateProfile.mode !== "time") return false;
     if (currentProfile.repDuration == null || candidateProfile.repDuration == null) return false;
@@ -3203,8 +3224,6 @@ function intervalComparable(current, candidate) {
     return ratio >= 0.80 && ratio <= 1.25;
   }
 
-  // Simple distance-based intervals: allow a different rep count when the
-  // repetition distance and total fast-work volume remain reasonably close.
   if (currentProfile.mode === "distance" || candidateProfile.mode === "distance") {
     if (currentProfile.mode !== "distance" || candidateProfile.mode !== "distance") return false;
     if (currentProfile.repDistance == null || candidateProfile.repDistance == null) return false;
@@ -3223,7 +3242,6 @@ function intervalComparable(current, candidate) {
     return true;
   }
 
-  // Mixed-distance sessions must preserve their multi-part structure.
   if (currentProfile.mode === "mixed-distance" && candidateProfile.mode === "mixed-distance") {
     const a = currentProfile.groups || [];
     const b = candidateProfile.groups || [];
@@ -3621,12 +3639,12 @@ function renderDynamics(workouts) {
       const currentHrSignal = Number.isFinite(dynamics.hrDelta) && Math.abs(dynamics.hrDelta) >= 3 ? (dynamics.hrDelta < 0 ? "better" : "worse") : "neutral";
       let trendLabel;
       if (dynamics.count === 1) trendLabel = t("historyEasyComparisonOnly");
-      else if (currentPaceSignal === "better" && currentHrSignal === "better") trendLabel = t("historyEasyCurrentBetter");
-      else if (currentPaceSignal === "worse" && currentHrSignal === "worse") trendLabel = t("historyEasyCurrentWorse");
-      else if ((currentPaceSignal === "better" && currentHrSignal === "worse") || (currentPaceSignal === "worse" && currentHrSignal === "better")) trendLabel = t("historyEasyMixed");
-      else if (currentPaceSignal !== "neutral" || currentHrSignal !== "neutral") trendLabel = t("historyEasyNearTypical");
       else if (dynamics.trend === "improved") trendLabel = t("historyEasyImproved");
       else if (dynamics.trend === "declined") trendLabel = t("historyEasyDeclined");
+      else if ((currentPaceSignal === "better" && currentHrSignal === "worse") || (currentPaceSignal === "worse" && currentHrSignal === "better")) trendLabel = t("historyEasyMixed");
+      else if (currentPaceSignal === "better" && currentHrSignal === "better") trendLabel = t("historyEasyCurrentBetter");
+      else if (currentPaceSignal === "worse" && currentHrSignal === "worse") trendLabel = t("historyEasyCurrentWorse");
+      else if (currentPaceSignal !== "neutral" || currentHrSignal !== "neutral") trendLabel = t("historyEasyNearTypical");
       else trendLabel = t("historyEasyStable");
       const compared = t("historyEasyCompared").replace("{count}", String(dynamics.count));
       const trendHint = dynamics.count < 4 ? t("historyEasyTrendHint") : t("historyEasyDynamicsHint");
