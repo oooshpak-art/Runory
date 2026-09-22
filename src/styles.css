@@ -2869,82 +2869,39 @@
 }
 
 
-/* === Mobile: keep the requested metric values on one line === */
+/* === Final mobile metric alignment === */
 @media (max-width: 680px) {
-  /* Home: average heart rate */
-  .home-metrics > div:nth-child(3) strong {
-    white-space: nowrap;
-    font-size: 17px;
-    letter-spacing: -0.4px;
-  }
-
-  /* History: total time (e.g. 66 год 43 хв) */
-  .history-stat-card:nth-child(3) strong,
-  .history-stat-card:nth-child(3) small {
-    white-space: nowrap;
-  }
-
-  .history-stat-card:nth-child(3) small {
-    display: inline;
-    margin-left: 4px;
-  }
-
-  .history-stat-card:nth-child(3) {
-    white-space: nowrap;
-  }
-}
-
-
-/* === Mobile metric cards: keep values inside their cards === */
-@media (max-width: 680px) {
-  .home-metrics {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .home-metrics > div:last-child {
-    grid-column: auto;
-  }
-
-  .home-metrics > div:nth-child(3) strong {
-    white-space: nowrap;
-    font-size: 14px !important;
-    letter-spacing: -0.3px !important;
+  /* Home: all three values use the same type size. */
+  .home-metrics > div strong {
+    font-size: 18px !important;
     line-height: 1 !important;
+    letter-spacing: -0.5px !important;
+    white-space: nowrap;
   }
 
-  .history-stats {
-    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  /* History: all three values use the same type size.
+     The long time value is horizontally compressed, not made smaller,
+     so its visual height matches the other values while staying on one line. */
+  .history-stats .history-stat-card strong {
+    font-size: 24px !important;
+    line-height: 1 !important;
+    letter-spacing: -1px !important;
   }
 
-  .history-stats .history-stat-card {
+  .history-stats .history-stat-card:nth-child(3) {
     min-width: 0 !important;
     overflow: hidden;
   }
 
   .history-stats .history-stat-card:nth-child(3) strong {
+    display: block;
+    width: 145%;
     white-space: nowrap;
-    font-size: 14px !important;
-    letter-spacing: -0.5px !important;
-    line-height: 1 !important;
+    transform: scaleX(0.69);
+    transform-origin: left center;
   }
 
   .history-stats .history-stat-card:nth-child(3) small {
     display: none;
-  }
-}
-
-
-/* === Mobile metric typography: match the surrounding values === */
-@media (max-width: 680px) {
-  /* Home: same value size as 5:28 and 1:22:08 */
-  .home-metrics > div:nth-child(3) strong {
-    font-size: 18px !important;
-    letter-spacing: -0.5px !important;
-  }
-
-  /* History: same value size as 49 and 757,3 */
-  .history-stats .history-stat-card:nth-child(3) strong {
-    font-size: 24px !important;
-    letter-spacing: -1px !important;
   }
 }
