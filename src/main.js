@@ -2659,6 +2659,16 @@ function formatWeekLabel(date) {
   return date.toLocaleDateString(translations[currentLanguage].locale, { day: "2-digit", month: "2-digit" });
 }
 
+function formatWeekRangeLabel(startDate) {
+  const start = new Date(startDate);
+  const end = new Date(startDate);
+  end.setDate(end.getDate() + 6);
+  const locale = translations[currentLanguage].locale;
+  const startLabel = start.toLocaleDateString(locale, { day: "2-digit", month: "2-digit" });
+  const endLabel = end.toLocaleDateString(locale, { day: "2-digit", month: "2-digit" });
+  return `${startLabel}–${endLabel}`;
+}
+
 function median(values) {
   const sorted = values.filter(Number.isFinite).sort((a, b) => a - b);
   if (!sorted.length) return null;
@@ -2948,9 +2958,9 @@ function renderHistoryAnalytics(workouts) {
   const weeks = [...byWeek.values()].sort((a, b) => a.date - b.date).slice(-8);
   const maxDistance = Math.max(...weeks.map(w => w.distance), 1);
   const chart = weeks.length ? weeks.map(w => `
-    <div class="history-bar-col" title="${escapeHtml(formatWeekLabel(w.date))}: ${escapeHtml(w.distance.toFixed(1))} km">
+    <div class="history-bar-col" title="${escapeHtml(formatWeekRangeLabel(w.date))}: ${escapeHtml(w.distance.toFixed(1))} km">
       <div class="history-bar-track"><div class="history-bar" style="height:${Math.max(5, (w.distance / maxDistance) * 100)}%"></div></div>
-      <span>${escapeHtml(formatWeekLabel(w.date))}</span>
+      <span>${escapeHtml(formatWeekRangeLabel(w.date))}</span>
       <strong>${escapeHtml(w.distance.toFixed(1))}</strong>
     </div>`).join("") : `<div class="history-chart-empty">${escapeHtml(t("historyNoData"))}</div>`;
 
