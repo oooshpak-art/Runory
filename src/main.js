@@ -2854,32 +2854,6 @@ function homeTrendState(workouts, type) {
 
   if (!dynamics) return { label: t("homeNoTrend"), tone: "neutral" };
   if (dynamics.count === 1) return { label: t("homeComparisonOnly"), tone: "neutral" };
-
-  // For easy runs, the latest workout's result versus the personal baseline
-  // is more relevant on the home page than the historical trend of older runs.
-  if (type === "easy") {
-    const paceSignal = Number.isFinite(dynamics.paceDelta) && Math.abs(dynamics.paceDelta) >= 6
-      ? (dynamics.paceDelta > 0 ? "better" : "worse")
-      : "neutral";
-    const hrSignal = Number.isFinite(dynamics.hrDelta) && Math.abs(dynamics.hrDelta) >= 3
-      ? (dynamics.hrDelta < 0 ? "better" : "worse")
-      : "neutral";
-
-    if (paceSignal === "better" && hrSignal === "better") {
-      return { label: t("historyEasyCurrentBetter"), tone: "positive" };
-    }
-    if (paceSignal === "worse" && hrSignal === "worse") {
-      return { label: t("historyEasyCurrentWorse"), tone: "negative" };
-    }
-    if ((paceSignal === "better" && hrSignal === "worse")
-        || (paceSignal === "worse" && hrSignal === "better")) {
-      return { label: t("historyEasyMixed"), tone: "neutral" };
-    }
-    if (paceSignal !== "neutral" || hrSignal !== "neutral") {
-      return { label: t("historyEasyNearTypical"), tone: "neutral" };
-    }
-  }
-
   if (dynamics.trend === "improved") {
     return { label: type === "easy" ? t("historyEasyImproved") : type === "tempo" ? t("historyTempoImproved") : type === "intervals" ? t("historyIntervalImproved") : t("historyLongImproved"), tone: "positive" };
   }
@@ -3018,26 +2992,26 @@ let dynamicsActiveTab = "easy";
 let longDynamicsSubtab = "simple";
 
 function tempoWorkDurationSec(workout) {
-  const splits = Array.isArray(workout?.splits) ? workout.splits : [];
-  const structure = Array.isArray(workout?.structure) ? workout.structure : [];
+  if (!workout) return 0;
+
+  const splits = Array.isArray(workout.splits) ? workout.splits : [];
+  const structure = Array.isArray(workout.structure) ? workout.structure : [];
   const summary = {
-    distance: Number(workout?.distance_km) || 0,
+    distance: Number(workout.distance_km) || 0,
     splits,
     structure
   };
 
+  // First try to reconstruct the actual continuous tempo block.
+  // Historical workouts can be re-evaluated differently as the easy-run
+  // baseline changes, so this is only the first source of truth.
   const pattern = getWorkoutPattern(summary);
-
-  // For a detected continuous tempo block, calculate the actual work time
-  // from the paces of its kilometer splits. This makes 9 km, 10 km, 12 km
-  // and e.g. 50 + 5 minutes of tempo comparable on the same time axis.
   if (pattern?.type === "tempo") {
-    const start = Number(pattern.tempoStart);
-    const end = Number(pattern.tempoEnd);
+    const startIndex = Number(pattern.tempoStart);
+    const endIndex = Number(pattern.tempoEnd);
 
-    if (Number.isInteger(start) && Number.isInteger(end) && end >= start) {
-      const tempoSplits = splits.slice(start, end + 1);
-      const duration = tempoSplits.reduce((sum, split) => {
+    if (Number.isInteger(startIndex) && Number.isInteger(endIndex) && endIndex >= startIndex) {
+      const duration = splits.slice(startIndex, endIndex + 1).reduce((sum, split) => {
         const pace = paceToSeconds(split?.pace);
         return sum + (Number.isFinite(pace) && pace > 0 ? pace : 0);
       }, 0);
@@ -3046,15 +3020,37 @@ function tempoWorkDurationSec(workout) {
     }
   }
 
-  // Some historical tempo records keep the workout type but no longer have
-  // enough structure/splits to reconstruct the exact block. In that case the
-  // total workout duration is the safest available fallback.
-  if (historyTypeClass(workout?.workout_type) === "tempo") {
-    const totalDuration = Number(workout?.duration_sec);
+  // If an explicit tempo block was stored, use it.
+  const tempoBlocks = structure.filter(block => block?.type === "tempo");
+  if (tempoBlocks.length) {
+    const duration = tempoBlocks.reduce((sum, block) => {
+      if (Array.isArray(block.items) && block.items.length) {
+        return sum + block.items.reduce((itemSum, item) => {
+          const pace = paceToSeconds(item?.pace);
+          const distanceKm = Number(item?.distance) / 1000;
+          return itemSum + (Number.isFinite(pace) && pace > 0 && Number.isFinite(distanceKm) && distanceKm > 0
+            ? pace * distanceKm
+            : 0);
+        }, 0);
+      }
+
+      const blockDuration = Number(block?.duration);
+      return sum + (Number.isFinite(blockDuration) && blockDuration > 0 ? blockDuration : 0);
+    }, 0);
+
+    if (duration > 0) return duration;
+  }
+
+  // Finally, trust a workout that was saved as tempo. This is important for
+  // older history records whose exact tempo block can no longer be reconstructed.
+  const savedType = historyTypeClass(workout.workout_type);
+  const derivedType = derivedWorkoutType(workout);
+  if (savedType === "tempo" || derivedType === "tempo") {
+    const totalDuration = Number(workout.duration_sec);
     if (Number.isFinite(totalDuration) && totalDuration > 0) return totalDuration;
 
-    const pace = paceToSeconds(workout?.pace);
-    const distance = Number(workout?.distance_km);
+    const pace = paceToSeconds(workout.pace);
+    const distance = Number(workout.distance_km);
     if (Number.isFinite(pace) && pace > 0 && Number.isFinite(distance) && distance > 0) {
       return pace * distance;
     }
@@ -3067,12 +3063,10 @@ function tempoComparable(current, candidate) {
   const currentDuration = tempoWorkDurationSec(current);
   const candidateDuration = tempoWorkDurationSec(candidate);
 
-  if (currentDuration > 0 && candidateDuration > 0) {
-    const ratio = candidateDuration / currentDuration;
-    return ratio >= 0.70 && ratio <= 1.30;
-  }
+  if (currentDuration <= 0 || candidateDuration <= 0) return false;
 
-  return false;
+  const ratio = candidateDuration / currentDuration;
+  return ratio >= 0.70 && ratio <= 1.30;
 }
 
 function formatTempoDuration(seconds) {
@@ -3243,31 +3237,27 @@ function intervalComparable(current, candidate) {
   const candidateProfile = intervalWorkoutProfile(candidate);
   if (!currentProfile || !candidateProfile) return false;
 
+  // Time-based intervals compare only with time-based intervals of the same
+  // duration. Distance covered during the work rep is deliberately ignored.
   if (currentProfile.mode === "time" || candidateProfile.mode === "time") {
     if (currentProfile.mode !== "time" || candidateProfile.mode !== "time") return false;
     if (currentProfile.repDuration == null || candidateProfile.repDuration == null) return false;
     const ratio = candidateProfile.repDuration / currentProfile.repDuration;
-    return ratio >= 0.80 && ratio <= 1.25;
+    return ratio >= 0.85 && ratio <= 1.15;
   }
 
+  // A single-distance set (7×1 km, 10×1 km, 15×400 m, etc.) compares by the
+  // distance of one work repetition. The number of reps may differ.
   if (currentProfile.mode === "distance" || candidateProfile.mode === "distance") {
     if (currentProfile.mode !== "distance" || candidateProfile.mode !== "distance") return false;
     if (currentProfile.repDistance == null || candidateProfile.repDistance == null) return false;
-
-    const repRatio = candidateProfile.repDistance / currentProfile.repDistance;
-    if (repRatio < 0.67 || repRatio > 1.50) return false;
-
-    const currentVolume = Number(currentProfile.totalWorkDistance);
-    const candidateVolume = Number(candidateProfile.totalWorkDistance);
-    if (Number.isFinite(currentVolume) && Number.isFinite(candidateVolume)
-        && currentVolume > 0 && candidateVolume > 0) {
-      const volumeRatio = candidateVolume / currentVolume;
-      if (volumeRatio < 0.70 || volumeRatio > 1.30) return false;
-    }
-
-    return true;
+    const ratio = candidateProfile.repDistance / currentProfile.repDistance;
+    return ratio >= 0.85 && ratio <= 1.15;
   }
 
+  // Mixed-distance sessions must preserve their multi-part structure. A
+  // 4×1600 + 4×800 session is comparable only with another two-part session
+  // with the same order of work distances (within ±15%). Counts may differ.
   if (currentProfile.mode === "mixed-distance" && candidateProfile.mode === "mixed-distance") {
     const a = currentProfile.groups || [];
     const b = candidateProfile.groups || [];
