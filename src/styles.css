@@ -2906,3 +2906,56 @@
     font-size: 8px !important;
   }
 }
+
+
+/* === Mobile metric alignment: equal heading/value rhythm === */
+@media (max-width: 680px) {
+  .home-metrics > div {
+    align-items: center;
+    justify-content: flex-start;
+    text-align: center;
+  }
+
+  .home-metrics > div > span {
+    width: 100%;
+    min-height: 19px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    line-height: 1.2 !important;
+  }
+
+  .home-metrics > div > strong {
+    width: 100%;
+    margin-top: 7px !important;
+    text-align: center;
+    white-space: nowrap;
+    line-height: 1.15 !important;
+  }
+
+  .history-stats .history-stat-card {
+    align-items: center;
+    justify-content: flex-start;
+    text-align: center;
+  }
+
+  .history-stats .history-stat-card > * {
+    width: 100%;
+    text-align: center;
+  }
+
+  .history-stats .history-stat-card > span,
+  .history-stats .history-stat-card > small {
+    min-height: 19px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    line-height: 1.2 !important;
+  }
+
+  .history-stats .history-stat-card > strong {
+    margin-top: 7px !important;
+    white-space: nowrap;
+    line-height: 1.15 !important;
+  }
+}
