@@ -2766,33 +2766,21 @@ function buildEasyRunDynamics(workouts) {
   const paceDelta = paceBaseline != null ? paceBaseline - currentPace : null;
   const hrDelta = hrBaseline != null ? currentHr - hrBaseline : null;
 
-  // Trend is calculated from several historical matches, split into older and
-  // newer halves. We do not call a single workout "progress".
+  // Trend is based on the latest workout versus its historical baseline.
+  // This keeps the headline aligned with the actual current result instead of
+  // reporting a decline that happened only inside older workouts.
   const matches = intensityMatches.slice().sort((a, b) => new Date(a.workout_date) - new Date(b.workout_date));
-  const splitIndex = Math.floor(matches.length / 2);
-  const older = matches.slice(0, splitIndex);
-  const recent = matches.slice(splitIndex);
-  const olderPace = median(older.map(w => paceToSeconds(w.pace)));
-  const recentPace = median(recent.map(w => paceToSeconds(w.pace)));
-
-  const paceMatches = samePace.slice(0, Math.max(3, Math.min(5, samePace.length)));
-  const paceMatchesSorted = paceMatches.slice().sort((a, b) => new Date(a.workout_date) - new Date(b.workout_date));
-  const paceSplit = Math.floor(paceMatchesSorted.length / 2);
-  const olderHr = median(paceMatchesSorted.slice(0, paceSplit).map(w => Number(w.heart_rate)));
-  const recentHr = median(paceMatchesSorted.slice(paceSplit).map(w => Number(w.heart_rate)));
-
   let trend = "stable";
-  if (matches.length >= 4) {
-    const paceTrend = olderPace != null && recentPace != null
-      ? (olderPace - recentPace >= 6 ? "improved" : olderPace - recentPace <= -6 ? "declined" : "stable")
+  if (matches.length >= 2) {
+    const paceTrend = paceDelta != null
+      ? (paceDelta >= 6 ? "improved" : paceDelta <= -6 ? "declined" : "stable")
       : null;
-    const hrTrend = olderHr != null && recentHr != null
-      ? (recentHr - olderHr <= -3 ? "improved" : recentHr - olderHr >= 3 ? "declined" : "stable")
+    const hrTrend = hrDelta != null
+      ? (hrDelta <= -3 ? "improved" : hrDelta >= 3 ? "declined" : "stable")
       : null;
 
-    // Only call a long-term trend when the available signals agree. If pace
-    // and HR point in opposite directions, keep the result neutral rather
-    // than turning one good metric into a false progress/decline claim.
+    // Pace and HR must agree. If they point in opposite directions, do not
+    // label the easy-run dynamics as a decline or improvement.
     if (paceTrend === "improved" && (hrTrend === "improved" || hrTrend === "stable" || hrTrend == null)) trend = "improved";
     else if (paceTrend === "declined" && (hrTrend === "declined" || hrTrend === "stable" || hrTrend == null)) trend = "declined";
     else if (hrTrend === "improved" && paceTrend === "stable") trend = "improved";
