@@ -3284,7 +3284,9 @@ function intervalComparable(current, candidate) {
     if (currentProfile.mode !== "distance" || candidateProfile.mode !== "distance") return false;
     if (currentProfile.repDistance == null || candidateProfile.repDistance == null) return false;
     const ratio = candidateProfile.repDistance / currentProfile.repDistance;
-    return ratio >= 0.85 && ratio <= 1.15;
+    // Allow different but still comparable work distances, e.g. 20×400 m
+    // and 10×600 m, while keeping clearly different interval formats apart.
+    return ratio >= 0.67 && ratio <= 1.50;
   }
 
   // Mixed-distance sessions must preserve their multi-part structure. A
