@@ -2925,7 +2925,7 @@ function renderHome(workouts = historyWorkouts) {
     <article class="home-card home-latest-card">
       <div class="home-card-top"><span class="eyebrow">${escapeHtml(t("homeLatest"))}</span><span class="home-card-date">${escapeHtml(formatHistoryDate(latest.workout_date))}</span></div>
       <div class="home-latest-main">
-        <div><h2>${escapeHtml(homeWorkoutLabel(latest))}</h2><p>${escapeHtml(latest.structure?.[0]?.label || "")}</p></div>
+        <div><h2>${escapeHtml(homeWorkoutLabel(latest))}</h2></div>
         <strong>${escapeHtml(formatHistoryDistance(latest.distance_km))}</strong>
       </div>
       <div class="home-metrics">
