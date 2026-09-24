@@ -2933,7 +2933,7 @@ function renderHome(workouts = historyWorkouts) {
         <div><span>${escapeHtml(t("time"))}</span><strong>${escapeHtml(formatHistoryDuration(latest.duration_sec))}</strong></div>
         <div><span>${escapeHtml(t("heartRate"))}</span><strong>${latest.heart_rate != null ? `${Math.round(latest.heart_rate)} ${currentLanguage === "uk" ? "уд/хв" : "bpm"}` : "—"}</strong></div>
       </div>
-      <div class="home-latest-footer"><span class="home-insight">${escapeHtml(latest.ai_analysis ? t("homeInsightSaved") : t("homeInsightWorkout"))}</span><button class="home-link-button" type="button">${escapeHtml(t("homeViewWorkout"))} →</button></div>
+      <div class="home-latest-footer"><span class="home-insight">${escapeHtml(latest.ai_analysis ? t("homeInsightSaved") : t("homeInsightWorkout"))}</span><button class="home-link-button" type="button">${escapeHtml(t("homeViewWorkout"))}</button></div>
     </article>` : `
     <article class="home-card home-empty-card"><div><strong>${escapeHtml(t("homeLatestEmpty"))}</strong><p>${escapeHtml(t("homeLatestEmptyCopy"))}</p></div><button class="home-primary-button" type="button" id="homeAddWorkoutButton">＋</button></article>`;
 
@@ -2957,7 +2957,7 @@ function renderHome(workouts = historyWorkouts) {
       <div class="home-main-column">${latestHtml}</div>
       <div class="home-side-column">
         <article class="home-card home-form-card">
-          <div class="home-card-top"><span class="eyebrow">${escapeHtml(t("homeForm"))}</span><button class="home-text-button" type="button" id="homeDynamicsButton">${escapeHtml(t("homeViewDynamics"))} →</button></div>
+          <div class="home-card-top"><span class="eyebrow">${escapeHtml(t("homeForm"))}</span><button class="home-text-button" type="button" id="homeDynamicsButton">${escapeHtml(t("homeViewDynamics"))}</button></div>
           <div class="home-form-list">${trendRows.map(([label, value, tone]) => `<div class="home-form-row"><span>${escapeHtml(label)}</span><strong class="${tone}">${escapeHtml(value)}</strong></div>`).join("")}</div>
         </article>
         <article class="home-card home-week-card">
@@ -2968,7 +2968,7 @@ function renderHome(workouts = historyWorkouts) {
     </div>
 
     <section class="home-recent-section">
-      <div class="home-section-heading"><h2>Останні тренування</h2><button class="home-outline-button" type="button" id="homeHistoryButton">Всі тренування&nbsp; →</button></div>
+      <div class="home-section-heading"><h2>Останні тренування</h2><button class="home-outline-button" type="button" id="homeHistoryButton">Всі тренування</button></div>
       <div class="home-recent-list">${recentHtml}</div>
     </section>`;
 
