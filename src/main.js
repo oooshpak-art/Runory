@@ -2957,7 +2957,7 @@ function renderHome(workouts = historyWorkouts) {
   const recentWorkouts = sorted.slice(0, 3);
   const recentHtml = recentWorkouts.length ? recentWorkouts.map(workout => `
     <button class="home-recent-item" type="button" data-home-workout="${escapeHtml(workout.id)}">
-      <span class="home-recent-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3.5 15.7c2.8-.1 4.8-1.2 6.1-3.6l1.2-2.2 2.6 2.2c1.1.9 2.4 1.5 3.8 1.8l2.1.4c.8.2 1.3.8 1.3 1.6v1.9H3.5z"></path><path d="M10.8 9.9 12 7.5l2.1 1.7M8.9 13.1l2.1.7M11.4 11.7l2.2.8M5.1 17.8h15.5"></path></svg></span>
+      <span class="home-recent-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3.2 15.8c2.2-.1 4.1-.8 5.5-2.5l2-2.5 2.8 2.2c1.2 1 2.7 1.6 4.2 1.8l2.1.3c.7.1 1.1.7 1.1 1.4v1.5H3.2z"></path><path d="M10.7 10.8 12 7.4l2.3 2.2M9.2 12.9l2 .8M12.1 11.8l2.1.9M5 18h15"></path></svg></span>
       <span class="home-recent-copy"><strong>${escapeHtml(homeWorkoutLabel(workout))}</strong><span>${escapeHtml(formatHistoryDate(workout.workout_date))} · ${escapeHtml(workout.pace || "—")}/км · ${escapeHtml(formatHistoryDistance(workout.distance_km))}</span></span>
       
     </button>`).join("") : `<div class="home-recent-empty">Після збереження тренувань вони з'являться тут.</div>`;
@@ -2966,13 +2966,13 @@ function renderHome(workouts = historyWorkouts) {
     <div class="home-grid">
       <div class="home-main-column">${latestHtml}</div>
       <div class="home-side-column">
-        <article class="home-card home-form-card">
-          <div class="home-card-top"><span class="eyebrow">${escapeHtml(t("homeForm"))}</span><button class="home-text-button" type="button" id="homeDynamicsButton" style="display:inline-flex;align-items:center;justify-content:center;min-height:32px;padding:7px 11px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);font:800 10px Manrope,sans-serif;cursor:pointer;text-decoration:none;box-sizing:border-box;">${escapeHtml(t("homeViewDynamics"))}</button></div>
-          <div class="home-form-list">${trendRows.map(([label, value, tone]) => `<div class="home-form-row"><span>${escapeHtml(label)}</span><strong class="${tone}">${escapeHtml(value)}</strong></div>`).join("")}</div>
-        </article>
         <article class="home-card home-week-card">
           <div class="home-card-top"><span class="eyebrow">${escapeHtml(t("homeWeek"))}</span><span class="home-card-date">${escapeHtml(formatWeekLabel(weekStart))} — ${escapeHtml(formatWeekLabel(now))}</span></div>
           ${weekWorkouts.length ? `<div class="home-week-stats"><div><strong>${weekWorkouts.length}</strong><span>${escapeHtml(t("homeWeekWorkouts"))}</span></div><div><strong>${weekDistance.toFixed(1).replace(".", currentLanguage === "uk" ? "," : ".")}</strong><span>${escapeHtml(t("homeWeekDistance"))}</span></div><div><strong>${escapeHtml(formatHomeHours(weekTime))}</strong><span>${escapeHtml(t("homeWeekTime"))}</span></div></div><div class="home-week-days">${[1,2,3,4,5,6,0].map(day => { const d = new Date(weekStart); d.setDate(weekStart.getDate() + (day === 0 ? 6 : day - 1)); const has = weekWorkouts.some(w => { const wd = new Date(w.workout_date || w.created_at || 0); return wd.toDateString() === d.toDateString(); }); return `<span class="${has ? "has-workout" : ""}" title="${escapeHtml(d.toLocaleDateString(translations[currentLanguage].locale, { weekday: "short" }))}"></span>`; }).join("")}</div>` : `<div class="home-week-empty">${escapeHtml(t("homeWeekEmpty"))}</div>`}
+        </article>
+        <article class="home-card home-form-card">
+          <div class="home-card-top"><span class="eyebrow">${escapeHtml(t("homeForm"))}</span><button class="home-outline-button" type="button" id="homeDynamicsButton">${escapeHtml(t("homeViewDynamics"))}</button></div>
+          <div class="home-form-list">${trendRows.map(([label, value, tone]) => `<div class="home-form-row"><span>${escapeHtml(label)}</span><strong class="${tone}">${escapeHtml(value)}</strong></div>`).join("")}</div>
         </article>
       </div>
     </div>
@@ -3803,7 +3803,7 @@ function renderHistoryList(workouts = historyFilteredWorkouts()) {
 
   container.innerHTML = workouts.map(workout => `
     <article class="history-item" data-history-id="${escapeHtml(workout.id)}" data-history-view="${escapeHtml(workout.id)}">
-      <div class="history-workout-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3.5 15.7c2.8-.1 4.8-1.2 6.1-3.6l1.2-2.2 2.6 2.2c1.1.9 2.4 1.5 3.8 1.8l2.1.4c.8.2 1.3.8 1.3 1.6v1.9H3.5z"></path><path d="M10.8 9.9 12 7.5l2.1 1.7M8.9 13.1l2.1.7M11.4 11.7l2.2.8M5.1 17.8h15.5"></path></svg></div>
+      <div class="history-workout-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3.2 15.8c2.2-.1 4.1-.8 5.5-2.5l2-2.5 2.8 2.2c1.2 1 2.7 1.6 4.2 1.8l2.1.3c.7.1 1.1.7 1.1 1.4v1.5H3.2z"></path><path d="M10.7 10.8 12 7.4l2.3 2.2M9.2 12.9l2 .8M12.1 11.8l2.1.9M5 18h15"></path></svg></div>
       <div class="history-item-main">
         <div class="history-item-heading"><div><p class="eyebrow">${escapeHtml(formatHistoryDate(workout.workout_date))}</p><h3>${escapeHtml(workoutTypeLabel(derivedWorkoutType(workout)))}</h3></div><strong class="history-distance">${escapeHtml(formatHistoryDistance(workout.distance_km))}</strong></div>
         <div class="history-metrics"><span><b>${escapeHtml(t("pace"))}</b> ${escapeHtml(workout.pace || "—")}</span><span><b>${escapeHtml(t("time"))}</b> ${escapeHtml(formatHistoryDuration(workout.duration_sec))}</span><span><b>${escapeHtml(t("heartRate"))}</b> ${workout.heart_rate != null ? `${Math.round(workout.heart_rate)} ${currentLanguage === "uk" ? "уд/хв" : "bpm"}` : "—"}</span><span><b>${escapeHtml(t("ascent"))}</b> ${workout.ascent_m != null ? `+${Math.round(workout.ascent_m)} ${currentLanguage === "uk" ? "м" : "m"}` : "—"}</span></div>
