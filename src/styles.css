@@ -3100,125 +3100,27 @@
 .history-item .history-item-actions,
 .history-item .history-item-actions button { cursor: pointer; }
 
-/* === Runory — weekly calendar cells (desktop + mobile) === */
-.home-week-days {
-  display: grid !important;
-  grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
-  gap: 6px !important;
-  margin-top: 18px !important;
-  padding-top: 4px !important;
-}
-
-.home-week-days span {
-  position: relative !important;
-  display: block !important;
-  height: 42px !important;
-  min-width: 0 !important;
-  border-radius: 10px !important;
-  background: #f4f7f5 !important;
-  border: 1px solid #e8eeea !important;
-}
-
-.home-week-days span::before {
-  content: attr(title);
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 6px;
-  text-align: center;
-  color: #8a948e;
-  font: 700 8px 'DM Mono', monospace;
-  line-height: 1;
-  text-transform: uppercase;
-}
-
-.home-week-days span::after {
-  content: "";
-  position: absolute;
-  width: 7px;
-  height: 7px;
-  left: 50%;
-  bottom: 7px;
-  transform: translateX(-50%);
-  border-radius: 50%;
-  background: #dfe6e2;
-}
-
-.home-week-days span.has-workout {
-  background: #E8F5F3 !important;
-  border-color: rgba(42,157,143,.18) !important;
-}
-
-.home-week-days span.has-workout::before {
-  color: #238276;
-}
-
-.home-week-days span.has-workout::after {
-  width: 8px;
-  height: 8px;
-  background: #2A9D8F !important;
-  box-shadow: 0 0 0 3px rgba(42,157,143,.10);
-}
-
-@media (max-width: 680px) {
-  .home-week-days {
-    grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
-    gap: 5px !important;
-    margin-top: 16px !important;
-  }
-
-  .home-week-days span {
-    height: 40px !important;
-    border-radius: 9px !important;
-  }
-
-  .home-week-days span::before {
-    top: 6px;
-    font-size: 7px;
-  }
-
-  .home-week-days span::after {
-    bottom: 6px;
-  }
-}
-
-
-/* === Runory — stronger dynamics action on home === */
+/* Runory — stronger "Переглянути динаміку" action */
 .home-form-card .home-text-button {
   display:inline-flex !important;
-  align-items:center;
-  justify-content:center;
-  min-height:34px;
-  padding:7px 11px !important;
-  border:1px solid rgba(42,157,143,.28) !important;
+  align-items:center !important;
+  justify-content:center !important;
+  min-height:34px !important;
+  padding:7px 12px !important;
+  border:1px solid rgba(42,157,143,.32) !important;
   border-radius:9px !important;
   background:#E8F5F3 !important;
   color:#238276 !important;
-  font:800 10px Manrope,sans-serif !important;
+  font-weight:800 !important;
   text-decoration:none !important;
-  white-space:nowrap;
-  transition:background .18s ease,border-color .18s ease,transform .18s ease;
+  white-space:nowrap !important;
+  cursor:pointer !important;
 }
 .home-form-card .home-text-button:hover {
-  background:#dff1ee !important;
-  border-color:rgba(42,157,143,.42) !important;
-  text-decoration:none !important;
-  transform:translateY(-1px);
+  background:#DDF1EE !important;
+  border-color:rgba(42,157,143,.48) !important;
 }
-.home-latest-card {
-  cursor:pointer;
-}
-.home-latest-card .home-link-button {
-  position:relative;
-  z-index:1;
-}
+.home-latest-card,
 .history-item {
-  cursor:pointer;
-}
-@media (max-width:680px) {
-  .home-form-card .home-text-button {
-    min-height:32px;
-    padding:6px 9px !important;
-    font-size:9px !important;
-  }
+  cursor:pointer !important;
 }
