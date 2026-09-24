@@ -64,7 +64,7 @@ const translations = {
     homeComparisonOnly: "Є пряме порівняння",
     navCalculator: "Калькулятор бігу",
     calcPageTitle: "Runory — калькулятор бігу",
-    calcHeroTitle: "Плануй забіг<br />у цифрах.",
+    calcHeroTitle: "Плануй забіг у цифрах.",
     calcHeroCopy: "Введи два значення — Runory одразу порахує третє.",
     calculatorEyebrow: "ІНСТРУМЕНТ БІГУНА",
     calculatorType: "Тип розрахунку",
@@ -373,7 +373,7 @@ const translations = {
     homeComparisonOnly: "Direct comparison available",
     navCalculator: "Running calculator",
     calcPageTitle: "Runory — running calculator",
-    calcHeroTitle: "Plan your run<br />with numbers.",
+    calcHeroTitle: "Plan your run with numbers.",
     calcHeroCopy: "Enter two values — Runory will calculate the third instantly.",
     calculatorEyebrow: "RUNNER'S TOOL",
     calculatorType: "Calculation type",
@@ -782,7 +782,110 @@ function applyRunoryIcons() {
       .history-workout-mark {
         color: #2A9D8F !important;
       }
-    `;
+    
+       /* Unified Runory data formatting and history row alignment */
+       .history-item {
+         display: grid !important;
+         grid-template-columns: 56px minmax(0, 1fr) 210px !important;
+         align-items: center !important;
+         column-gap: 24px !important;
+       }
+       .history-workout-mark {
+         width: 48px !important;
+         height: 48px !important;
+         min-width: 48px !important;
+         min-height: 48px !important;
+         margin: 0 !important;
+         padding: 0 !important;
+         display: grid !important;
+         place-items: center !important;
+         align-self: center !important;
+         justify-self: center !important;
+         box-sizing: border-box !important;
+       }
+       .history-workout-mark .runory-workout-icon {
+         width: 23px !important;
+         height: 23px !important;
+         display: block !important;
+         object-fit: contain !important;
+         margin: 0 !important;
+       }
+       .history-item-main {
+         min-width: 0 !important;
+         width: 100% !important;
+       }
+       .history-item-heading {
+         display: grid !important;
+         grid-template-columns: minmax(0, 1fr) 180px !important;
+         align-items: center !important;
+         gap: 24px !important;
+         width: 100% !important;
+       }
+       .history-distance {
+         width: 180px !important;
+         min-width: 180px !important;
+         display: flex !important;
+         align-items: center !important;
+         justify-content: center !important;
+         text-align: center !important;
+         white-space: nowrap !important;
+         margin: 0 !important;
+         font-variant-numeric: tabular-nums !important;
+       }
+       .history-item-actions {
+         display: flex !important;
+         align-items: center !important;
+         justify-content: flex-end !important;
+         gap: 10px !important;
+         min-width: 0 !important;
+       }
+       .history-stat-card strong,
+       .home-latest-main > strong,
+       .home-week-stats > div > strong {
+         font-variant-numeric: tabular-nums !important;
+       }
+
+       @media (max-width: 900px) {
+         .history-item {
+           grid-template-columns: 48px minmax(0, 1fr) !important;
+           column-gap: 16px !important;
+         }
+         .history-item-actions {
+           grid-column: 2 !important;
+           justify-content: flex-start !important;
+         }
+         .history-item-heading {
+           grid-template-columns: minmax(0, 1fr) auto !important;
+           gap: 12px !important;
+         }
+         .history-distance {
+           width: auto !important;
+           min-width: 110px !important;
+         }
+       }
+
+       @media (max-width: 560px) {
+         .history-item {
+           grid-template-columns: 44px minmax(0, 1fr) !important;
+           column-gap: 12px !important;
+         }
+         .history-workout-mark {
+           width: 44px !important;
+           height: 44px !important;
+           min-width: 44px !important;
+           min-height: 44px !important;
+         }
+         .history-item-heading {
+           grid-template-columns: 1fr !important;
+         }
+         .history-distance {
+           justify-content: flex-start !important;
+           min-width: 0 !important;
+           width: auto !important;
+           text-align: left !important;
+         }
+       }
+`;
     document.head.appendChild(style);
   }
 }
@@ -3034,7 +3137,7 @@ function renderHome(workouts = historyWorkouts) {
       <div class="home-side-column">
         <article class="home-card home-week-card">
           <div class="home-card-top"><span class="eyebrow">${escapeHtml(t("homeWeek"))}</span><span class="home-card-date">${escapeHtml(formatWeekLabel(weekStart))} — ${escapeHtml(formatWeekLabel(now))}</span></div>
-          ${weekWorkouts.length ? `<div class="home-week-stats"><div><strong>${weekWorkouts.length}</strong><span>${escapeHtml(t("homeWeekWorkouts"))}</span></div><div><strong>${weekDistance.toFixed(1).replace(".", currentLanguage === "uk" ? "," : ".")}</strong><span>${escapeHtml(t("homeWeekDistance"))}</span></div><div><strong>${escapeHtml(formatHomeHours(weekTime))}</strong><span>${escapeHtml(t("homeWeekTime"))}</span></div></div><div class="home-week-days">${[1,2,3,4,5,6,0].map(day => { const d = new Date(weekStart); d.setDate(weekStart.getDate() + (day === 0 ? 6 : day - 1)); const has = weekWorkouts.some(w => { const wd = new Date(w.workout_date || w.created_at || 0); return wd.toDateString() === d.toDateString(); }); return `<span class="${has ? "has-workout" : ""}" title="${escapeHtml(d.toLocaleDateString(translations[currentLanguage].locale, { weekday: "short" }))}"></span>`; }).join("")}</div>` : `<div class="home-week-empty">${escapeHtml(t("homeWeekEmpty"))}</div>`}
+          ${weekWorkouts.length ? `<div class="home-week-stats"><div><strong>${weekWorkouts.length}</strong><span>${escapeHtml(t("homeWeekWorkouts"))}</span></div><div><strong>${weekDistance.toFixed(2).replace(".", currentLanguage === "uk" ? "," : ".")}</strong><span>${escapeHtml(t("homeWeekDistance"))}</span></div><div><strong>${escapeHtml(formatHomeHours(weekTime))}</strong><span>${escapeHtml(t("homeWeekTime"))}</span></div></div><div class="home-week-days">${[1,2,3,4,5,6,0].map(day => { const d = new Date(weekStart); d.setDate(weekStart.getDate() + (day === 0 ? 6 : day - 1)); const has = weekWorkouts.some(w => { const wd = new Date(w.workout_date || w.created_at || 0); return wd.toDateString() === d.toDateString(); }); return `<span class="${has ? "has-workout" : ""}" title="${escapeHtml(d.toLocaleDateString(translations[currentLanguage].locale, { weekday: "short" }))}"></span>`; }).join("")}</div>` : `<div class="home-week-empty">${escapeHtml(t("homeWeekEmpty"))}</div>`}
         </article>
         <article class="home-card home-form-card">
           <div class="home-card-top"><span class="eyebrow">${escapeHtml(t("homeForm"))}</span><button class="home-outline-button" type="button" id="homeDynamicsButton">${escapeHtml(t("homeViewDynamics"))}</button></div>
@@ -3863,7 +3966,7 @@ function renderHistoryList(workouts = historyFilteredWorkouts()) {
   if (stats) {
     stats.innerHTML = `
       <article class="history-stat-card"><span class="history-stat-label">${escapeHtml(t("historyStatsWorkouts"))}</span><strong>${workouts.length}</strong></article>
-      <article class="history-stat-card"><span class="history-stat-label">${escapeHtml(t("historyStatsDistance"))}</span><strong>${escapeHtml(totalDistance.toFixed(1).replace(".", currentLanguage === "uk" ? "," : "."))} <small>${currentLanguage === "uk" ? "км" : "km"}</small></strong></article>
+      <article class="history-stat-card"><span class="history-stat-label">${escapeHtml(t("historyStatsDistance"))}</span><strong>${escapeHtml(totalDistance.toFixed(2).replace(".", currentLanguage === "uk" ? "," : "."))} <small>${currentLanguage === "uk" ? "км" : "km"}</small></strong></article>
       <article class="history-stat-card"><span class="history-stat-label">${escapeHtml(t("historyStatsTime"))}</span><strong>${escapeHtml(formatHistoryTotalTime(totalTime))}</strong></article>`;
   }
 
