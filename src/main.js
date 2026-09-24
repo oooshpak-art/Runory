@@ -781,6 +781,12 @@ document.querySelectorAll("[data-view-target]").forEach(button => {
   button.addEventListener("click", () => navigateToView(button.dataset.viewTarget));
 });
 
+// Runory — logo always returns to Home on desktop and mobile
+document.querySelector(".brand")?.addEventListener("click", event => {
+  event.preventDefault();
+  navigateToView("home");
+});
+
 function initializeRoute() {
   const workoutId = currentRouteWorkoutId();
   if (workoutId) {
@@ -2922,10 +2928,10 @@ function renderHome(workouts = historyWorkouts) {
   }
 
   const latestHtml = latest ? `
-    <article class="home-card home-latest-card" data-home-workout="${escapeHtml(latest.id)}" role="button" tabindex="0">
+    <article class="home-card home-latest-card">
       <div class="home-card-top"><span class="eyebrow">${escapeHtml(t("homeLatest"))}</span><span class="home-card-date">${escapeHtml(formatHistoryDate(latest.workout_date))}</span></div>
       <div class="home-latest-main">
-        <div><h2 title="${escapeHtml(t("homeViewWorkout"))}">${escapeHtml(homeWorkoutLabel(latest))}</h2></div>
+        <div><h2 data-home-workout="${escapeHtml(latest.id)}" title="${escapeHtml(t("homeViewWorkout"))}" style="cursor:pointer">${escapeHtml(homeWorkoutLabel(latest))}</h2></div>
         <strong>${escapeHtml(formatHistoryDistance(latest.distance_km))}</strong>
       </div>
       <div class="home-metrics">
@@ -2933,7 +2939,7 @@ function renderHome(workouts = historyWorkouts) {
         <div><span>${escapeHtml(t("time"))}</span><strong>${escapeHtml(formatHistoryDuration(latest.duration_sec))}</strong></div>
         <div><span>${escapeHtml(t("heartRate"))}</span><strong>${latest.heart_rate != null ? `${Math.round(latest.heart_rate)} ${currentLanguage === "uk" ? "уд/хв" : "bpm"}` : "—"}</strong></div>
       </div>
-      <div class="home-latest-footer"><span class="home-insight">${escapeHtml(latest.ai_analysis ? t("homeInsightSaved") : t("homeInsightWorkout"))}</span><button class="home-link-button" type="button">${escapeHtml(t("homeViewWorkout"))} →</button></div>
+      <div class="home-latest-footer"><span class="home-insight">${escapeHtml(latest.ai_analysis ? t("homeInsightSaved") : t("homeInsightWorkout"))}</span><button class="home-link-button" type="button" data-home-workout="${escapeHtml(latest.id)}">${escapeHtml(t("homeViewWorkout"))} →</button></div>
     </article>` : `
     <article class="home-card home-empty-card"><div><strong>${escapeHtml(t("homeLatestEmpty"))}</strong><p>${escapeHtml(t("homeLatestEmptyCopy"))}</p></div><button class="home-primary-button" type="button" id="homeAddWorkoutButton">＋</button></article>`;
 
@@ -2975,25 +2981,11 @@ function renderHome(workouts = historyWorkouts) {
   document.querySelector("#homeDynamicsButton")?.addEventListener("click", () => navigateToView("dynamics"));
   document.querySelector("#homeHistoryButton")?.addEventListener("click", () => navigateToView("history"));
   document.querySelector("#homeAddWorkoutButton")?.addEventListener("click", () => document.querySelector("#addWorkoutButton")?.click());
-  document.querySelectorAll("[data-home-workout]").forEach(button => {
-    const open = () => {
-      const id = button.dataset.homeWorkout;
-      window.history.pushState({ view: "analysis", workoutId: id }, "", `/workouts/${encodeURIComponent(id)}`);
-      openWorkoutFromHistoryId(id);
-    };
-    button.addEventListener("click", event => {
-      if (event.target.closest("button") && !button.classList.contains("home-latest-card")) return;
-      open();
-    });
-    if (button.classList.contains("home-latest-card")) {
-      button.addEventListener("keydown", event => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          open();
-        }
-      });
-    }
-  });
+  document.querySelectorAll("[data-home-workout]").forEach(button => button.addEventListener("click", () => {
+    const id = button.dataset.homeWorkout;
+    window.history.pushState({ view: "analysis", workoutId: id }, "", `/workouts/${encodeURIComponent(id)}`);
+    openWorkoutFromHistoryId(id);
+  }));
 }
 
 function openWorkoutFromHistoryId(id) {
@@ -3936,14 +3928,6 @@ document.addEventListener("click", async event => {
   const deleteButton = event.target.closest("[data-history-delete]");
   if (deleteButton) {
     await deleteWorkoutFromHistory(deleteButton.dataset.historyDelete);
-    return;
-  }
-
-  const historyRow = event.target.closest(".history-item[data-history-view]");
-  if (historyRow && !event.target.closest(".history-item-actions")) {
-    const id = historyRow.dataset.historyView;
-    const record = historyWorkouts.find(item => String(item.id) === String(id));
-    if (record) openWorkoutFromHistory(record);
     return;
   }
 
