@@ -3182,3 +3182,43 @@
   }
 }
 
+
+/* === Runory — stronger dynamics action on home === */
+.home-form-card .home-text-button {
+  display:inline-flex !important;
+  align-items:center;
+  justify-content:center;
+  min-height:34px;
+  padding:7px 11px !important;
+  border:1px solid rgba(42,157,143,.28) !important;
+  border-radius:9px !important;
+  background:#E8F5F3 !important;
+  color:#238276 !important;
+  font:800 10px Manrope,sans-serif !important;
+  text-decoration:none !important;
+  white-space:nowrap;
+  transition:background .18s ease,border-color .18s ease,transform .18s ease;
+}
+.home-form-card .home-text-button:hover {
+  background:#dff1ee !important;
+  border-color:rgba(42,157,143,.42) !important;
+  text-decoration:none !important;
+  transform:translateY(-1px);
+}
+.home-latest-card {
+  cursor:pointer;
+}
+.home-latest-card .home-link-button {
+  position:relative;
+  z-index:1;
+}
+.history-item {
+  cursor:pointer;
+}
+@media (max-width:680px) {
+  .home-form-card .home-text-button {
+    min-height:32px;
+    padding:6px 9px !important;
+    font-size:9px !important;
+  }
+}
