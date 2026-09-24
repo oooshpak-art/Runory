@@ -2922,10 +2922,10 @@ function renderHome(workouts = historyWorkouts) {
   }
 
   const latestHtml = latest ? `
-    <article class="home-card home-latest-card" data-home-workout="${escapeHtml(latest.id)}">
+    <article class="home-card home-latest-card" data-home-workout="${escapeHtml(latest.id)}" role="button" tabindex="0">
       <div class="home-card-top"><span class="eyebrow">${escapeHtml(t("homeLatest"))}</span><span class="home-card-date">${escapeHtml(formatHistoryDate(latest.workout_date))}</span></div>
       <div class="home-latest-main">
-        <div><h2>${escapeHtml(homeWorkoutLabel(latest))}</h2></div>
+        <div><h2 title="${escapeHtml(t("homeViewWorkout"))}">${escapeHtml(homeWorkoutLabel(latest))}</h2></div>
         <strong>${escapeHtml(formatHistoryDistance(latest.distance_km))}</strong>
       </div>
       <div class="home-metrics">
@@ -2957,7 +2957,7 @@ function renderHome(workouts = historyWorkouts) {
       <div class="home-main-column">${latestHtml}</div>
       <div class="home-side-column">
         <article class="home-card home-form-card">
-          <div class="home-card-top"><span class="eyebrow">${escapeHtml(t("homeForm"))}</span><button class="home-text-button" type="button" id="homeDynamicsButton">${escapeHtml(t("homeViewDynamics"))}</button></div>
+          <div class="home-card-top"><span class="eyebrow">${escapeHtml(t("homeForm"))}</span><button class="home-text-button" type="button" id="homeDynamicsButton">${escapeHtml(t("homeViewDynamics"))} →</button></div>
           <div class="home-form-list">${trendRows.map(([label, value, tone]) => `<div class="home-form-row"><span>${escapeHtml(label)}</span><strong class="${tone}">${escapeHtml(value)}</strong></div>`).join("")}</div>
         </article>
         <article class="home-card home-week-card">
@@ -2968,18 +2968,32 @@ function renderHome(workouts = historyWorkouts) {
     </div>
 
     <section class="home-recent-section">
-      <div class="home-section-heading"><h2>Останні тренування</h2><button class="home-outline-button" type="button" id="homeHistoryButton">Всі тренування</button></div>
+      <div class="home-section-heading"><h2>Останні тренування</h2><button class="home-outline-button" type="button" id="homeHistoryButton">Всі тренування&nbsp; →</button></div>
       <div class="home-recent-list">${recentHtml}</div>
     </section>`;
 
   document.querySelector("#homeDynamicsButton")?.addEventListener("click", () => navigateToView("dynamics"));
   document.querySelector("#homeHistoryButton")?.addEventListener("click", () => navigateToView("history"));
   document.querySelector("#homeAddWorkoutButton")?.addEventListener("click", () => document.querySelector("#addWorkoutButton")?.click());
-  document.querySelectorAll("[data-home-workout]").forEach(button => button.addEventListener("click", () => {
-    const id = button.dataset.homeWorkout;
-    window.history.pushState({ view: "analysis", workoutId: id }, "", `/workouts/${encodeURIComponent(id)}`);
-    openWorkoutFromHistoryId(id);
-  }));
+  document.querySelectorAll("[data-home-workout]").forEach(button => {
+    const open = () => {
+      const id = button.dataset.homeWorkout;
+      window.history.pushState({ view: "analysis", workoutId: id }, "", `/workouts/${encodeURIComponent(id)}`);
+      openWorkoutFromHistoryId(id);
+    };
+    button.addEventListener("click", event => {
+      if (event.target.closest("button") && !button.classList.contains("home-latest-card")) return;
+      open();
+    });
+    if (button.classList.contains("home-latest-card")) {
+      button.addEventListener("keydown", event => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          open();
+        }
+      });
+    }
+  });
 }
 
 function openWorkoutFromHistoryId(id) {
@@ -3792,7 +3806,7 @@ function renderHistoryList(workouts = historyFilteredWorkouts()) {
   }
 
   container.innerHTML = workouts.map(workout => `
-    <article class="history-item" data-history-id="${escapeHtml(workout.id)}">
+    <article class="history-item" data-history-id="${escapeHtml(workout.id)}" data-history-view="${escapeHtml(workout.id)}">
       <div class="history-workout-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 4h7l3 3v13H7z"></path><path d="M14 4v4h4"></path><path d="M9.5 12h5M9.5 15h5"></path></svg></div>
       <div class="history-item-main">
         <div class="history-item-heading"><div><p class="eyebrow">${escapeHtml(formatHistoryDate(workout.workout_date))}</p><h3>${escapeHtml(workoutTypeLabel(derivedWorkoutType(workout)))}</h3></div><strong class="history-distance">${escapeHtml(formatHistoryDistance(workout.distance_km))}</strong></div>
@@ -3919,14 +3933,18 @@ document.addEventListener("click", event => {
 });
 
 document.addEventListener("click", async event => {
-  const historyItem = event.target.closest(".history-item[data-history-id]");
-  if (historyItem && !event.target.closest(".history-item-actions")) {
-    const id = historyItem.dataset.historyId;
+  const deleteButton = event.target.closest("[data-history-delete]");
+  if (deleteButton) {
+    await deleteWorkoutFromHistory(deleteButton.dataset.historyDelete);
+    return;
+  }
+
+  const historyRow = event.target.closest(".history-item[data-history-view]");
+  if (historyRow && !event.target.closest(".history-item-actions")) {
+    const id = historyRow.dataset.historyView;
     const record = historyWorkouts.find(item => String(item.id) === String(id));
-    if (record) {
-      openWorkoutFromHistory(record);
-      return;
-    }
+    if (record) openWorkoutFromHistory(record);
+    return;
   }
 
   const viewButton = event.target.closest("[data-history-view]");
@@ -3939,12 +3957,6 @@ document.addEventListener("click", async event => {
       .eq("user_id", currentSession?.user?.id || "")
       .single();
     if (!error && data) openWorkoutFromHistory(data);
-    return;
-  }
-
-  const deleteButton = event.target.closest("[data-history-delete]");
-  if (deleteButton) {
-    await deleteWorkoutFromHistory(deleteButton.dataset.historyDelete);
   }
 });
 
