@@ -2957,7 +2957,7 @@ function renderHome(workouts = historyWorkouts) {
   const recentWorkouts = sorted.slice(0, 3);
   const recentHtml = recentWorkouts.length ? recentWorkouts.map(workout => `
     <button class="home-recent-item" type="button" data-home-workout="${escapeHtml(workout.id)}">
-      <span class="home-recent-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4.5 15.5c1.8-.3 3.4-1.2 4.4-2.7l2.1-3.1 2.4 2.1c1 .9 2.2 1.5 3.6 1.7l2.8.5c.9.2 1.5 1 1.5 1.9v1.6H4.5z"></path><path d="M9 12.8l2.1 1.9M12.2 13.8l2 1.5M6.5 17.5h12.8"></path></svg></span>
+      <span class="home-recent-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3.5 15.7c2.8-.1 4.8-1.2 6.1-3.6l1.2-2.2 2.6 2.2c1.1.9 2.4 1.5 3.8 1.8l2.1.4c.8.2 1.3.8 1.3 1.6v1.9H3.5z"></path><path d="M10.8 9.9 12 7.5l2.1 1.7M8.9 13.1l2.1.7M11.4 11.7l2.2.8M5.1 17.8h15.5"></path></svg></span>
       <span class="home-recent-copy"><strong>${escapeHtml(homeWorkoutLabel(workout))}</strong><span>${escapeHtml(formatHistoryDate(workout.workout_date))} · ${escapeHtml(workout.pace || "—")}/км · ${escapeHtml(formatHistoryDistance(workout.distance_km))}</span></span>
       
     </button>`).join("") : `<div class="home-recent-empty">Після збереження тренувань вони з'являться тут.</div>`;
@@ -3803,7 +3803,7 @@ function renderHistoryList(workouts = historyFilteredWorkouts()) {
 
   container.innerHTML = workouts.map(workout => `
     <article class="history-item" data-history-id="${escapeHtml(workout.id)}" data-history-view="${escapeHtml(workout.id)}">
-      <div class="history-workout-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 4h7l3 3v13H7z"></path><path d="M14 4v4h4"></path><path d="M9.5 12h5M9.5 15h5"></path></svg></div>
+      <div class="history-workout-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3.5 15.7c2.8-.1 4.8-1.2 6.1-3.6l1.2-2.2 2.6 2.2c1.1.9 2.4 1.5 3.8 1.8l2.1.4c.8.2 1.3.8 1.3 1.6v1.9H3.5z"></path><path d="M10.8 9.9 12 7.5l2.1 1.7M8.9 13.1l2.1.7M11.4 11.7l2.2.8M5.1 17.8h15.5"></path></svg></div>
       <div class="history-item-main">
         <div class="history-item-heading"><div><p class="eyebrow">${escapeHtml(formatHistoryDate(workout.workout_date))}</p><h3>${escapeHtml(workoutTypeLabel(derivedWorkoutType(workout)))}</h3></div><strong class="history-distance">${escapeHtml(formatHistoryDistance(workout.distance_km))}</strong></div>
         <div class="history-metrics"><span><b>${escapeHtml(t("pace"))}</b> ${escapeHtml(workout.pace || "—")}</span><span><b>${escapeHtml(t("time"))}</b> ${escapeHtml(formatHistoryDuration(workout.duration_sec))}</span><span><b>${escapeHtml(t("heartRate"))}</b> ${workout.heart_rate != null ? `${Math.round(workout.heart_rate)} ${currentLanguage === "uk" ? "уд/хв" : "bpm"}` : "—"}</span><span><b>${escapeHtml(t("ascent"))}</b> ${workout.ascent_m != null ? `+${Math.round(workout.ascent_m)} ${currentLanguage === "uk" ? "м" : "m"}` : "—"}</span></div>
