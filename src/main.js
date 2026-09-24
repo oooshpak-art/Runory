@@ -781,6 +781,12 @@ document.querySelectorAll("[data-view-target]").forEach(button => {
   button.addEventListener("click", () => navigateToView(button.dataset.viewTarget));
 });
 
+const brandHomeLink = document.querySelector(".brand");
+brandHomeLink?.addEventListener("click", event => {
+  event.preventDefault();
+  navigateToView("home");
+});
+
 function initializeRoute() {
   const workoutId = currentRouteWorkoutId();
   if (workoutId) {
