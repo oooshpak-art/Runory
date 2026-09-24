@@ -3100,27 +3100,46 @@
 .history-item .history-item-actions,
 .history-item .history-item-actions button { cursor: pointer; }
 
-/* Runory — stronger "Переглянути динаміку" action */
+/* === Runory final home interaction pass === */
+.home-latest-card {
+  cursor:pointer !important;
+}
+.home-latest-card:hover {
+  border-color:#d5dfd9 !important;
+}
 .home-form-card .home-text-button {
   display:inline-flex !important;
   align-items:center !important;
   justify-content:center !important;
-  min-height:34px !important;
-  padding:7px 12px !important;
-  border:1px solid rgba(42,157,143,.32) !important;
-  border-radius:9px !important;
+  min-height:36px !important;
+  padding:7px 13px !important;
+  border:1px solid rgba(42,157,143,.36) !important;
+  border-radius:10px !important;
   background:#E8F5F3 !important;
   color:#238276 !important;
-  font-weight:800 !important;
-  text-decoration:none !important;
-  white-space:nowrap !important;
+  font:800 11px Manrope,sans-serif !important;
   cursor:pointer !important;
+  white-space:nowrap !important;
 }
 .home-form-card .home-text-button:hover {
   background:#DDF1EE !important;
-  border-color:rgba(42,157,143,.48) !important;
+  border-color:rgba(42,157,143,.55) !important;
 }
-.home-latest-card,
+.home-recent-item {
+  grid-template-columns:48px minmax(0,1fr) !important;
+}
+.home-recent-arrow {
+  display:none !important;
+}
 .history-item {
   cursor:pointer !important;
+}
+@media (max-width:680px) {
+  .home-recent-item {
+    grid-template-columns:42px minmax(0,1fr) !important;
+  }
+  .home-form-card .home-text-button {
+    min-height:34px !important;
+    padding:6px 10px !important;
+  }
 }
