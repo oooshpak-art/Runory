@@ -781,11 +781,15 @@ document.querySelectorAll("[data-view-target]").forEach(button => {
   button.addEventListener("click", () => navigateToView(button.dataset.viewTarget));
 });
 
-// Runory — logo always returns to Home on desktop and mobile
-document.querySelector(".brand")?.addEventListener("click", event => {
+// Runory — logo always returns to Home on desktop and mobile.
+// Capture the click at document level so no other header handler can swallow it.
+document.addEventListener("click", event => {
+  const brand = event.target.closest(".brand");
+  if (!brand) return;
   event.preventDefault();
+  event.stopPropagation();
   navigateToView("home");
-});
+}, true);
 
 function initializeRoute() {
   const workoutId = currentRouteWorkoutId();
