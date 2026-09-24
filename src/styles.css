@@ -3198,26 +3198,33 @@
 }
 
 
-/* === Runory: restore framed Dynamics action, remove decorative arrows === */
+/* === Runory Home final button cleanup === */
 .home-text-button {
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  min-height: 32px !important;
-  padding: 7px 11px !important;
-  border: 1px solid var(--line) !important;
-  border-radius: 9px !important;
-  background: #fff !important;
-  color: var(--ink) !important;
-  font: 800 10px Manrope, sans-serif !important;
-  cursor: pointer !important;
-  text-decoration: none !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  min-height:32px !important;
+  padding:7px 11px !important;
+  border:1px solid var(--line) !important;
+  border-radius:9px !important;
+  background:#fff !important;
+  color:var(--ink) !important;
+  font:800 10px Manrope,sans-serif !important;
+  text-decoration:none !important;
+  cursor:pointer !important;
+  box-sizing:border-box !important;
 }
 .home-text-button:hover {
-  background: #f4f7f2 !important;
-  border-color: #cbd5cc !important;
-  text-decoration: none !important;
+  background:#f4f7f2 !important;
+  border-color:#cbd5cc !important;
+  text-decoration:none !important;
 }
-.home-recent-arrow {
-  display: none !important;
+.home-link-button:hover,
+.home-text-button:hover { text-decoration:none !important; }
+.home-recent-item {
+  grid-template-columns:48px minmax(0,1fr) !important;
+}
+.home-recent-arrow { display:none !important; }
+.home-outline-button {
+  text-decoration:none !important;
 }
