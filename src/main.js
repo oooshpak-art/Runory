@@ -784,11 +784,10 @@ document.querySelectorAll("[data-view-target]").forEach(button => {
 // Runory — logo always returns to Home on desktop and mobile.
 // Capture the click at document level so no other header handler can swallow it.
 document.addEventListener("click", event => {
-  const target = event.target instanceof Element ? event.target : null;
-  const brand = target?.closest(".brand");
+  const brand = event.target.closest(".brand");
   if (!brand) return;
   event.preventDefault();
-  event.stopImmediatePropagation();
+  event.stopPropagation();
   navigateToView("home");
 }, true);
 
@@ -2960,7 +2959,7 @@ function renderHome(workouts = historyWorkouts) {
     <button class="home-recent-item" type="button" data-home-workout="${escapeHtml(workout.id)}">
       <span class="home-recent-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3.5h7l3 3V20.5H7z"></path><path d="M14 3.5v4h4M10 12h4M10 15h4"></path></svg></span>
       <span class="home-recent-copy"><strong>${escapeHtml(homeWorkoutLabel(workout))}</strong><span>${escapeHtml(formatHistoryDate(workout.workout_date))} · ${escapeHtml(workout.pace || "—")}/км · ${escapeHtml(formatHistoryDistance(workout.distance_km))}</span></span>
-      <span class="home-recent-arrow" aria-hidden="true">→</span>
+      <span class="home-recent-arrow" aria-hidden="true"></span>
     </button>`).join("") : `<div class="home-recent-empty">Після збереження тренувань вони з'являться тут.</div>`;
 
   container.innerHTML = `
