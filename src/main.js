@@ -784,10 +784,11 @@ document.querySelectorAll("[data-view-target]").forEach(button => {
 // Runory — logo always returns to Home on desktop and mobile.
 // Capture the click at document level so no other header handler can swallow it.
 document.addEventListener("click", event => {
-  const brand = event.target.closest(".brand");
+  const target = event.target instanceof Element ? event.target : null;
+  const brand = target?.closest(".brand");
   if (!brand) return;
   event.preventDefault();
-  event.stopPropagation();
+  event.stopImmediatePropagation();
   navigateToView("home");
 }, true);
 
