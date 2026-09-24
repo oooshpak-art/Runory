@@ -781,6 +781,11 @@ document.querySelectorAll("[data-view-target]").forEach(button => {
   button.addEventListener("click", () => navigateToView(button.dataset.viewTarget));
 });
 
+document.querySelector(".brand")?.addEventListener("click", event => {
+  event.preventDefault();
+  navigateToView("home");
+});
+
 function initializeRoute() {
   const workoutId = currentRouteWorkoutId();
   if (workoutId) {
@@ -2925,7 +2930,7 @@ function renderHome(workouts = historyWorkouts) {
     <article class="home-card home-latest-card">
       <div class="home-card-top"><span class="eyebrow">${escapeHtml(t("homeLatest"))}</span><span class="home-card-date">${escapeHtml(formatHistoryDate(latest.workout_date))}</span></div>
       <div class="home-latest-main">
-        <div><h2 data-home-workout="${escapeHtml(latest.id)}" title="${escapeHtml(t("homeViewWorkout"))}" style="cursor:pointer">${escapeHtml(homeWorkoutLabel(latest))}</h2></div>
+        <div><h2>${escapeHtml(homeWorkoutLabel(latest))}</h2><p>${escapeHtml(latest.structure?.[0]?.label || "")}</p></div>
         <strong>${escapeHtml(formatHistoryDistance(latest.distance_km))}</strong>
       </div>
       <div class="home-metrics">
@@ -3792,7 +3797,7 @@ function renderHistoryList(workouts = historyFilteredWorkouts()) {
   }
 
   container.innerHTML = workouts.map(workout => `
-    <article class="history-item" data-history-id="${escapeHtml(workout.id)}" data-history-view="${escapeHtml(workout.id)}">
+    <article class="history-item" data-history-id="${escapeHtml(workout.id)}">
       <div class="history-workout-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 4h7l3 3v13H7z"></path><path d="M14 4v4h4"></path><path d="M9.5 12h5M9.5 15h5"></path></svg></div>
       <div class="history-item-main">
         <div class="history-item-heading"><div><p class="eyebrow">${escapeHtml(formatHistoryDate(workout.workout_date))}</p><h3>${escapeHtml(workoutTypeLabel(derivedWorkoutType(workout)))}</h3></div><strong class="history-distance">${escapeHtml(formatHistoryDistance(workout.distance_km))}</strong></div>
@@ -3919,12 +3924,6 @@ document.addEventListener("click", event => {
 });
 
 document.addEventListener("click", async event => {
-  const deleteButton = event.target.closest("[data-history-delete]");
-  if (deleteButton) {
-    await deleteWorkoutFromHistory(deleteButton.dataset.historyDelete);
-    return;
-  }
-
   const viewButton = event.target.closest("[data-history-view]");
   if (viewButton) {
     const id = viewButton.dataset.historyView;
@@ -3935,6 +3934,12 @@ document.addEventListener("click", async event => {
       .eq("user_id", currentSession?.user?.id || "")
       .single();
     if (!error && data) openWorkoutFromHistory(data);
+    return;
+  }
+
+  const deleteButton = event.target.closest("[data-history-delete]");
+  if (deleteButton) {
+    await deleteWorkoutFromHistory(deleteButton.dataset.historyDelete);
   }
 });
 
