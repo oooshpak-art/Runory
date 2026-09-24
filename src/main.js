@@ -2922,7 +2922,7 @@ function renderHome(workouts = historyWorkouts) {
   }
 
   const latestHtml = latest ? `
-    <article class="home-card home-latest-card">
+    <article class="home-card home-latest-card" data-home-workout="${escapeHtml(latest.id)}">
       <div class="home-card-top"><span class="eyebrow">${escapeHtml(t("homeLatest"))}</span><span class="home-card-date">${escapeHtml(formatHistoryDate(latest.workout_date))}</span></div>
       <div class="home-latest-main">
         <div><h2>${escapeHtml(homeWorkoutLabel(latest))}</h2><p>${escapeHtml(latest.structure?.[0]?.label || "")}</p></div>
@@ -2933,7 +2933,7 @@ function renderHome(workouts = historyWorkouts) {
         <div><span>${escapeHtml(t("time"))}</span><strong>${escapeHtml(formatHistoryDuration(latest.duration_sec))}</strong></div>
         <div><span>${escapeHtml(t("heartRate"))}</span><strong>${latest.heart_rate != null ? `${Math.round(latest.heart_rate)} ${currentLanguage === "uk" ? "уд/хв" : "bpm"}` : "—"}</strong></div>
       </div>
-      <div class="home-latest-footer"><span class="home-insight">${escapeHtml(latest.ai_analysis ? t("homeInsightSaved") : t("homeInsightWorkout"))}</span><button class="home-link-button" type="button" data-home-workout="${escapeHtml(latest.id)}">${escapeHtml(t("homeViewWorkout"))}</button></div>
+      <div class="home-latest-footer"><span class="home-insight">${escapeHtml(latest.ai_analysis ? t("homeInsightSaved") : t("homeInsightWorkout"))}</span><button class="home-link-button" type="button">${escapeHtml(t("homeViewWorkout"))}</button></div>
     </article>` : `
     <article class="home-card home-empty-card"><div><strong>${escapeHtml(t("homeLatestEmpty"))}</strong><p>${escapeHtml(t("homeLatestEmptyCopy"))}</p></div><button class="home-primary-button" type="button" id="homeAddWorkoutButton">＋</button></article>`;
 
@@ -3919,6 +3919,14 @@ document.addEventListener("click", event => {
 });
 
 document.addEventListener("click", async event => {
+  const historyItem = event.target.closest(".history-item[data-history-id]");
+  if (historyItem && !event.target.closest(".history-item-actions")) {
+    const id = historyItem.dataset.historyId;
+    const record = historyWorkouts.find(item => String(item.id) === String(id));
+    if (record) openWorkoutFromHistory(record);
+    return;
+  }
+
   const viewButton = event.target.closest("[data-history-view]");
   if (viewButton) {
     const id = viewButton.dataset.historyView;
