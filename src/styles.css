@@ -3094,3 +3094,8 @@
     padding: 23px 21px !important;
   }
 }
+
+/* Runory — clickable workout cards */
+.history-item { cursor: pointer; }
+.history-item .history-item-actions,
+.history-item .history-item-actions button { cursor: pointer; }
