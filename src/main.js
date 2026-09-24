@@ -2943,7 +2943,7 @@ function renderHome(workouts = historyWorkouts) {
         <div><span>${escapeHtml(t("time"))}</span><strong>${escapeHtml(formatHistoryDuration(latest.duration_sec))}</strong></div>
         <div><span>${escapeHtml(t("heartRate"))}</span><strong>${latest.heart_rate != null ? `${Math.round(latest.heart_rate)} ${currentLanguage === "uk" ? "уд/хв" : "bpm"}` : "—"}</strong></div>
       </div>
-      <div class="home-latest-footer"><span class="home-insight">${escapeHtml(latest.ai_analysis ? t("homeInsightSaved") : t("homeInsightWorkout"))}</span><button class="home-link-button" type="button" data-home-workout="${escapeHtml(latest.id)}">${escapeHtml(t("homeViewWorkout"))}</button></div>
+      <div class="home-latest-footer"><span class="home-insight">${escapeHtml(latest.ai_analysis ? t("homeInsightSaved") : t("homeInsightWorkout"))}</span><button class="home-link-button" type="button" data-home-workout="${escapeHtml(latest.id)}">${escapeHtml(t("homeViewWorkout"))} →</button></div>
     </article>` : `
     <article class="home-card home-empty-card"><div><strong>${escapeHtml(t("homeLatestEmpty"))}</strong><p>${escapeHtml(t("homeLatestEmptyCopy"))}</p></div><button class="home-primary-button" type="button" id="homeAddWorkoutButton">＋</button></article>`;
 
@@ -2957,9 +2957,9 @@ function renderHome(workouts = historyWorkouts) {
   const recentWorkouts = sorted.slice(0, 3);
   const recentHtml = recentWorkouts.length ? recentWorkouts.map(workout => `
     <button class="home-recent-item" type="button" data-home-workout="${escapeHtml(workout.id)}">
-      <span class="home-recent-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3.5h7l3 3V20.5H7z"></path><path d="M14 3.5v4h4M10 12h4M10 15h4"></path></svg></span>
+      <span class="home-recent-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4.5 15.5c1.8-.3 3.4-1.2 4.4-2.7l2.1-3.1 2.4 2.1c1 .9 2.2 1.5 3.6 1.7l2.8.5c.9.2 1.5 1 1.5 1.9v1.6H4.5z"></path><path d="M9 12.8l2.1 1.9M12.2 13.8l2 1.5M6.5 17.5h12.8"></path></svg></span>
       <span class="home-recent-copy"><strong>${escapeHtml(homeWorkoutLabel(workout))}</strong><span>${escapeHtml(formatHistoryDate(workout.workout_date))} · ${escapeHtml(workout.pace || "—")}/км · ${escapeHtml(formatHistoryDistance(workout.distance_km))}</span></span>
-      <span class="home-recent-arrow" aria-hidden="true"></span>
+      <span class="home-recent-arrow" aria-hidden="true">→</span>
     </button>`).join("") : `<div class="home-recent-empty">Після збереження тренувань вони з'являться тут.</div>`;
 
   container.innerHTML = `
@@ -2978,7 +2978,7 @@ function renderHome(workouts = historyWorkouts) {
     </div>
 
     <section class="home-recent-section">
-      <div class="home-section-heading"><h2>Останні тренування</h2><button class="home-outline-button" type="button" id="homeHistoryButton">Всі тренування</button></div>
+      <div class="home-section-heading"><h2>Останні тренування</h2><button class="home-outline-button" type="button" id="homeHistoryButton">Всі тренування&nbsp; →</button></div>
       <div class="home-recent-list">${recentHtml}</div>
     </section>`;
 
