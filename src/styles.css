@@ -3111,9 +3111,17 @@
 @media (max-width:680px) { .home-week-days { grid-template-columns:repeat(7,minmax(0,1fr)) !important; gap:5px !important; margin-top:16px !important; } .home-week-days span { height:40px !important; border-radius:9px !important; } .home-week-days span::before { top:6px; font-size:7px; } .home-week-days span::after { bottom:6px; } }
 
 
-/* Runory — make workout cards visibly clickable */
-.home-latest-card[data-home-workout] { cursor: pointer; }
-.home-latest-card[data-home-workout]:hover { border-color: #cbd7d1; box-shadow: 0 12px 32px rgba(31,40,31,.055) !important; }
-.home-latest-card[data-home-workout]:focus-visible,
-.history-item[data-history-view]:focus-visible { outline: 2px solid #2A9D8F; outline-offset: 2px; }
-.history-item[data-history-view] { cursor: pointer; }
+/* === Runory — restore approved weekly summary === */
+.home-week-card { padding:20px 21px !important; }
+.home-week-stats { display:grid !important; grid-template-columns:repeat(3,minmax(0,1fr)) !important; gap:9px !important; margin-top:18px !important; }
+.home-week-stats > div { padding:13px 11px !important; background:#f5f7f4 !important; border-radius:11px !important; }
+.home-week-stats strong { display:block !important; font-size:22px !important; letter-spacing:-1px !important; }
+.home-week-stats span { display:block !important; margin-top:3px !important; color:#7a857e !important; font-size:9px !important; }
+.home-week-days { display:grid !important; grid-template-columns:repeat(7,minmax(0,1fr)) !important; gap:6px !important; margin-top:18px !important; padding-top:4px !important; }
+.home-week-days span { position:relative !important; display:block !important; height:42px !important; min-width:0 !important; border-radius:10px !important; background:#f4f7f5 !important; border:1px solid #e8eeea !important; }
+.home-week-days span::before { content:attr(title) !important; position:absolute !important; left:0 !important; right:0 !important; top:6px !important; text-align:center !important; color:#8a948e !important; font:700 8px 'DM Mono',monospace !important; line-height:1 !important; text-transform:uppercase !important; }
+.home-week-days span::after { content:"" !important; position:absolute !important; width:7px !important; height:7px !important; left:50% !important; bottom:7px !important; transform:translateX(-50%) !important; border-radius:50% !important; background:#dfe6e2 !important; }
+.home-week-days span.has-workout { background:#E8F5F3 !important; border-color:rgba(42,157,143,.18) !important; }
+.home-week-days span.has-workout::before { color:#238276 !important; }
+.home-week-days span.has-workout::after { width:8px !important; height:8px !important; background:#2A9D8F !important; box-shadow:0 0 0 3px rgba(42,157,143,.10) !important; }
+@media (max-width:680px) { .home-week-card { padding:20px 21px !important; } .home-week-days { grid-template-columns:repeat(7,minmax(0,1fr)) !important; gap:5px !important; margin-top:16px !important; } .home-week-days span { height:40px !important; border-radius:9px !important; } .home-week-days span::before { top:6px !important; font-size:7px !important; } .home-week-days span::after { bottom:6px !important; } }
