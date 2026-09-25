@@ -992,9 +992,9 @@ function initRunoryTheme() {
       const dark = document.documentElement.dataset.theme === "dark";
       setRunoryTheme(dark ? "light" : "dark");
     });
-    languageSwitcher.appendChild(button);
-  } else if (button.parentElement !== languageSwitcher) {
-    languageSwitcher.appendChild(button);
+    topbarRight.appendChild(button);
+  } else if (button.parentElement !== topbarRight) {
+    topbarRight.appendChild(button);
   }
   updateThemeToggle();
 }
@@ -1024,7 +1024,7 @@ function injectRunoryThemeStyles() {
       --runory-dark-soft: #252d2a;
     }
 
-    /* V20 — fixed header without changing the page layout model. */
+    /* V18 — compact opaque fixed header with all controls in one row. */
     .topbar {
       position: fixed !important;
       top: 0 !important;
@@ -1033,8 +1033,8 @@ function injectRunoryThemeStyles() {
       width: 100% !important;
       z-index: 1000 !important;
       box-sizing: border-box !important;
-      height: 96px !important;
-      min-height: 96px !important;
+      min-height: 76px !important;
+      height: 76px !important;
       padding: 8px 20px !important;
       background: #ffffff !important;
       border-bottom: 1px solid #dfe6e2 !important;
@@ -1045,7 +1045,7 @@ function injectRunoryThemeStyles() {
       gap: 20px !important;
     }
     body {
-      padding-top: 96px !important;
+      padding-top: var(--runory-topbar-height, 76px) !important;
     }
     .topbar .brand {
       display: flex !important;
@@ -1075,10 +1075,9 @@ function injectRunoryThemeStyles() {
       min-width: 0 !important;
     }
     .language-switcher {
-      position: relative !important;
+      position: static !important;
       overflow: visible !important;
       flex: 0 0 auto !important;
-      margin-bottom: 0 !important;
     }
     .runory-theme-toggle {
       width: 44px !important;
@@ -1095,13 +1094,11 @@ function injectRunoryThemeStyles() {
       font: 700 17px/1 Manrope, sans-serif !important;
       cursor: pointer !important;
       transition: background .16s ease, color .16s ease, border-color .16s ease, transform .16s ease !important;
-      position: absolute !important;
-      left: 50% !important;
-      top: calc(100% + 8px) !important;
-      transform: translateX(-50%) !important;
+      position: static !important;
+      flex: 0 0 auto !important;
       z-index: 50 !important;
     }
-    .runory-theme-toggle:hover { transform: translateX(-50%) translateY(-1px) !important; border-color: #b8c3bc !important; }
+    .runory-theme-toggle:hover { transform: translateY(-1px) !important; border-color: #b8c3bc !important; }
     .runory-theme-toggle.is-dark { background: #252d2a !important; color: #f4f7f5 !important; border-color: #394540 !important; }
     .runory-theme-toggle span { display:block !important; transform: translateY(-1px); }
 
@@ -1511,14 +1508,14 @@ function injectRunoryThemeStyles() {
     }
 
     @media (max-width: 900px) {
-      .topbar { min-height: 96px !important; height: 96px !important; padding: 8px 14px !important; gap: 10px !important; }
+      .topbar { min-height: 68px !important; height: 68px !important; padding: 7px 14px !important; gap: 10px !important; }
       .topbar .brand { height: 54px !important; }
       .topbar .brand-logo { width: 190px !important; max-height: 52px !important; }
       .topbar-right { gap: 7px !important; }
       .runory-theme-toggle { width: 40px !important; height: 32px !important; min-width: 40px !important; }
     }
     @media (max-width: 560px) {
-      .topbar { min-height: 92px !important; height: 92px !important; padding: 7px 10px !important; gap: 7px !important; }
+      .topbar { min-height: 62px !important; height: 62px !important; padding: 6px 10px !important; gap: 7px !important; }
       .topbar .brand { height: 50px !important; }
       .topbar .brand-logo { width: 155px !important; max-height: 46px !important; }
       .topbar-right { gap: 5px !important; }
@@ -5938,6 +5935,22 @@ document.querySelectorAll(".language-button").forEach(button => {
 
 initRunoryTheme();
 
+function syncRunoryTopbarHeight() {
+  const topbar = document.querySelector(".topbar");
+  if (!topbar) return;
+  const update = () => {
+    const height = Math.ceil(topbar.getBoundingClientRect().height);
+    document.documentElement.style.setProperty("--runory-topbar-height", `${height}px`);
+  };
+  update();
+  if (typeof ResizeObserver !== "undefined") {
+    const observer = new ResizeObserver(update);
+    observer.observe(topbar);
+  }
+  window.addEventListener("resize", update, { passive: true });
+}
+
+syncRunoryTopbarHeight();
 
 document.querySelector("#addWorkoutButton")?.addEventListener("click", () => {
   navigateToView("analysis");
@@ -6013,9 +6026,13 @@ function updateAuthUI(session) {
 
   if (authButton) authButton.classList.toggle("is-signed-in", signedIn);
   if (authButtonText) {
-    authButtonText.textContent = signedIn
-      ? t("authAccount")
-      : t("authSignIn");
+    // The top-bar account control is icon-only; keep the state text for accessibility.
+    authButtonText.textContent = signedIn ? t("authAccount") : t("authSignIn");
+    authButtonText.setAttribute("aria-hidden", "true");
+    if (authButton) {
+      authButton.setAttribute("aria-label", signedIn ? t("authAccount") : t("authSignIn"));
+      authButton.setAttribute("title", signedIn ? t("authAccount") : t("authSignIn"));
+    }
   }
 
   if (authAccountEmail) {
@@ -7062,18 +7079,32 @@ function installRunoryMobilePolishV15() {
     }
 
 
-    /* V20 — keep the existing layout flow; only fix fixed header and mobile drawer behavior. */
+    /* V19 — fixed desktop sidebar + compact mobile layout.
+       Layout only: workout parsing/classification is untouched. */
+
     @media (min-width: 681px) {
       #accountSidebar {
         position: fixed !important;
         left: 0 !important;
-        top: 96px !important;
+        top: var(--runory-topbar-height, 76px) !important;
         bottom: 0 !important;
-        height: calc(100vh - 96px) !important;
-        max-height: calc(100vh - 96px) !important;
+        height: calc(100vh - var(--runory-topbar-height, 76px)) !important;
+        max-height: calc(100vh - var(--runory-topbar-height, 76px)) !important;
         z-index: 900 !important;
         overflow-y: auto !important;
         overflow-x: hidden !important;
+        box-sizing: border-box !important;
+      }
+
+      #accountSidebar.is-collapsed {
+        width: 110px !important;
+      }
+
+      /* Keep the page content aligned with the permanently visible rail. */
+      .page-shell,
+      .app-content,
+      .main-content,
+      .content-area {
         box-sizing: border-box !important;
       }
 
@@ -7084,54 +7115,38 @@ function installRunoryMobilePolishV15() {
     }
 
     @media (max-width: 680px) {
-      .topbar {
-        height: 92px !important;
-        min-height: 92px !important;
-      }
-
+      /* Mobile: the sidebar becomes a drawer below the fixed header. */
       #accountSidebar {
         position: fixed !important;
         left: 0 !important;
-        top: 92px !important;
+        top: var(--runory-topbar-height, 62px) !important;
         bottom: 0 !important;
-        height: calc(100vh - 92px) !important;
-        max-height: calc(100vh - 92px) !important;
-        width: min(290px, 86vw) !important;
+        height: calc(100vh - var(--runory-topbar-height, 62px)) !important;
+        max-height: calc(100vh - var(--runory-topbar-height, 62px)) !important;
         z-index: 1100 !important;
         overflow-y: auto !important;
         overflow-x: hidden !important;
-        transform: translateX(-105%) !important;
-        transition: transform .22s ease !important;
-        visibility: hidden !important;
-      }
-
-      #accountSidebar.is-open {
-        transform: translateX(0) !important;
-        visibility: visible !important;
       }
 
       #sidebarMobileBackdrop {
-        display: block !important;
         position: fixed !important;
         left: 0 !important;
         right: 0 !important;
-        top: 92px !important;
+        top: var(--runory-topbar-height, 62px) !important;
         bottom: 0 !important;
         z-index: 1090 !important;
-        background: rgba(17, 22, 21, .28) !important;
-        opacity: 0 !important;
-        visibility: hidden !important;
-        pointer-events: none !important;
-        transition: opacity .22s ease, visibility .22s ease !important;
       }
 
-      #sidebarMobileBackdrop.is-visible {
-        opacity: 1 !important;
-        visibility: visible !important;
-        pointer-events: auto !important;
+      /* Do not let the compact header controls wrap or collide. */
+      .topbar {
+        gap: 6px !important;
+        padding-left: 9px !important;
+        padding-right: 9px !important;
       }
 
       .topbar .brand {
+        flex: 0 1 auto !important;
+        min-width: 0 !important;
         max-width: 42vw !important;
       }
 
@@ -7139,12 +7154,12 @@ function installRunoryMobilePolishV15() {
         width: min(150px, 42vw) !important;
         max-width: 100% !important;
         max-height: 44px !important;
+        height: auto !important;
       }
 
       .topbar-right {
         flex: 0 0 auto !important;
         gap: 4px !important;
-        align-items: center !important;
       }
 
       #addWorkoutButton,
@@ -7153,8 +7168,15 @@ function installRunoryMobilePolishV15() {
         height: 34px !important;
       }
 
+      #authButton {
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+        white-space: nowrap !important;
+      }
+
       .language-switcher {
-        margin-top: 0 !important;
+        height: 34px !important;
+        min-height: 34px !important;
       }
 
       .language-switcher .language-button {
@@ -7176,20 +7198,121 @@ function installRunoryMobilePolishV15() {
     }
 
     @media (max-width: 430px) {
-      body { padding-top: 92px !important; }
-      .topbar .brand-logo { width: min(128px, 36vw) !important; }
+      .topbar .brand-logo {
+        width: min(128px, 36vw) !important;
+      }
+
       #authButton {
         font-size: 0 !important;
         width: 34px !important;
         min-width: 34px !important;
         padding: 0 !important;
       }
+
       #authButton::before {
         content: "•" !important;
         font-size: 17px !important;
         line-height: 1 !important;
       }
-      .topbar-right { gap: 3px !important; }
+
+      .topbar-right {
+        gap: 3px !important;
+      }
+    }
+
+
+
+    /* V20 — account control as an icon + readable dark auth sheet. */
+    :root { --runory-account-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='29' fill='none' stroke='black' stroke-width='4'/%3E%3Ccircle cx='32' cy='22' r='9' fill='none' stroke='black' stroke-width='4'/%3E%3Cpath d='M14 52c0-10 8-18 18-18s18 8 18 18' fill='none' stroke='black' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E"); }
+    #authButton {
+      position: relative !important;
+      display: inline-grid !important;
+      place-items: center !important;
+      width: 40px !important;
+      min-width: 40px !important;
+      height: 40px !important;
+      padding: 0 !important;
+      font-size: 0 !important;
+      line-height: 0 !important;
+    }
+    #authButtonText {
+      display: block !important;
+      width: 24px !important;
+      height: 24px !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      font-size: 0 !important;
+      line-height: 0 !important;
+      color: transparent !important;
+      background: transparent !important;
+      position: relative !important;
+    }
+    #authButtonText::before {
+      content: "" !important;
+      position: absolute !important;
+      inset: 0 !important;
+      display: block !important;
+      background: currentColor !important;
+      -webkit-mask: var(--runory-account-icon) center / contain no-repeat !important;
+      mask: var(--runory-account-icon) center / contain no-repeat !important;
+    }
+    html[data-theme="dark"] #authButtonText { color: #9fe0d6 !important; }
+    html[data-theme="light"] #authButtonText { color: #16766c !important; }
+
+    html[data-theme="dark"] .auth-modal-card,
+    html[data-theme="dark"] .auth-modal .auth-modal-card {
+      background: #202825 !important;
+      color: #f2f5f3 !important;
+      border: 1px solid #394740 !important;
+      box-shadow: 0 24px 70px rgba(0,0,0,.55) !important;
+    }
+    html[data-theme="dark"] .auth-modal-card :is(h1,h2,h3,h4,strong,b,label) {
+      color: #f2f5f3 !important;
+    }
+    html[data-theme="dark"] .auth-modal-card :is(p,span,small,div) {
+      color: #b7c3bd !important;
+    }
+    html[data-theme="dark"] .auth-modal-card .eyebrow {
+      color: #8ed6cc !important;
+    }
+    html[data-theme="dark"] .auth-modal-card :is(input,select,textarea) {
+      background: #18201d !important;
+      color: #f2f5f3 !important;
+      border-color: #3b4943 !important;
+      caret-color: #9fe0d6 !important;
+    }
+    html[data-theme="dark"] .auth-modal-card :is(input,select,textarea)::placeholder {
+      color: #7f8c86 !important;
+      opacity: 1 !important;
+    }
+    html[data-theme="dark"] .auth-modal-card button {
+      color: #f2f5f3 !important;
+      border-color: #3b4943 !important;
+    }
+    html[data-theme="dark"] .auth-modal-card #authClose {
+      background: #2b3531 !important;
+      color: #dce5e1 !important;
+    }
+    html[data-theme="dark"] .auth-modal-card #authMessage {
+      color: #a9b8b1 !important;
+    }
+    html[data-theme="dark"] .auth-modal-card .auth-message.is-error {
+      color: #ffaaa2 !important;
+    }
+    html[data-theme="dark"] .auth-modal-card .auth-message.is-success {
+      color: #9fe0d6 !important;
+    }
+
+    @media (max-width: 680px) {
+      #authButton {
+        width: 34px !important;
+        min-width: 34px !important;
+        height: 34px !important;
+      }
+      #authButtonText {
+        width: 21px !important;
+        height: 21px !important;
+      }
     }
 
     /* Aggregate recovery summary is no longer rendered. */
