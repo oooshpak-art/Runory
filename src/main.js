@@ -6382,6 +6382,158 @@ function refreshCalculatorLanguage() {
   }
 }
 
+
+
+function installWorkoutAnalysisReadabilityV12() {
+  if (document.querySelector('#runory-workout-analysis-v12')) return;
+  const style = document.createElement('style');
+  style.id = 'runory-workout-analysis-v12';
+  style.textContent = `
+    /* V12 — light result rows, interval readability and save panel */
+
+    /* Summary rows: same compact rhythm in light mode as in dark mode. */
+    html[data-theme="light"] .results-sidebar .summary-card,
+    html[data-theme="light"] .results-sidebar .summary-panel {
+      padding: 18px !important;
+      border-radius: 16px !important;
+      background: #ffffff !important;
+      border: 1px solid #d8e0dc !important;
+      box-shadow: none !important;
+    }
+    html[data-theme="light"] .results-sidebar .summary-metric {
+      display: grid !important;
+      grid-template-columns: 34px 1fr !important;
+      align-items: center !important;
+      gap: 10px !important;
+      min-height: 56px !important;
+      margin: 0 0 8px !important;
+      padding: 8px 12px !important;
+      box-sizing: border-box !important;
+      background: #f4f7f5 !important;
+      border: 1px solid #d8e0dc !important;
+      border-radius: 10px !important;
+      box-shadow: none !important;
+    }
+    html[data-theme="light"] .results-sidebar .summary-metric:last-child { margin-bottom: 0 !important; }
+    html[data-theme="light"] .results-sidebar .summary-metric :is(span,small,label) {
+      color: #66736e !important;
+      opacity: 1 !important;
+    }
+    html[data-theme="light"] .results-sidebar .summary-metric :is(strong,b,.summary-value) {
+      color: #18211e !important;
+      opacity: 1 !important;
+    }
+    html[data-theme="light"] .results-sidebar .runory-summary-icon {
+      filter: none !important;
+    }
+
+    /* Interval/recovery cards: never use the washed-out default text in light mode. */
+    html[data-theme="light"] #structureCard .timeline-detail,
+    html[data-theme="light"] #structureCard .timeline-item.timeline-detail {
+      background: #f1f5f3 !important;
+      border: 1px solid #cbd8d2 !important;
+      border-radius: 10px !important;
+      color: #34423c !important;
+      opacity: 1 !important;
+      box-shadow: none !important;
+    }
+    html[data-theme="light"] #structureCard .timeline-detail .timeline-content,
+    html[data-theme="light"] #structureCard .timeline-detail .timeline-content strong,
+    html[data-theme="light"] #structureCard .timeline-detail .timeline-content b {
+      color: #18211e !important;
+      opacity: 1 !important;
+    }
+    html[data-theme="light"] #structureCard .timeline-detail .timeline-content span {
+      color: #4d5c55 !important;
+      opacity: 1 !important;
+      font-weight: 500 !important;
+    }
+    html[data-theme="light"] #structureCard .timeline-recovery.timeline-detail {
+      background: #eef2f0 !important;
+      border-color: #c8d3ce !important;
+    }
+    html[data-theme="light"] #structureCard .timeline-recovery.timeline-detail .timeline-content span {
+      color: #56645e !important;
+    }
+
+    /* Save workout panel: readable on the light background. */
+    html[data-theme="light"] #workoutSavePanel {
+      background: #f4f7f5 !important;
+      color: #18211e !important;
+      border: 1px solid #d3dfda !important;
+      border-radius: 16px !important;
+      box-shadow: none !important;
+      opacity: 1 !important;
+    }
+    html[data-theme="light"] #workoutSavePanel :is(.eyebrow, h1, h2, h3, h4, strong, b, label) {
+      color: #18211e !important;
+      opacity: 1 !important;
+    }
+    html[data-theme="light"] #workoutSavePanel :is(p, span, small, #workoutSaveStatus) {
+      color: #596760 !important;
+      opacity: 1 !important;
+    }
+    html[data-theme="light"] #saveWorkoutButton {
+      background: #18211e !important;
+      color: #ffffff !important;
+      border: 1px solid #18211e !important;
+      box-shadow: none !important;
+      opacity: 1 !important;
+    }
+    html[data-theme="light"] #saveWorkoutButton:hover {
+      background: #2a9d8f !important;
+      border-color: #2a9d8f !important;
+      color: #ffffff !important;
+    }
+    html[data-theme="light"] #cancelWorkoutButton {
+      background: #ffffff !important;
+      color: #34423c !important;
+      border: 1px solid #cbd8d2 !important;
+      box-shadow: none !important;
+      opacity: 1 !important;
+    }
+    html[data-theme="light"] #cancelWorkoutButton:hover {
+      background: #eaf5f2 !important;
+      color: #147b70 !important;
+      border-color: #58b6a9 !important;
+    }
+
+    /* Dark mode save panel gets the same explicit contrast, without changing its layout. */
+    html[data-theme="dark"] #workoutSavePanel {
+      background: #1b2421 !important;
+      color: #f4f8f6 !important;
+      border: 1px solid #35443e !important;
+      border-radius: 16px !important;
+      box-shadow: none !important;
+      opacity: 1 !important;
+    }
+    html[data-theme="dark"] #workoutSavePanel :is(.eyebrow, h1, h2, h3, h4, strong, b, label) {
+      color: #f4f8f6 !important;
+      opacity: 1 !important;
+    }
+    html[data-theme="dark"] #workoutSavePanel :is(p, span, small, #workoutSaveStatus) {
+      color: #c3cec8 !important;
+      opacity: 1 !important;
+    }
+    html[data-theme="dark"] #saveWorkoutButton {
+      background: #dce9e4 !important;
+      color: #18211e !important;
+      border: 1px solid #dce9e4 !important;
+      box-shadow: none !important;
+      opacity: 1 !important;
+    }
+    html[data-theme="dark"] #cancelWorkoutButton {
+      background: #26332f !important;
+      color: #f1f7f4 !important;
+      border: 1px solid #4a625a !important;
+      box-shadow: none !important;
+      opacity: 1 !important;
+    }
+  `;
+  document.head.appendChild(style);
+}
+
 installWorkoutAnalysisReadabilityV11();
+installWorkoutAnalysisReadabilityV12();
 initializeRoute();
 initAuth();
