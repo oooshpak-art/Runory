@@ -6026,13 +6026,9 @@ function updateAuthUI(session) {
 
   if (authButton) authButton.classList.toggle("is-signed-in", signedIn);
   if (authButtonText) {
-    // The top-bar account control is icon-only; keep the state text for accessibility.
-    authButtonText.textContent = signedIn ? t("authAccount") : t("authSignIn");
-    authButtonText.setAttribute("aria-hidden", "true");
-    if (authButton) {
-      authButton.setAttribute("aria-label", signedIn ? t("authAccount") : t("authSignIn"));
-      authButton.setAttribute("title", signedIn ? t("authAccount") : t("authSignIn"));
-    }
+    authButtonText.textContent = signedIn
+      ? t("authAccount")
+      : t("authSignIn");
   }
 
   if (authAccountEmail) {
@@ -7217,101 +7213,6 @@ function installRunoryMobilePolishV15() {
 
       .topbar-right {
         gap: 3px !important;
-      }
-    }
-
-
-
-    /* V20 — account control as an icon + readable dark auth sheet. */
-    :root { --runory-account-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='29' fill='none' stroke='black' stroke-width='4'/%3E%3Ccircle cx='32' cy='22' r='9' fill='none' stroke='black' stroke-width='4'/%3E%3Cpath d='M14 52c0-10 8-18 18-18s18 8 18 18' fill='none' stroke='black' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E"); }
-    #authButton {
-      position: relative !important;
-      display: inline-grid !important;
-      place-items: center !important;
-      width: 40px !important;
-      min-width: 40px !important;
-      height: 40px !important;
-      padding: 0 !important;
-      font-size: 0 !important;
-      line-height: 0 !important;
-    }
-    #authButtonText {
-      display: block !important;
-      width: 24px !important;
-      height: 24px !important;
-      margin: 0 !important;
-      padding: 0 !important;
-      font-size: 0 !important;
-      line-height: 0 !important;
-      color: transparent !important;
-      background: transparent !important;
-      position: relative !important;
-    }
-    #authButtonText::before {
-      content: "" !important;
-      position: absolute !important;
-      inset: 0 !important;
-      display: block !important;
-      background: currentColor !important;
-      -webkit-mask: var(--runory-account-icon) center / contain no-repeat !important;
-      mask: var(--runory-account-icon) center / contain no-repeat !important;
-    }
-    html[data-theme="dark"] #authButtonText { color: #9fe0d6 !important; }
-    html[data-theme="light"] #authButtonText { color: #16766c !important; }
-
-    html[data-theme="dark"] .auth-modal-card,
-    html[data-theme="dark"] .auth-modal .auth-modal-card {
-      background: #202825 !important;
-      color: #f2f5f3 !important;
-      border: 1px solid #394740 !important;
-      box-shadow: 0 24px 70px rgba(0,0,0,.55) !important;
-    }
-    html[data-theme="dark"] .auth-modal-card :is(h1,h2,h3,h4,strong,b,label) {
-      color: #f2f5f3 !important;
-    }
-    html[data-theme="dark"] .auth-modal-card :is(p,span,small,div) {
-      color: #b7c3bd !important;
-    }
-    html[data-theme="dark"] .auth-modal-card .eyebrow {
-      color: #8ed6cc !important;
-    }
-    html[data-theme="dark"] .auth-modal-card :is(input,select,textarea) {
-      background: #18201d !important;
-      color: #f2f5f3 !important;
-      border-color: #3b4943 !important;
-      caret-color: #9fe0d6 !important;
-    }
-    html[data-theme="dark"] .auth-modal-card :is(input,select,textarea)::placeholder {
-      color: #7f8c86 !important;
-      opacity: 1 !important;
-    }
-    html[data-theme="dark"] .auth-modal-card button {
-      color: #f2f5f3 !important;
-      border-color: #3b4943 !important;
-    }
-    html[data-theme="dark"] .auth-modal-card #authClose {
-      background: #2b3531 !important;
-      color: #dce5e1 !important;
-    }
-    html[data-theme="dark"] .auth-modal-card #authMessage {
-      color: #a9b8b1 !important;
-    }
-    html[data-theme="dark"] .auth-modal-card .auth-message.is-error {
-      color: #ffaaa2 !important;
-    }
-    html[data-theme="dark"] .auth-modal-card .auth-message.is-success {
-      color: #9fe0d6 !important;
-    }
-
-    @media (max-width: 680px) {
-      #authButton {
-        width: 34px !important;
-        min-width: 34px !important;
-        height: 34px !important;
-      }
-      #authButtonText {
-        width: 21px !important;
-        height: 21px !important;
       }
     }
 
