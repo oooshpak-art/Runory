@@ -4573,7 +4573,7 @@ function renderHome(workouts = historyWorkouts) {
         <div><span>${escapeHtml(t("time"))}</span><strong>${escapeHtml(formatHistoryDuration(latest.duration_sec))}</strong></div>
         <div><span>${escapeHtml(t("heartRate"))}</span><strong>${latest.heart_rate != null ? `${Math.round(latest.heart_rate)} ${currentLanguage === "uk" ? "уд/хв" : "bpm"}` : "—"}</strong></div>
       </div>
-      <div class="home-latest-footer"><span class="home-insight">${escapeHtml(latest.ai_analysis ? t("homeInsightSaved") : t("homeInsightWorkout"))}</span><button class="home-link-button" type="button" data-home-workout="${escapeHtml(latest.id)}">${escapeHtml(t("homeViewWorkout"))}</button></div>
+      <div class="home-latest-footer"><span class="home-insight">${escapeHtml(latest.ai_analysis ? t("homeInsightSaved") : t("homeInsightWorkout"))}</span><button class="home-outline-button" type="button" data-home-workout="${escapeHtml(latest.id)}">${escapeHtml(t("homeViewWorkout"))}</button></div>
     </article>` : `
     <article class="home-card home-empty-card"><div><strong>${escapeHtml(t("homeLatestEmpty"))}</strong><p>${escapeHtml(t("homeLatestEmptyCopy"))}</p></div><button class="home-primary-button" type="button" id="homeAddWorkoutButton">＋</button></article>`;
 
@@ -6544,6 +6544,43 @@ function installWorkoutAnalysisReadabilityV12() {
 
 
 
+function installRunoryWorkoutUiPolishV18() {
+  if (document.querySelector("#runory-workout-ui-polish-v18")) return;
+  const style = document.createElement("style");
+  style.id = "runory-workout-ui-polish-v18";
+  style.textContent = `
+    /* V18 — remove the extra frame from the aggregated recovery summary. */
+    #structureCard .timeline-summary,
+    #structureCard .timeline-summary .timeline-content {
+      background: transparent !important;
+      border: 0 !important;
+      box-shadow: none !important;
+      border-radius: 0 !important;
+    }
+
+    html[data-theme="light"] #structureCard .timeline-summary {
+      color: #4d5c55 !important;
+    }
+    html[data-theme="light"] #structureCard .timeline-summary .timeline-content :is(strong,b) {
+      color: #34423c !important;
+    }
+    html[data-theme="light"] #structureCard .timeline-summary .timeline-content :is(span,small,p,div) {
+      color: #66736e !important;
+    }
+
+    html[data-theme="dark"] #structureCard .timeline-summary {
+      color: #c3cec8 !important;
+    }
+    html[data-theme="dark"] #structureCard .timeline-summary .timeline-content :is(strong,b) {
+      color: #e7eeea !important;
+    }
+    html[data-theme="dark"] #structureCard .timeline-summary .timeline-content :is(span,small,p,div) {
+      color: #aeb9b4 !important;
+    }
+  `;
+  document.head.appendChild(style);
+}
+
 function installWorkoutAnalysisReadabilityV13() {
   if (document.querySelector('#runory-workout-analysis-v13')) return;
   const style = document.createElement('style');
@@ -6691,6 +6728,7 @@ function installWorkoutAnalysisReadabilityV13() {
 installWorkoutAnalysisReadabilityV11();
 installWorkoutAnalysisReadabilityV12();
 installWorkoutAnalysisReadabilityV13();
+installRunoryWorkoutUiPolishV18();
 
 function installRunoryMobilePolishV15() {
   if (document.querySelector("#runory-mobile-polish-v15")) return;
@@ -6775,137 +6813,6 @@ function installRunoryMobilePolishV15() {
         min-height: 32px !important;
         margin: 0 !important;
         padding: 0 !important;
-      }
-    }
-
-    /* V17 — unify the framed controls and restore the distance field surface. */
-    html[data-theme="light"] .calculator-card .calc-field > div {
-      background: #f3f7f5 !important;
-      border-color: #d7e2de !important;
-      color: #1b2321 !important;
-    }
-    html[data-theme="light"] .calculator-card .calc-field > div input {
-      color: #1b2321 !important;
-      background: transparent !important;
-    }
-    html[data-theme="light"] .calculator-card .calc-field > div input::placeholder {
-      color: #7d8984 !important;
-      opacity: 1 !important;
-    }
-    html[data-theme="light"] .calculator-card .calc-field > div em {
-      color: #68756f !important;
-    }
-    html[data-theme="light"] .calculator-card .calc-field > div:focus-within {
-      background: #f3f7f5 !important;
-      border-color: #2a9d8f !important;
-    }
-
-    /* One consistent framed control style across desktop and mobile. */
-    #sidebarMobileToggle,
-    .account-sidebar-toggle,
-    #addWorkoutButton,
-    #authButton,
-    .language-switcher,
-    .runory-theme-toggle {
-      border: 2px solid #2a9d8f !important;
-      border-radius: 10px !important;
-      box-shadow: 0 0 0 2px rgba(42,157,143,.10), 0 4px 14px rgba(20,35,31,.12) !important;
-    }
-    #sidebarMobileToggle,
-    .account-sidebar-toggle,
-    #addWorkoutButton,
-    #authButton,
-    .runory-theme-toggle {
-      background: #eef5f2 !important;
-      color: #16766c !important;
-    }
-    .language-switcher {
-      background: #eef5f2 !important;
-      border-color: #2a9d8f !important;
-    }
-    .language-switcher .language-button {
-      border-radius: 7px !important;
-    }
-    .language-switcher .language-button.is-active {
-      background: #2a9d8f !important;
-      color: #ffffff !important;
-    }
-    #sidebarMobileToggle svg,
-    .account-sidebar-toggle svg {
-      stroke: currentColor !important;
-      color: currentColor !important;
-      fill: none !important;
-      stroke-width: 2.4 !important;
-    }
-    #addWorkoutButton:hover,
-    #authButton:hover,
-    .language-switcher:hover,
-    .runory-theme-toggle:hover,
-    .account-sidebar-toggle:hover,
-    #sidebarMobileToggle:hover {
-      border-color: #238b7f !important;
-      box-shadow: 0 0 0 3px rgba(42,157,143,.13), 0 5px 16px rgba(20,35,31,.15) !important;
-    }
-
-    html[data-theme="dark"] #sidebarMobileToggle,
-    html[data-theme="dark"] .account-sidebar-toggle,
-    html[data-theme="dark"] #addWorkoutButton,
-    html[data-theme="dark"] #authButton,
-    html[data-theme="dark"] .language-switcher,
-    html[data-theme="dark"] .runory-theme-toggle {
-      background: #202d29 !important;
-      border-color: #4c9d92 !important;
-      color: #9fe0d6 !important;
-      box-shadow: 0 0 0 2px rgba(76,157,146,.10), 0 4px 14px rgba(0,0,0,.20) !important;
-    }
-    html[data-theme="dark"] .language-switcher .language-button.is-active {
-      background: #2a9d8f !important;
-      color: #ffffff !important;
-    }
-
-    /* V16 — restore the light-theme calculator cells; keep dark theme unchanged. */
-    html[data-theme="light"] .calculator-card .runory-split-cell {
-      background: #f3f7f5 !important;
-      border-color: #d7e2de !important;
-      color: #1b2321 !important;
-    }
-    html[data-theme="light"] .calculator-card .runory-split-cell input {
-      color: #1b2321 !important;
-    }
-    html[data-theme="light"] .calculator-card .runory-split-cell input::placeholder {
-      color: #7d8984 !important;
-      opacity: 1 !important;
-    }
-    html[data-theme="light"] .calculator-card .runory-split-cell span {
-      color: #68756f !important;
-    }
-    html[data-theme="light"] .calculator-card .runory-split-cell:focus-within {
-      background: #f3f7f5 !important;
-      border-color: #2a9d8f !important;
-    }
-
-    @media (max-width: 680px) {
-      /* V16 — make the mobile hamburger unmistakably visible. */
-      #sidebarMobileToggle,
-      .sidebar-mobile-toggle,
-      .mobile-sidebar-toggle {
-        opacity: 1 !important;
-        visibility: visible !important;
-        background: #eef5f2 !important;
-        border: 2px solid #2a9d8f !important;
-        color: #16766c !important;
-        box-shadow: 0 0 0 2px rgba(42,157,143,.12), 0 4px 14px rgba(20,35,31,.18) !important;
-        -webkit-text-fill-color: currentColor !important;
-      }
-      #sidebarMobileToggle svg,
-      .sidebar-mobile-toggle svg,
-      .mobile-sidebar-toggle svg {
-        opacity: 1 !important;
-        visibility: visible !important;
-        stroke: currentColor !important;
-        fill: none !important;
-        color: currentColor !important;
-        stroke-width: 2.4 !important;
       }
     }
 
