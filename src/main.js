@@ -6593,6 +6593,39 @@ function installWorkoutAnalysisReadabilityV13() {
       color: #f2f7f4 !important;
     }
 
+    /* The detail card is the only visible frame. Keep its inner content transparent. */
+    html[data-theme="dark"] #structureCard .timeline-detail .timeline-content {
+      background: transparent !important;
+      border: 0 !important;
+      box-shadow: none !important;
+      color: #dfe9e4 !important;
+    }
+    html[data-theme="dark"] #structureCard .timeline-detail .timeline-content :is(strong,b) {
+      color: #f7faf8 !important;
+    }
+    html[data-theme="dark"] #structureCard .timeline-detail .timeline-content :is(span,small,p,div) {
+      color: #c4d0ca !important;
+    }
+    html[data-theme="dark"] #structureCard .timeline-recovery.timeline-detail .timeline-content :is(span,small,p,div) {
+      color: #cbd7d1 !important;
+    }
+
+    html[data-theme="light"] #structureCard .timeline-detail .timeline-content {
+      background: transparent !important;
+      border: 0 !important;
+      box-shadow: none !important;
+      color: #34423c !important;
+    }
+    html[data-theme="light"] #structureCard .timeline-detail .timeline-content :is(strong,b) {
+      color: #18211e !important;
+    }
+    html[data-theme="light"] #structureCard .timeline-detail .timeline-content :is(span,small,p,div) {
+      color: #4d5c55 !important;
+    }
+    html[data-theme="light"] #structureCard .timeline-recovery.timeline-detail .timeline-content :is(span,small,p,div) {
+      color: #56645e !important;
+    }
+
     /* Compact FIT picker: keep the action button, remove the oversized empty drop area. */
     #dropZone {
       min-height: 0 !important;
