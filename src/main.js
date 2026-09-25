@@ -2752,20 +2752,23 @@ function getWorkoutPattern(summary) {
     return { type: "fartlek", states };
   }
 
-  // Fast finish tempo = a long easy/steady first part followed by a sustained
-  // faster block all the way to the finish. This is still a tempo workout even
-  // though there is no separate cool-down after the tempo block.
-  // Example: 10 km @ 5:25 + 5 km @ 4:30.
-  // Require a substantial final block and a clear pace separation from the
-  // preceding running so ordinary negative-split easy runs are not promoted.
+  // Fast-finish tempo = a long easy/steady first part followed by a
+  // sustained faster block all the way to the finish. Do NOT use a fixed
+  // percentage of the workout to choose the boundary: for 10 km easy + 5 km
+  // tempo, the boundary must be found at the real pace jump (km 10 -> 11),
+  // otherwise the workout is incorrectly rendered as 9 km + 6 km.
   if (paces.length >= 8) {
-    const finalStart = Math.max(3, Math.floor(paces.length * 0.60));
-    const finalBlock = paces.slice(finalStart);
-    const preceding = paces.slice(0, finalStart);
+    let bestFastFinish = null;
 
-    if (finalBlock.length >= 3 && preceding.length >= 5) {
-      const finalAverage = finalBlock.reduce((a, b) => a + b, 0) / finalBlock.length;
+    // Test every plausible boundary. The final block must contain at least
+    // 3 km and at least 30% of the workout; the preceding part must contain
+    // at least 5 km.
+    for (let boundary = 5; boundary <= paces.length - 3; boundary++) {
+      const preceding = paces.slice(0, boundary);
+      const finalBlock = paces.slice(boundary);
+
       const precedingAverage = preceding.reduce((a, b) => a + b, 0) / preceding.length;
+      const finalAverage = finalBlock.reduce((a, b) => a + b, 0) / finalBlock.length;
       const finalVariation = finalBlock.reduce(
         (sum, pace) => sum + Math.abs(pace - finalAverage) / finalAverage,
         0
@@ -2773,23 +2776,45 @@ function getWorkoutPattern(summary) {
       const paceGain = precedingAverage - finalAverage;
       const paceGainPercent = precedingAverage > 0 ? paceGain / precedingAverage : 0;
       const share = finalBlock.length / paces.length;
+      const boundaryJump = paces[boundary - 1] - paces[boundary];
+      const boundaryJumpPercent = paces[boundary - 1] > 0
+        ? boundaryJump / paces[boundary - 1]
+        : 0;
 
       if (
         share >= 0.30
         && paceGain >= 20
         && paceGainPercent >= 0.06
+        && boundaryJump >= 20
+        && boundaryJumpPercent >= 0.05
         && finalVariation <= 0.055
       ) {
-        return {
-          type: "tempo",
-          variant: "fast_finish",
-          tempoStart: finalStart,
-          tempoEnd: paces.length - 1,
-          baselinePace: precedingAverage,
-          paceGain,
-          paceGainPercent
-        };
+        // Prefer the boundary with the clearest actual pace jump. If jumps are
+        // similar, prefer the longer sustained fast block.
+        const score = boundaryJump + paceGain * 0.5 + finalBlock.length * 0.1;
+        if (!bestFastFinish || score > bestFastFinish.score) {
+          bestFastFinish = {
+            score,
+            boundary,
+            precedingAverage,
+            finalAverage,
+            paceGain,
+            paceGainPercent
+          };
+        }
       }
+    }
+
+    if (bestFastFinish) {
+      return {
+        type: "tempo",
+        variant: "fast_finish",
+        tempoStart: bestFastFinish.boundary,
+        tempoEnd: paces.length - 1,
+        baselinePace: bestFastFinish.precedingAverage,
+        paceGain: bestFastFinish.paceGain,
+        paceGainPercent: bestFastFinish.paceGainPercent
+      };
     }
   }
 
