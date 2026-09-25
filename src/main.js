@@ -992,9 +992,9 @@ function initRunoryTheme() {
       const dark = document.documentElement.dataset.theme === "dark";
       setRunoryTheme(dark ? "light" : "dark");
     });
-    languageSwitcher.appendChild(button);
-  } else if (button.parentElement !== languageSwitcher) {
-    languageSwitcher.appendChild(button);
+    topbarRight.appendChild(button);
+  } else if (button.parentElement !== topbarRight) {
+    topbarRight.appendChild(button);
   }
   updateThemeToggle();
 }
@@ -1024,7 +1024,7 @@ function injectRunoryThemeStyles() {
       --runory-dark-soft: #252d2a;
     }
 
-    /* V17 — keep the main header visible on every Runory page. */
+    /* V18 — compact opaque fixed header with all controls in one row. */
     .topbar {
       position: fixed !important;
       top: 0 !important;
@@ -1033,15 +1033,51 @@ function injectRunoryThemeStyles() {
       width: 100% !important;
       z-index: 1000 !important;
       box-sizing: border-box !important;
-      padding-bottom: 48px !important;
+      min-height: 76px !important;
+      height: 76px !important;
+      padding: 8px 20px !important;
+      background: #ffffff !important;
+      border-bottom: 1px solid #dfe6e2 !important;
+      box-shadow: 0 2px 12px rgba(20,35,31,.06) !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      gap: 20px !important;
     }
     body {
-      padding-top: var(--runory-topbar-height, 0px) !important;
+      padding-top: var(--runory-topbar-height, 76px) !important;
     }
-    .topbar-right { position: static !important; }
+    .topbar .brand {
+      display: flex !important;
+      align-items: center !important;
+      height: 60px !important;
+      min-width: 0 !important;
+      margin: 0 !important;
+    }
+    .topbar .brand-logo {
+      display: block !important;
+      width: 220px !important;
+      max-width: 42vw !important;
+      height: auto !important;
+      max-height: 58px !important;
+      object-fit: contain !important;
+      object-position: left center !important;
+      margin: 0 !important;
+    }
+    .topbar-right {
+      position: static !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: flex-end !important;
+      gap: 10px !important;
+      flex-wrap: nowrap !important;
+      margin: 0 !important;
+      min-width: 0 !important;
+    }
     .language-switcher {
-      position: relative !important;
+      position: static !important;
       overflow: visible !important;
+      flex: 0 0 auto !important;
     }
     .runory-theme-toggle {
       width: 44px !important;
@@ -1058,16 +1094,19 @@ function injectRunoryThemeStyles() {
       font: 700 17px/1 Manrope, sans-serif !important;
       cursor: pointer !important;
       transition: background .16s ease, color .16s ease, border-color .16s ease, transform .16s ease !important;
-      position: absolute !important;
-      left: 50% !important;
-      right: auto !important;
-      top: calc(100% + 8px) !important;
-      transform: translateX(-50%) !important;
+      position: static !important;
+      flex: 0 0 auto !important;
       z-index: 50 !important;
     }
-    .runory-theme-toggle:hover { transform: translateX(-50%) translateY(-1px) !important; border-color: #b8c3bc !important; }
+    .runory-theme-toggle:hover { transform: translateY(-1px) !important; border-color: #b8c3bc !important; }
     .runory-theme-toggle.is-dark { background: #252d2a !important; color: #f4f7f5 !important; border-color: #394540 !important; }
     .runory-theme-toggle span { display:block !important; transform: translateY(-1px); }
+
+    html[data-theme="dark"] .topbar {
+      background: #181e1c !important;
+      border-bottom-color: #303a36 !important;
+      box-shadow: 0 2px 12px rgba(0,0,0,.20) !important;
+    }
 
     html[data-theme="dark"] {
       color-scheme: dark;
@@ -1469,10 +1508,18 @@ function injectRunoryThemeStyles() {
     }
 
     @media (max-width: 900px) {
-      .runory-theme-toggle { top: calc(100% + 10px) !important; width: 40px !important; height: 32px !important; min-width: 40px !important; }
+      .topbar { min-height: 68px !important; height: 68px !important; padding: 7px 14px !important; gap: 10px !important; }
+      .topbar .brand { height: 54px !important; }
+      .topbar .brand-logo { width: 190px !important; max-height: 52px !important; }
+      .topbar-right { gap: 7px !important; }
+      .runory-theme-toggle { width: 40px !important; height: 32px !important; min-width: 40px !important; }
     }
     @media (max-width: 560px) {
-      .runory-theme-toggle { top: calc(100% + 8px) !important; width: 38px !important; height: 30px !important; min-width: 38px !important; border-radius: 9px !important; }
+      .topbar { min-height: 62px !important; height: 62px !important; padding: 6px 10px !important; gap: 7px !important; }
+      .topbar .brand { height: 50px !important; }
+      .topbar .brand-logo { width: 155px !important; max-height: 46px !important; }
+      .topbar-right { gap: 5px !important; }
+      .runory-theme-toggle { width: 38px !important; height: 30px !important; min-width: 38px !important; border-radius: 9px !important; }
     }
 
     /* === Runory unified page system ===
@@ -2095,9 +2142,9 @@ function injectRunoryThemeStyles() {
       color: #8ed6cc !important; fill: none !important; stroke: currentColor !important;
     }
 
-    /* V17 — give the cool-down the same section spacing as the warm-up. */
+    /* V18 — reduce the gap before the cool-down. */
     #structureCard .timeline-cooldown {
-      margin-top: 28px !important;
+      margin-top: 16px !important;
     }
 
     html[data-theme="dark"] #structureCard {
