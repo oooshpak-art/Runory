@@ -704,6 +704,8 @@ function applyLanguage() {
     button.setAttribute("aria-pressed", String(active));
   });
 
+  updateThemeToggle();
+
   if (currentWorkout) renderSummary(currentWorkout);
   if (document.querySelector("#home")?.classList.contains("is-active") || document.querySelector("#history")?.classList.contains("is-active") || document.querySelector("#dynamics")?.classList.contains("is-active")) {
     historyLoaded = false;
@@ -926,12 +928,249 @@ function currentRouteWorkoutId() {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
+
+/* === Runory theme + view reset === */
+const RUNORY_THEME_KEY = "runory-theme";
+
+function getRunoryTheme() {
+  const stored = localStorage.getItem(RUNORY_THEME_KEY);
+  return stored === "dark" || stored === "light" ? stored : "light";
+}
+
+function updateThemeToggle() {
+  const button = document.querySelector("#runoryThemeToggle");
+  if (!button) return;
+  const dark = document.documentElement.dataset.theme === "dark";
+  button.classList.toggle("is-dark", dark);
+  button.setAttribute("aria-pressed", String(dark));
+  const label = dark
+    ? (currentLanguage === "uk" ? "Увімкнути світлу тему" : "Switch to light theme")
+    : (currentLanguage === "uk" ? "Увімкнути темну тему" : "Switch to dark theme");
+  button.setAttribute("aria-label", label);
+  button.setAttribute("title", label);
+  button.innerHTML = dark
+    ? '<span aria-hidden="true">☀</span>'
+    : '<span aria-hidden="true">☾</span>';
+}
+
+function setRunoryTheme(theme, persist = true) {
+  const next = theme === "dark" ? "dark" : "light";
+  document.documentElement.dataset.theme = next;
+  document.documentElement.style.colorScheme = next;
+  if (persist) localStorage.setItem(RUNORY_THEME_KEY, next);
+  updateThemeToggle();
+}
+
+function initRunoryTheme() {
+  if (!document.documentElement.dataset.theme) {
+    setRunoryTheme(getRunoryTheme(), false);
+  }
+
+  const languageSwitcher = document.querySelector(".language-switcher");
+  const topbarRight = document.querySelector(".topbar-right");
+  if (!languageSwitcher || !topbarRight) {
+    updateThemeToggle();
+    return;
+  }
+
+  let button = document.querySelector("#runoryThemeToggle");
+  if (!button) {
+    button = document.createElement("button");
+    button.type = "button";
+    button.id = "runoryThemeToggle";
+    button.className = "runory-theme-toggle";
+    button.addEventListener("click", () => {
+      const dark = document.documentElement.dataset.theme === "dark";
+      setRunoryTheme(dark ? "light" : "dark");
+    });
+    topbarRight.appendChild(button);
+  }
+  updateThemeToggle();
+}
+
+function resetRunoryScroll() {
+  window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  document.documentElement.scrollTop = 0;
+  document.body.scrollTop = 0;
+  document.querySelectorAll(".app-content, .main-content, .content-area").forEach(element => {
+    if (element.scrollTop) element.scrollTop = 0;
+  });
+}
+
+function injectRunoryThemeStyles() {
+  if (document.querySelector("#runory-theme-styles")) return;
+  const style = document.createElement("style");
+  style.id = "runory-theme-styles";
+  style.textContent = `
+    :root {
+      color-scheme: light;
+      --runory-dark-canvas: #111615;
+      --runory-dark-surface: #181e1c;
+      --runory-dark-surface-2: #202725;
+      --runory-dark-line: #303a36;
+      --runory-dark-ink: #f2f5f3;
+      --runory-dark-muted: #a4afaa;
+      --runory-dark-soft: #252d2a;
+    }
+
+    .topbar-right { position: relative !important; }
+    .runory-theme-toggle {
+      width: 44px !important;
+      height: 34px !important;
+      min-width: 44px !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      border: 1px solid var(--line) !important;
+      border-radius: 10px !important;
+      background: var(--white) !important;
+      color: var(--ink) !important;
+      display: grid !important;
+      place-items: center !important;
+      font: 700 17px/1 Manrope, sans-serif !important;
+      cursor: pointer !important;
+      transition: background .16s ease, color .16s ease, border-color .16s ease, transform .16s ease !important;
+      position: absolute !important;
+      right: 0 !important;
+      top: 52px !important;
+      z-index: 20 !important;
+    }
+    .runory-theme-toggle:hover { transform: translateY(-1px) !important; border-color: #b8c3bc !important; }
+    .runory-theme-toggle.is-dark { background: #252d2a !important; color: #f4f7f5 !important; border-color: #394540 !important; }
+    .runory-theme-toggle span { display:block !important; transform: translateY(-1px); }
+
+    html[data-theme="dark"] {
+      color-scheme: dark;
+      --canvas: var(--runory-dark-canvas) !important;
+      --white: var(--runory-dark-surface) !important;
+      --ink: var(--runory-dark-ink) !important;
+      --muted: var(--runory-dark-muted) !important;
+      --line: var(--runory-dark-line) !important;
+      --soft: var(--runory-dark-soft) !important;
+      --soft-lime: #203532 !important;
+      --runory-primary-light: #203532 !important;
+    }
+
+    html[data-theme="dark"] body,
+    html[data-theme="dark"] .page-shell { background: var(--runory-dark-canvas) !important; color: var(--runory-dark-ink) !important; }
+    html[data-theme="dark"] .topbar { border-color: var(--runory-dark-line) !important; }
+    html[data-theme="dark"] .brand,
+    html[data-theme="dark"] .brand-logo { color: var(--runory-dark-ink) !important; }
+    html[data-theme="dark"] .brand-mark { background: #f2f5f3 !important; }
+    html[data-theme="dark"] .nav-tab { color: #9da9a3 !important; }
+    html[data-theme="dark"] .nav-tab:hover { background: #252d2a !important; color: #f2f5f3 !important; }
+    html[data-theme="dark"] .nav-tab.is-active { background: #f2f5f3 !important; color: #171b1d !important; }
+    html[data-theme="dark"] .eyebrow,
+    html[data-theme="dark"] .status-pill,
+    html[data-theme="dark"] .account-sidebar-label,
+    html[data-theme="dark"] .history-filter-label { color: #95a19b !important; }
+
+    html[data-theme="dark"] .upload-section,
+    html[data-theme="dark"] .results,
+    html[data-theme="dark"] .home-card,
+    html[data-theme="dark"] .home-tool-card,
+    html[data-theme="dark"] .history-stat-card,
+    html[data-theme="dark"] .history-chart-card,
+    html[data-theme="dark"] .history-dynamics-card,
+    html[data-theme="dark"] .history-item,
+    html[data-theme="dark"] .profile-card,
+    html[data-theme="dark"] .calculator-card,
+    html[data-theme="dark"] .calculator-panel,
+    html[data-theme="dark"] .future-card,
+    html[data-theme="dark"] .account-sidebar-link-secondary,
+    html[data-theme="dark"] .dynamics-card,
+    html[data-theme="dark"] .dynamics-panel { background: var(--runory-dark-surface) !important; color: var(--runory-dark-ink) !important; border-color: var(--runory-dark-line) !important; }
+
+    html[data-theme="dark"] .home-metrics > div,
+    html[data-theme="dark"] .home-tool-icon,
+    html[data-theme="dark"] .history-workout-mark,
+    html[data-theme="dark"] .history-type-icon,
+    html[data-theme="dark"] .account-sidebar-icon,
+    html[data-theme="dark"] .account-sidebar-toggle { background: var(--runory-dark-soft) !important; border-color: var(--runory-dark-line) !important; color: #9fe0d6 !important; }
+    html[data-theme="dark"] .home-tool-card:hover,
+    html[data-theme="dark"] .home-recent-item:hover,
+    html[data-theme="dark"] .history-item:hover .history-workout-mark { background: #263532 !important; }
+
+    html[data-theme="dark"] h1,
+    html[data-theme="dark"] h2,
+    html[data-theme="dark"] h3,
+    html[data-theme="dark"] h4,
+    html[data-theme="dark"] strong,
+    html[data-theme="dark"] .history-distance,
+    html[data-theme="dark"] .home-latest-main > strong { color: #f2f5f3 !important; }
+    html[data-theme="dark"] p,
+    html[data-theme="dark"] span,
+    html[data-theme="dark"] small,
+    html[data-theme="dark"] label,
+    html[data-theme="dark"] .hero-copy,
+    html[data-theme="dark"] .history-copy,
+    html[data-theme="dark"] .history-metrics,
+    html[data-theme="dark"] .home-form-row span,
+    html[data-theme="dark"] .home-insight { color: #a4afaa !important; }
+
+    html[data-theme="dark"] input,
+    html[data-theme="dark"] select,
+    html[data-theme="dark"] textarea,
+    html[data-theme="dark"] .history-filter,
+    html[data-theme="dark"] .language-switcher { background: var(--runory-dark-surface-2) !important; color: #f2f5f3 !important; border-color: var(--runory-dark-line) !important; }
+    html[data-theme="dark"] .language-button { color: #a4afaa !important; }
+    html[data-theme="dark"] .language-button.is-active { background: #f2f5f3 !important; color: #171b1d !important; }
+    html[data-theme="dark"] .history-filter:hover,
+    html[data-theme="dark"] .dynamics-tab:hover:not(.is-active):not(.is-disabled) { background: #263532 !important; border-color: #3c4a45 !important; color: #f2f5f3 !important; }
+    html[data-theme="dark"] .history-filter.is-active,
+    html[data-theme="dark"] .dynamics-tab.is-active { background: #f2f5f3 !important; color: #171b1d !important; border-color: #f2f5f3 !important; }
+
+    html[data-theme="dark"] .add-workout-button,
+    html[data-theme="dark"] .auth-button,
+    html[data-theme="dark"] .home-primary-button,
+    html[data-theme="dark"] .history-view-button,
+    html[data-theme="dark"] .home-outline-button,
+    html[data-theme="dark"] .home-link-button { border-color: #394540 !important; }
+    html[data-theme="dark"] .add-workout-button,
+    html[data-theme="dark"] .auth-button,
+    html[data-theme="dark"] .home-primary-button,
+    html[data-theme="dark"] .history-view-button { background: #f2f5f3 !important; color: #171b1d !important; }
+    html[data-theme="dark"] .home-outline-button,
+    html[data-theme="dark"] .home-link-button { color: #dce5e1 !important; background: transparent !important; }
+
+    html[data-theme="dark"] .account-sidebar-link.is-active,
+    html[data-theme="dark"] .account-sidebar-link-secondary.is-active { background: #f2f5f3 !important; color: #171b1d !important; }
+    html[data-theme="dark"] .account-sidebar-link.is-active .account-sidebar-icon,
+    html[data-theme="dark"] .account-sidebar-link-secondary.is-active .account-sidebar-icon { background: #e0e8e4 !important; color: #238276 !important; }
+    html[data-theme="dark"] .account-sidebar-divider { background: var(--runory-dark-line) !important; }
+
+    html[data-theme="dark"] .modal,
+    html[data-theme="dark"] .auth-modal,
+    html[data-theme="dark"] .auth-modal-card,
+    html[data-theme="dark"] .modal-card { background: var(--runory-dark-surface) !important; color: var(--runory-dark-ink) !important; border-color: var(--runory-dark-line) !important; }
+    html[data-theme="dark"] .modal-backdrop,
+    html[data-theme="dark"] .auth-modal-backdrop { background: rgba(0,0,0,.68) !important; }
+    html[data-theme="dark"] table,
+    html[data-theme="dark"] th,
+    html[data-theme="dark"] td { border-color: var(--runory-dark-line) !important; }
+    html[data-theme="dark"] .history-bars { border-color: var(--runory-dark-line) !important; }
+    html[data-theme="dark"] .history-bar-label,
+    html[data-theme="dark"] .history-bar-date { color: #8f9b95 !important; }
+
+    @media (max-width: 900px) {
+      .runory-theme-toggle { top: 48px !important; width: 40px !important; height: 32px !important; min-width: 40px !important; }
+    }
+    @media (max-width: 560px) {
+      .runory-theme-toggle { top: 44px !important; width: 38px !important; height: 30px !important; min-width: 38px !important; border-radius: 9px !important; }
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+injectRunoryThemeStyles();
+setRunoryTheme(getRunoryTheme(), false);
+
 function navigateToView(viewName, { push = true } = {}) {
   if (push) {
     const target = routeForView(viewName);
     if (window.location.pathname !== target) window.history.pushState({ view: viewName }, "", target);
   }
   setActiveView(viewName, { updateRoute: false });
+  resetRunoryScroll();
 }
 
 function setActiveView(viewName, { updateRoute = true } = {}) {
@@ -994,9 +1233,13 @@ function initializeRoute() {
   const path = window.location.pathname.replace(/\/$/, "") || "/";
   const view = path === "/workouts" ? "history" : path === "/progress" ? "dynamics" : path === "/account" ? "profile" : path === "/calculator" ? "calculator" : "home";
   setActiveView(view, { updateRoute: false });
+  resetRunoryScroll();
 }
 
-window.addEventListener("popstate", () => initializeRoute());
+window.addEventListener("popstate", () => {
+  initializeRoute();
+  resetRunoryScroll();
+});
 
 const sidebarProfileButton = document.querySelector("#sidebarProfileButton");
 const accountSidebar = document.querySelector("#accountSidebar");
@@ -4364,6 +4607,8 @@ resetButton?.addEventListener("click", () => {
 document.querySelectorAll(".language-button").forEach(button => {
   button.addEventListener("click", () => setLanguage(button.dataset.lang));
 });
+
+initRunoryTheme();
 
 document.querySelector("#addWorkoutButton")?.addEventListener("click", () => {
   navigateToView("analysis");
