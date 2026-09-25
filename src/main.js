@@ -2319,19 +2319,29 @@ accountSidebarToggle?.addEventListener("click", () => {
 updateSidebarToggle();
 
 function setMobileSidebar(open) {
-  accountSidebar?.classList.toggle("is-open", open);
-  sidebarMobileBackdrop?.classList.toggle("is-visible", open);
-  sidebarMobileToggle?.setAttribute("aria-expanded", String(open));
-  sidebarMobileToggle?.setAttribute("aria-label", open ? "Закрити меню" : "Відкрити меню");
+  const shouldOpen = Boolean(open);
+  accountSidebar?.classList.toggle("is-open", shouldOpen);
+  sidebarMobileBackdrop?.classList.toggle("is-visible", shouldOpen);
+  document.documentElement.classList.toggle("runory-mobile-sidebar-open", shouldOpen);
+  sidebarMobileToggle?.setAttribute("aria-expanded", String(shouldOpen));
+  sidebarMobileToggle?.setAttribute("aria-label", shouldOpen ? "Закрити меню" : "Відкрити меню");
 }
 
-sidebarMobileToggle?.addEventListener("click", () => {
+sidebarMobileToggle?.addEventListener("click", event => {
+  event.preventDefault();
+  event.stopPropagation();
   setMobileSidebar(!accountSidebar?.classList.contains("is-open"));
 });
 sidebarMobileBackdrop?.addEventListener("click", () => setMobileSidebar(false));
 document.querySelectorAll(".account-sidebar-link").forEach(link => {
   link.addEventListener("click", () => setMobileSidebar(false));
 });
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape") setMobileSidebar(false);
+});
+window.addEventListener("resize", () => {
+  if (window.innerWidth > 680) setMobileSidebar(false);
+}, { passive: true });
 
 
 function formatMetric(value) {
@@ -7075,7 +7085,7 @@ function installRunoryMobilePolishV15() {
     }
 
 
-    /* V19 — fixed desktop sidebar + compact mobile layout.
+    /* V20 — mobile sidebar/header correction.
        Layout only: workout parsing/classification is untouched. */
 
     @media (min-width: 681px) {
@@ -7091,128 +7101,197 @@ function installRunoryMobilePolishV15() {
         overflow-x: hidden !important;
         box-sizing: border-box !important;
       }
-
-      #accountSidebar.is-collapsed {
-        width: 110px !important;
-      }
-
-      /* Keep the page content aligned with the permanently visible rail. */
-      .page-shell,
-      .app-content,
-      .main-content,
-      .content-area {
-        box-sizing: border-box !important;
-      }
-
-      #sidebarMobileToggle,
-      #sidebarMobileBackdrop {
-        display: none !important;
-      }
+      #accountSidebar.is-collapsed { width: 110px !important; }
+      #sidebarMobileToggle, #sidebarMobileBackdrop { display: none !important; }
     }
 
     @media (max-width: 680px) {
-      /* Mobile: the sidebar becomes a drawer below the fixed header. */
+      /* Compact, single-row mobile header. */
+      .topbar {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        height: 64px !important;
+        min-height: 64px !important;
+        max-height: 64px !important;
+        padding: 6px 10px !important;
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        gap: 6px !important;
+        box-sizing: border-box !important;
+        overflow: visible !important;
+      }
+
+      .topbar .brand {
+        flex: 1 1 auto !important;
+        width: auto !important;
+        height: 52px !important;
+        min-width: 0 !important;
+        max-width: none !important;
+        margin: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+      }
+
+      .topbar .brand-logo {
+        display: block !important;
+        width: min(145px, 39vw) !important;
+        max-width: 100% !important;
+        height: auto !important;
+        max-height: 48px !important;
+        object-fit: contain !important;
+        object-position: left center !important;
+      }
+
+      .topbar-right {
+        flex: 0 0 auto !important;
+        width: auto !important;
+        min-width: 0 !important;
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        align-items: center !important;
+        justify-content: flex-end !important;
+        gap: 4px !important;
+        margin: 0 !important;
+      }
+
+      #addWorkoutButton,
+      #authButton,
+      .language-switcher,
+      .runory-theme-toggle {
+        flex: 0 0 auto !important;
+        height: 34px !important;
+        min-height: 34px !important;
+        max-height: 34px !important;
+      }
+
+      #addWorkoutButton { width: 34px !important; min-width: 34px !important; }
+      #authButton {
+        min-width: 34px !important;
+        padding: 0 7px !important;
+        white-space: nowrap !important;
+        font-size: 11px !important;
+      }
+      .language-switcher { min-width: 68px !important; }
+      .language-switcher .language-button {
+        min-width: 31px !important;
+        padding: 0 5px !important;
+      }
+      .runory-theme-toggle {
+        width: 34px !important;
+        min-width: 34px !important;
+        padding: 0 !important;
+        border-radius: 9px !important;
+        position: static !important;
+      }
+
+      /* The mobile burger is a real toggle, fixed below the header. */
+      #sidebarMobileToggle {
+        position: fixed !important;
+        top: calc(var(--runory-topbar-height, 64px) + 10px) !important;
+        left: 14px !important;
+        width: 48px !important;
+        height: 48px !important;
+        min-width: 48px !important;
+        min-height: 48px !important;
+        z-index: 1300 !important;
+        display: grid !important;
+        place-items: center !important;
+        margin: 0 !important;
+      }
+      #sidebarMobileToggle svg {
+        width: 25px !important;
+        height: 25px !important;
+      }
+      #sidebarMobileToggle[aria-expanded="true"] {
+        background: #2a9d8f !important;
+        color: #ffffff !important;
+      }
+
+      /* Mobile sidebar = fixed drawer. */
       #accountSidebar {
         position: fixed !important;
         left: 0 !important;
-        top: var(--runory-topbar-height, 62px) !important;
+        top: var(--runory-topbar-height, 64px) !important;
         bottom: 0 !important;
-        height: calc(100vh - var(--runory-topbar-height, 62px)) !important;
-        max-height: calc(100vh - var(--runory-topbar-height, 62px)) !important;
-        z-index: 1100 !important;
-        overflow-y: auto !important;
+        width: min(290px, 84vw) !important;
+        height: calc(100dvh - var(--runory-topbar-height, 64px)) !important;
+        max-height: calc(100dvh - var(--runory-topbar-height, 64px)) !important;
+        z-index: 1250 !important;
+        display: flex !important;
+        flex-direction: column !important;
         overflow-x: hidden !important;
+        overflow-y: auto !important;
+        box-sizing: border-box !important;
+        transform: translate3d(-105%, 0, 0) !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        transition: transform .22s ease, opacity .18s ease, visibility .22s ease !important;
+        will-change: transform !important;
+      }
+      #accountSidebar.is-open {
+        transform: translate3d(0, 0, 0) !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+      }
+      #accountSidebar.is-collapsed {
+        width: min(290px, 84vw) !important;
       }
 
       #sidebarMobileBackdrop {
         position: fixed !important;
         left: 0 !important;
         right: 0 !important;
-        top: var(--runory-topbar-height, 62px) !important;
+        top: var(--runory-topbar-height, 64px) !important;
         bottom: 0 !important;
-        z-index: 1090 !important;
+        z-index: 1240 !important;
+        display: block !important;
+        background: rgba(0, 0, 0, .34) !important;
+        opacity: 0 !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+        transition: opacity .18s ease, visibility .18s ease !important;
+      }
+      #sidebarMobileBackdrop.is-visible {
+        opacity: 1 !important;
+        visibility: visible !important;
+        pointer-events: auto !important;
       }
 
-      /* Do not let the compact header controls wrap or collide. */
-      .topbar {
-        gap: 6px !important;
-        padding-left: 9px !important;
-        padding-right: 9px !important;
+      html.runory-mobile-sidebar-open,
+      html.runory-mobile-sidebar-open body {
+        overflow: hidden !important;
       }
 
-      .topbar .brand {
-        flex: 0 1 auto !important;
-        min-width: 0 !important;
-        max-width: 42vw !important;
-      }
-
-      .topbar .brand-logo {
-        width: min(150px, 42vw) !important;
-        max-width: 100% !important;
-        max-height: 44px !important;
-        height: auto !important;
-      }
-
-      .topbar-right {
-        flex: 0 0 auto !important;
-        gap: 4px !important;
-      }
-
-      #addWorkoutButton,
-      #authButton {
-        min-width: 34px !important;
-        height: 34px !important;
-      }
-
-      #authButton {
-        padding-left: 8px !important;
-        padding-right: 8px !important;
-        white-space: nowrap !important;
-      }
-
-      .language-switcher {
-        height: 34px !important;
-        min-height: 34px !important;
-      }
-
-      .language-switcher .language-button {
-        min-width: 31px !important;
-        padding-left: 6px !important;
-        padding-right: 6px !important;
-      }
-
-      .runory-theme-toggle {
-        width: 34px !important;
-        min-width: 34px !important;
-        height: 34px !important;
-        border-radius: 9px !important;
-      }
-
-      #sidebarMobileToggle {
-        z-index: 1200 !important;
+      /* The content stays below the fixed header. */
+      body {
+        padding-top: 64px !important;
       }
     }
 
-    @media (max-width: 430px) {
-      .topbar .brand-logo {
-        width: min(128px, 36vw) !important;
-      }
-
+    @media (max-width: 390px) {
+      .topbar { padding-left: 8px !important; padding-right: 8px !important; gap: 4px !important; }
+      .topbar .brand-logo { width: min(125px, 35vw) !important; }
+      .topbar-right { gap: 3px !important; }
       #authButton {
-        font-size: 0 !important;
         width: 34px !important;
         min-width: 34px !important;
         padding: 0 !important;
+        font-size: 0 !important;
       }
-
       #authButton::before {
         content: "•" !important;
         font-size: 17px !important;
         line-height: 1 !important;
-      }
-
-      .topbar-right {
-        gap: 3px !important;
       }
     }
 
