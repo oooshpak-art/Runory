@@ -2752,6 +2752,47 @@ function getWorkoutPattern(summary) {
     return { type: "fartlek", states };
   }
 
+  // Fast finish tempo = a long easy/steady first part followed by a sustained
+  // faster block all the way to the finish. This is still a tempo workout even
+  // though there is no separate cool-down after the tempo block.
+  // Example: 10 km @ 5:25 + 5 km @ 4:30.
+  // Require a substantial final block and a clear pace separation from the
+  // preceding running so ordinary negative-split easy runs are not promoted.
+  if (paces.length >= 8) {
+    const finalStart = Math.max(3, Math.floor(paces.length * 0.60));
+    const finalBlock = paces.slice(finalStart);
+    const preceding = paces.slice(0, finalStart);
+
+    if (finalBlock.length >= 3 && preceding.length >= 5) {
+      const finalAverage = finalBlock.reduce((a, b) => a + b, 0) / finalBlock.length;
+      const precedingAverage = preceding.reduce((a, b) => a + b, 0) / preceding.length;
+      const finalVariation = finalBlock.reduce(
+        (sum, pace) => sum + Math.abs(pace - finalAverage) / finalAverage,
+        0
+      ) / finalBlock.length;
+      const paceGain = precedingAverage - finalAverage;
+      const paceGainPercent = precedingAverage > 0 ? paceGain / precedingAverage : 0;
+      const share = finalBlock.length / paces.length;
+
+      if (
+        share >= 0.30
+        && paceGain >= 20
+        && paceGainPercent >= 0.06
+        && finalVariation <= 0.055
+      ) {
+        return {
+          type: "tempo",
+          variant: "fast_finish",
+          tempoStart: finalStart,
+          tempoEnd: paces.length - 1,
+          baselinePace: precedingAverage,
+          paceGain,
+          paceGainPercent
+        };
+      }
+    }
+  }
+
   // Tempo = a sustained faster block between a slower warm-up and cool-down.
   // Use the outer splits as the baseline so a long tempo block does not distort the median.
   const edgeCount = Math.max(1, Math.min(2, Math.floor(paces.length / 4)));
@@ -2789,38 +2830,6 @@ function getWorkoutPattern(summary) {
     const share = blockLength / paces.length;
     const hasWarmup = bestStart > 0;
     const hasCooldown = bestEnd < paces.length - 1;
-
-    /*
-     * Fast finish: a long easy/steady opening followed by a sustained,
-     * controlled faster block all the way to the finish.
-     *
-     * This is still a tempo workout, even without a cool-down split after
-     * the fast block. Example: 10 km easy + 5 km at tempo pace.
-     * Keep the threshold conservative so an ordinary negative-split run is
-     * not automatically promoted to tempo.
-     */
-    if (blockLength >= 3 && share >= 0.30 && bestEnd === paces.length - 1) {
-      const precedingPaces = paces.slice(0, bestStart);
-      if (precedingPaces.length >= 3) {
-        const precedingAverage =
-          precedingPaces.reduce((sum, pace) => sum + pace, 0) / precedingPaces.length;
-        const paceGain = precedingAverage - blockAverage;
-
-        if (
-          paceGain >= 20
-          && paceGain / precedingAverage >= 0.06
-          && blockVariation <= 0.055
-        ) {
-          return {
-            type: "tempo",
-            variant: "fast_finish",
-            tempoStart: bestStart,
-            tempoEnd: bestEnd,
-            paceGain
-          };
-        }
-      }
-    }
 
     if (
       blockLength >= 3
