@@ -783,12 +783,14 @@ function applyRunoryIcons() {
         color: #2A9D8F !important;
       }
     
-       /* Unified Runory history row layout */
+       /* Final history card alignment: distance and actions are independent columns. */
        .history-item {
          display: grid !important;
-         grid-template-columns: 52px minmax(0, 1fr) 150px auto !important;
+         grid-template-columns: 56px minmax(0, 1fr) 130px auto !important;
          align-items: center !important;
-         column-gap: 22px !important;
+         column-gap: 24px !important;
+         width: 100% !important;
+         box-sizing: border-box !important;
        }
        .history-workout-mark {
          width: 48px !important;
@@ -819,32 +821,20 @@ function applyRunoryIcons() {
          width: 100% !important;
          margin: 0 !important;
        }
-       .history-item-heading h3 {
-         margin: 0 !important;
-       }
-       .history-distance {
-         width: 150px !important;
-         min-width: 150px !important;
-         display: flex !important;
-         align-items: center !important;
-         justify-content: center !important;
-         text-align: center !important;
-         white-space: nowrap !important;
-         margin: 0 !important;
-         padding: 0 !important;
-         font-variant-numeric: tabular-nums !important;
-         box-sizing: border-box !important;
-       }
-       .history-metrics {
-         display: flex !important;
-         flex-wrap: wrap !important;
-         align-items: center !important;
-         gap: 8px 18px !important;
-         margin-top: 12px !important;
+       .history-item-heading > div {
          min-width: 0 !important;
        }
-       .history-metrics span {
+       .history-distance {
+         width: 130px !important;
+         min-width: 130px !important;
+         display: flex !important;
+         align-items: center !important;
+         justify-content: flex-start !important;
+         text-align: left !important;
          white-space: nowrap !important;
+         margin: 0 !important;
+         font-size: 20px !important;
+         font-variant-numeric: tabular-nums !important;
        }
        .history-item-actions {
          display: flex !important;
@@ -853,6 +843,7 @@ function applyRunoryIcons() {
          gap: 10px !important;
          min-width: max-content !important;
          width: max-content !important;
+         margin: 0 !important;
        }
        .history-stat-card strong,
        .home-latest-main > strong,
@@ -860,34 +851,52 @@ function applyRunoryIcons() {
          font-variant-numeric: tabular-nums !important;
        }
 
-       @media (max-width: 900px) {
+       @media (max-width: 1100px) {
          .history-item {
-           grid-template-columns: 44px minmax(0, 1fr) !important;
-           grid-template-areas:
-             "icon main"
-             "icon distance"
-             "icon actions" !important;
-           align-items: center !important;
+           grid-template-columns: 48px minmax(0, 1fr) 120px auto !important;
            column-gap: 16px !important;
-           row-gap: 12px !important;
          }
          .history-workout-mark {
-           grid-area: icon !important;
-           align-self: center !important;
-         }
-         .history-item-main {
-           grid-area: main !important;
+           width: 46px !important;
+           height: 46px !important;
+           min-width: 46px !important;
+           min-height: 46px !important;
          }
          .history-distance {
-           grid-area: distance !important;
+           width: 120px !important;
+           min-width: 120px !important;
+         }
+       }
+
+       @media (max-width: 680px) {
+         .history-item {
+           grid-template-columns: 44px minmax(0, 1fr) !important;
+           column-gap: 12px !important;
+           row-gap: 10px !important;
+           align-items: start !important;
+         }
+         .history-workout-mark {
+           width: 44px !important;
+           height: 44px !important;
+           min-width: 44px !important;
+           min-height: 44px !important;
+           grid-column: 1 !important;
+           grid-row: 1 !important;
+         }
+         .history-item-main {
+           grid-column: 2 !important;
+           grid-row: 1 !important;
+         }
+         .history-distance {
+           grid-column: 2 !important;
+           grid-row: 2 !important;
            width: auto !important;
            min-width: 0 !important;
-           justify-content: flex-start !important;
-           text-align: left !important;
            font-size: 21px !important;
          }
          .history-item-actions {
-           grid-area: actions !important;
+           grid-column: 2 !important;
+           grid-row: 3 !important;
            width: 100% !important;
            min-width: 0 !important;
            display: grid !important;
@@ -896,37 +905,11 @@ function applyRunoryIcons() {
          }
          .history-view-button {
            width: 100% !important;
-           min-height: 46px !important;
+           min-height: 44px !important;
          }
          .history-delete-button {
            width: 46px !important;
-           height: 46px !important;
-         }
-       }
-
-       @media (max-width: 560px) {
-         .history-item {
-           grid-template-columns: 44px minmax(0, 1fr) !important;
-           column-gap: 12px !important;
-           row-gap: 10px !important;
-           padding: 16px !important;
-         }
-         .history-workout-mark {
-           width: 44px !important;
            height: 44px !important;
-           min-width: 44px !important;
-           min-height: 44px !important;
-         }
-         .history-metrics {
-           gap: 7px 13px !important;
-           margin-top: 10px !important;
-           font-size: 10px !important;
-         }
-         .history-item-heading h3 {
-           font-size: 18px !important;
-         }
-         .history-distance {
-           font-size: 21px !important;
          }
        }
 `;
@@ -4018,18 +4001,8 @@ function renderHistoryList(workouts = historyFilteredWorkouts()) {
     <article class="history-item" data-history-id="${escapeHtml(workout.id)}" data-history-view="${escapeHtml(workout.id)}">
       <div class="history-workout-mark" aria-hidden="true"><img class="runory-workout-icon" alt="" src="${RUNORY_ICON_SHOE}"></div>
       <div class="history-item-main">
-        <div class="history-item-heading">
-          <div>
-            <p class="eyebrow">${escapeHtml(formatHistoryDate(workout.workout_date))}</p>
-            <h3>${escapeHtml(workoutTypeLabel(derivedWorkoutType(workout)))}</h3>
-          </div>
-        </div>
-        <div class="history-metrics">
-          <span><b>${escapeHtml(t("pace"))}</b> ${escapeHtml(workout.pace || "—")}</span>
-          <span><b>${escapeHtml(t("time"))}</b> ${escapeHtml(formatHistoryDuration(workout.duration_sec))}</span>
-          <span><b>${escapeHtml(t("heartRate"))}</b> ${workout.heart_rate != null ? `${Math.round(workout.heart_rate)} ${currentLanguage === "uk" ? "уд/хв" : "bpm"}` : "—"}</span>
-          <span><b>${escapeHtml(t("ascent"))}</b> ${workout.ascent_m != null ? `+${Math.round(workout.ascent_m)} ${currentLanguage === "uk" ? "м" : "m"}` : "—"}</span>
-        </div>
+        <div class="history-item-heading"><div><p class="eyebrow">${escapeHtml(formatHistoryDate(workout.workout_date))}</p><h3>${escapeHtml(workoutTypeLabel(derivedWorkoutType(workout)))}</h3></div></div>
+        <div class="history-metrics"><span><b>${escapeHtml(t("pace"))}</b> ${escapeHtml(workout.pace || "—")}</span><span><b>${escapeHtml(t("time"))}</b> ${escapeHtml(formatHistoryDuration(workout.duration_sec))}</span><span><b>${escapeHtml(t("heartRate"))}</b> ${workout.heart_rate != null ? `${Math.round(workout.heart_rate)} ${currentLanguage === "uk" ? "уд/хв" : "bpm"}` : "—"}</span><span><b>${escapeHtml(t("ascent"))}</b> ${workout.ascent_m != null ? `+${Math.round(workout.ascent_m)} ${currentLanguage === "uk" ? "м" : "m"}` : "—"}</span></div>
       </div>
       <strong class="history-distance">${escapeHtml(formatHistoryDistance(workout.distance_km))}</strong>
       <div class="history-item-actions"><button type="button" class="history-view-button" data-history-view="${escapeHtml(workout.id)}">${escapeHtml(t("historyOpen"))}</button><button type="button" class="history-delete-button" data-history-delete="${escapeHtml(workout.id)}" aria-label="${escapeHtml(t("historyDelete"))}">×</button></div>
