@@ -949,7 +949,7 @@ function updateThemeToggle() {
   button.setAttribute("aria-label", label);
   button.setAttribute("title", label);
   button.innerHTML = dark
-    ? '<span aria-hidden="true">☀</span>'
+    ? '<span aria-hidden="true">☀︎</span>'
     : '<span aria-hidden="true">☾</span>';
 }
 
@@ -1248,8 +1248,52 @@ function injectRunoryThemeStyles() {
     html[data-theme="dark"] .calculation-result p { color: #a9d9d2 !important; }
     html[data-theme="dark"] .calculation-result span { color: #9da9a3 !important; }
 
+    /* Calculator split fields: keep every input as its own column/card. */
+    .calculator-card .split-inputs {
+      display: grid !important;
+      gap: 12px !important;
+      width: 100% !important;
+      margin: 0 !important;
+    }
+    .calculator-card .split-inputs label {
+      min-width: 0 !important;
+      width: 100% !important;
+      margin: 0 !important;
+      border-radius: 10px !important;
+      border: 1px solid var(--line) !important;
+      overflow: hidden !important;
+      box-sizing: border-box !important;
+    }
+    .calculator-card .split-inputs label + label {
+      margin-left: 0 !important;
+      border-left: 1px solid var(--line) !important;
+    }
+    html[data-theme="dark"] .calculator-card .split-inputs label {
+      border-color: var(--runory-dark-line) !important;
+      background: #202725 !important;
+    }
+
     @media (max-width: 900px) {
       .runory-theme-toggle { top: calc(100% + 10px) !important; width: 40px !important; height: 32px !important; min-width: 40px !important; }
+
+      /* Mobile: make the menu button visibly distinct from the header background. */
+      #sidebarMobileToggle {
+        background: #f1f4f2 !important;
+        border: 1px solid #c8d1cc !important;
+        color: #53615b !important;
+        box-shadow: 0 2px 8px rgba(15, 24, 21, .12) !important;
+      }
+      html[data-theme="dark"] #sidebarMobileToggle {
+        background: #252d2a !important;
+        border-color: #46554f !important;
+        color: #dce5e1 !important;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, .28) !important;
+      }
+      #sidebarMobileToggle svg,
+      #sidebarMobileToggle svg path {
+        stroke: currentColor !important;
+        fill: none !important;
+      }
     }
     @media (max-width: 560px) {
       .runory-theme-toggle { top: calc(100% + 8px) !important; width: 38px !important; height: 30px !important; min-width: 38px !important; border-radius: 9px !important; }
