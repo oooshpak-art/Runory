@@ -1013,6 +1013,7 @@ function injectRunoryThemeStyles() {
       --runory-dark-soft: #252d2a;
     }
 
+    .topbar { position: relative !important; }
     .topbar-right { position: relative !important; }
     .runory-theme-toggle {
       width: 44px !important;
@@ -1031,8 +1032,8 @@ function injectRunoryThemeStyles() {
       transition: background .16s ease, color .16s ease, border-color .16s ease, transform .16s ease !important;
       position: absolute !important;
       right: 0 !important;
-      top: 52px !important;
-      z-index: 20 !important;
+      top: calc(100% + 10px) !important;
+      z-index: 50 !important;
     }
     .runory-theme-toggle:hover { transform: translateY(-1px) !important; border-color: #b8c3bc !important; }
     .runory-theme-toggle.is-dark { background: #252d2a !important; color: #f4f7f5 !important; border-color: #394540 !important; }
@@ -1055,6 +1056,7 @@ function injectRunoryThemeStyles() {
     html[data-theme="dark"] .topbar { border-color: var(--runory-dark-line) !important; }
     html[data-theme="dark"] .brand,
     html[data-theme="dark"] .brand-logo { color: var(--runory-dark-ink) !important; }
+    html[data-theme="dark"] .brand-logo { filter: brightness(0) invert(1) !important; opacity: .96 !important; }
     html[data-theme="dark"] .brand-mark { background: #f2f5f3 !important; }
     html[data-theme="dark"] .nav-tab { color: #9da9a3 !important; }
     html[data-theme="dark"] .nav-tab:hover { background: #252d2a !important; color: #f2f5f3 !important; }
@@ -1082,6 +1084,9 @@ function injectRunoryThemeStyles() {
 
     html[data-theme="dark"] .home-metrics > div,
     html[data-theme="dark"] .home-tool-icon,
+    html[data-theme="dark"] .home-recent-icon,
+    html[data-theme="dark"] .home-week-stats > div,
+    html[data-theme="dark"] .home-week-days span,
     html[data-theme="dark"] .history-workout-mark,
     html[data-theme="dark"] .history-type-icon,
     html[data-theme="dark"] .account-sidebar-icon,
@@ -1089,6 +1094,15 @@ function injectRunoryThemeStyles() {
     html[data-theme="dark"] .home-tool-card:hover,
     html[data-theme="dark"] .home-recent-item:hover,
     html[data-theme="dark"] .history-item:hover .history-workout-mark { background: #263532 !important; }
+
+    html[data-theme="dark"] .home-recent-item { background: var(--runory-dark-surface) !important; color: var(--runory-dark-ink) !important; border-color: var(--runory-dark-line) !important; }
+    html[data-theme="dark"] .home-recent-item:hover { background: #202a27 !important; }
+    html[data-theme="dark"] .home-recent-copy strong { color: #f2f5f3 !important; }
+    html[data-theme="dark"] .home-recent-copy small { color: #8f9b95 !important; }
+    html[data-theme="dark"] .dynamics-module { background: var(--runory-dark-surface) !important; color: var(--runory-dark-ink) !important; border-color: var(--runory-dark-line) !important; }
+    html[data-theme="dark"] .dynamics-module .history-dynamic-row { border-color: var(--runory-dark-line) !important; }
+    html[data-theme="dark"] .dynamics-module > p,
+    html[data-theme="dark"] .dynamics-empty p { color: #8f9b95 !important; }
 
     html[data-theme="dark"] h1,
     html[data-theme="dark"] h2,
@@ -1148,14 +1162,26 @@ function injectRunoryThemeStyles() {
     html[data-theme="dark"] th,
     html[data-theme="dark"] td { border-color: var(--runory-dark-line) !important; }
     html[data-theme="dark"] .history-bars { border-color: var(--runory-dark-line) !important; }
+    html[data-theme="dark"] .home-heading { border-color: var(--runory-dark-line) !important; }
+    html[data-theme="dark"] .home-latest-footer { border-color: var(--runory-dark-line) !important; }
+    html[data-theme="dark"] .home-form-row { border-color: var(--runory-dark-line) !important; }
+    html[data-theme="dark"] .home-week-days span { background: #202725 !important; border-color: var(--runory-dark-line) !important; }
+    html[data-theme="dark"] .home-week-days span::before { color: #8f9b95 !important; }
+    html[data-theme="dark"] .home-week-days span::after { background: #44514c !important; }
+    html[data-theme="dark"] .home-week-days span.has-workout { background: #203532 !important; border-color: #31524c !important; }
+    html[data-theme="dark"] .home-week-days span.has-workout::before { color: #9fe0d6 !important; }
+    html[data-theme="dark"] .home-week-days span.has-workout::after { background: #2A9D8F !important; }
+    html[data-theme="dark"] .home-week-stats > div { background: #202725 !important; }
+    html[data-theme="dark"] .home-metrics > div { background: #202725 !important; border-color: var(--runory-dark-line) !important; }
+    html[data-theme="dark"] .home-empty-icon { background: #203532 !important; color: #9fe0d6 !important; }
     html[data-theme="dark"] .history-bar-label,
     html[data-theme="dark"] .history-bar-date { color: #8f9b95 !important; }
 
     @media (max-width: 900px) {
-      .runory-theme-toggle { top: 48px !important; width: 40px !important; height: 32px !important; min-width: 40px !important; }
+      .runory-theme-toggle { top: calc(100% + 10px) !important; width: 40px !important; height: 32px !important; min-width: 40px !important; }
     }
     @media (max-width: 560px) {
-      .runory-theme-toggle { top: 44px !important; width: 38px !important; height: 30px !important; min-width: 38px !important; border-radius: 9px !important; }
+      .runory-theme-toggle { top: calc(100% + 8px) !important; width: 38px !important; height: 30px !important; min-width: 38px !important; border-radius: 9px !important; }
     }
   `;
   document.head.appendChild(style);
