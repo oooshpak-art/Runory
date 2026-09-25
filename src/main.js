@@ -6838,54 +6838,132 @@ function installRunoryMobilePolishV15() {
 
 installRunoryMobilePolishV15();
 
-function installRunoryUiPolishV19() {
-  if (document.querySelector("#runory-ui-polish-v19")) return;
+function installRunoryUiPolishV20() {
+  if (document.querySelector("#runory-ui-polish-v20")) return;
   const style = document.createElement("style");
-  style.id = "runory-ui-polish-v19";
+  style.id = "runory-ui-polish-v20";
   style.textContent = `
-    /* V19 — final overrides after V13/V15 so recovery summary loses its frame. */
-    #structureCard .timeline-summary {
+    /* V20 — final recovery-summary cleanup, calculator field states, and header control frames. */
+
+    /* The aggregated recovery line is informational text, not a card. Remove every possible frame source. */
+    #structureCard .timeline-item.timeline-recovery.timeline-summary,
+    #structureCard .timeline-recovery.timeline-summary,
+    #structureCard .timeline-item.timeline-recovery.timeline-summary::before,
+    #structureCard .timeline-item.timeline-recovery.timeline-summary::after,
+    #structureCard .timeline-recovery.timeline-summary .timeline-content,
+    #structureCard .timeline-recovery.timeline-summary .timeline-content::before,
+    #structureCard .timeline-recovery.timeline-summary .timeline-content::after {
       background: transparent !important;
       border: 0 !important;
+      border-color: transparent !important;
       box-shadow: none !important;
+      outline: 0 !important;
       border-radius: 0 !important;
     }
-    #structureCard .timeline-summary .timeline-content {
-      background: transparent !important;
-      border: 0 !important;
-      box-shadow: none !important;
-      border-radius: 0 !important;
+    #structureCard .timeline-recovery.timeline-summary {
+      padding-left: 0 !important;
+      padding-right: 0 !important;
+    }
+    #structureCard .timeline-recovery.timeline-summary .timeline-content {
+      padding-left: 0 !important;
+      padding-right: 0 !important;
     }
 
-    /* Restore the light calculator inputs/cells on the light theme.
-       Dark-theme calculator styling remains unchanged. */
-    html[data-theme="light"] .calculator-card .runory-field-label {
-      color: #5f6b66 !important;
-    }
-    html[data-theme="light"] .calculator-card .runory-split-cell {
-      background: #ffffff !important;
-      border-color: #d8e0dc !important;
+    /* Calculator — restore the light filled cells and the teal focus highlight. */
+    html[data-theme="light"] .calculator-card .calc-field > div,
+    html[data-theme="light"] .calculator-card .split-inputs label {
+      background: #f4f7f5 !important;
+      border: 1px solid #cdd8d3 !important;
       color: #18211e !important;
       box-shadow: none !important;
     }
-    html[data-theme="light"] .calculator-card .runory-split-cell input {
+    html[data-theme="light"] .calculator-card .calc-field > div:focus-within,
+    html[data-theme="light"] .calculator-card .split-inputs:focus-within,
+    html[data-theme="light"] .calculator-card .split-inputs label:focus-within {
+      background: #eaf5f2 !important;
+      border-color: #2a9d8f !important;
+      outline: 3px solid #d7f0ed !important;
+      outline-offset: 0 !important;
+      box-shadow: none !important;
+    }
+    html[data-theme="light"] .calculator-card .calc-field input {
       background: transparent !important;
       color: #18211e !important;
     }
-    html[data-theme="light"] .calculator-card .runory-split-cell input::placeholder {
-      color: #a2aca7 !important;
+    html[data-theme="light"] .calculator-card .calc-field input::placeholder {
+      color: #8f9b95 !important;
+      opacity: 1 !important;
     }
-    html[data-theme="light"] .calculator-card .runory-split-cell span {
-      color: #68756f !important;
+    html[data-theme="light"] .calculator-card .calc-field em,
+    html[data-theme="light"] .calculator-card .split-inputs span {
+      color: #66736e !important;
     }
-    html[data-theme="light"] .calculator-card .runory-split-cell:focus-within {
-      border-color: #2a9d8f !important;
+    html[data-theme="light"] .calculator-card .calc-field > span,
+    html[data-theme="light"] .calculator-card .calc-field legend {
+      color: #48554e !important;
+    }
+
+    /* Header controls — restore the same visible framed treatment on every viewport. */
+    .add-workout-button,
+    .auth-button,
+    .language-switcher,
+    .sidebar-mobile-toggle,
+    .account-sidebar-toggle,
+    .runory-theme-toggle {
+      border-style: solid !important;
+      border-width: 1px !important;
+      opacity: 1 !important;
+      visibility: visible !important;
+      box-sizing: border-box !important;
+    }
+
+    .add-workout-button,
+    .auth-button,
+    .sidebar-mobile-toggle,
+    .account-sidebar-toggle {
+      border-color: #d5dfda !important;
+      box-shadow: 0 4px 14px rgba(18,24,20,.08) !important;
+    }
+    .language-switcher {
+      border-color: #d5dfda !important;
+      box-shadow: 0 4px 14px rgba(18,24,20,.06) !important;
+    }
+    .runory-theme-toggle {
+      border-color: #d5dfda !important;
+      box-shadow: 0 4px 14px rgba(18,24,20,.06) !important;
+    }
+
+    html[data-theme="dark"] .add-workout-button,
+    html[data-theme="dark"] .auth-button,
+    html[data-theme="dark"] .language-switcher,
+    html[data-theme="dark"] .sidebar-mobile-toggle,
+    html[data-theme="dark"] .account-sidebar-toggle,
+    html[data-theme="dark"] .runory-theme-toggle {
+      border-color: #394a44 !important;
+      box-shadow: 0 4px 14px rgba(0,0,0,.18) !important;
+    }
+
+    @media (max-width: 680px) {
+      .sidebar-mobile-toggle {
+        border: 1px solid #b8cfc8 !important;
+        background: #ffffff !important;
+        color: #147b70 !important;
+        box-shadow: 0 0 0 1px rgba(42,157,143,.12), 0 5px 16px rgba(18,24,20,.10) !important;
+      }
+      .sidebar-mobile-toggle svg {
+        stroke: currentColor !important;
+        opacity: 1 !important;
+      }
+      .add-workout-button,
+      .auth-button,
+      .language-switcher {
+        box-shadow: 0 4px 14px rgba(18,24,20,.08) !important;
+      }
     }
   `;
   document.head.appendChild(style);
 }
 
-installRunoryUiPolishV19();
-
+installRunoryUiPolishV20();
 initializeRoute();
 initAuth();
