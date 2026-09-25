@@ -1254,6 +1254,493 @@ function injectRunoryThemeStyles() {
     @media (max-width: 560px) {
       .runory-theme-toggle { top: calc(100% + 8px) !important; width: 38px !important; height: 30px !important; min-width: 38px !important; border-radius: 9px !important; }
     }
+
+    /* === Runory unified page system ===
+       Keep every main tab on the same visual grid without changing
+       workout logic, calculator logic, or theme-specific colors. */
+    :root {
+      --runory-page-max: 1260px;
+      --runory-page-gap: 22px;
+      --runory-card-radius: 16px;
+      --runory-card-pad: 22px;
+      --runory-heading-size: 48px;
+      --runory-heading-leading: 1.05;
+      --runory-body-size: 14px;
+      --runory-small-size: 11px;
+    }
+
+    .home-page,
+    .history-page,
+    .dynamics-page,
+    .calculator-view {
+      width: min(100%, var(--runory-page-max)) !important;
+      max-width: var(--runory-page-max) !important;
+      margin-left: auto !important;
+      margin-right: auto !important;
+      box-sizing: border-box !important;
+    }
+
+    .home-page,
+    .history-page,
+    .dynamics-page,
+    .calculator-view {
+      padding-top: 48px !important;
+    }
+
+    .home-heading h1,
+    .history-heading h1,
+    .dynamics-heading h1,
+    .calculator-intro h1 {
+      font-size: var(--runory-heading-size) !important;
+      line-height: var(--runory-heading-leading) !important;
+      letter-spacing: -2.4px !important;
+    }
+
+    .home-heading p:last-child,
+    .history-heading > div > p:last-child,
+    .dynamics-heading p,
+    .calculator-intro > p:last-child {
+      margin-top: 12px !important;
+      font-size: var(--runory-body-size) !important;
+      line-height: 1.6 !important;
+    }
+
+    .home-heading,
+    .history-heading,
+    .dynamics-heading,
+    .calculator-intro {
+      margin-bottom: var(--runory-page-gap) !important;
+    }
+
+    .home-grid,
+    .history-stats,
+    .history-analytics-grid {
+      gap: 14px !important;
+    }
+
+    .home-card,
+    .history-stat-card,
+    .history-chart-card,
+    .history-dynamics-card,
+    .history-item,
+    .dynamics-module,
+    .calculator-card {
+      border-radius: var(--runory-card-radius) !important;
+      box-sizing: border-box !important;
+    }
+
+    .home-latest-card,
+    .home-form-card,
+    .home-week-card,
+    .history-chart-card,
+    .history-dynamics-card,
+    .dynamics-module,
+    .calculator-card {
+      padding: var(--runory-card-pad) !important;
+    }
+
+    .home-latest-main h2,
+    .calculator-heading h2,
+    .dynamics-module-heading h2 {
+      font-size: 24px !important;
+      line-height: 1.15 !important;
+      letter-spacing: -1px !important;
+    }
+
+    .home-latest-main > strong {
+      font-size: 40px !important;
+      letter-spacing: -1.8px !important;
+    }
+
+    .history-item-heading h3 {
+      font-size: 16px !important;
+      line-height: 1.2 !important;
+      letter-spacing: -.45px !important;
+    }
+
+    .history-distance {
+      font-size: 22px !important;
+      letter-spacing: -.8px !important;
+    }
+
+    .home-section-heading h2 {
+      font-size: 20px !important;
+      letter-spacing: -.6px !important;
+    }
+
+    .home-outline-button,
+    .history-view-button,
+    .history-delete-button,
+    .calc-tab,
+    .dynamics-tab,
+    .history-filter {
+      font-size: 11px !important;
+    }
+
+    .home-outline-button,
+    .history-view-button {
+      min-height: 36px !important;
+      padding: 9px 13px !important;
+      box-sizing: border-box !important;
+    }
+
+    .calculator-tabs {
+      gap: 8px !important;
+      margin-top: 24px !important;
+      margin-bottom: 0 !important;
+    }
+
+    .calc-tab {
+      min-height: 38px !important;
+      padding: 9px 14px !important;
+      box-sizing: border-box !important;
+    }
+
+    .calculator-card {
+      margin-top: 14px !important;
+    }
+
+    .calculator-heading {
+      gap: 20px !important;
+    }
+
+    .calculator-heading > p {
+      font-size: 12px !important;
+      line-height: 1.55 !important;
+    }
+
+    .calculator-fields {
+      gap: 14px !important;
+      margin-top: 24px !important;
+    }
+
+    .dynamics-page {
+      padding-left: 0 !important;
+      padding-right: 0 !important;
+    }
+
+    .dynamics-heading {
+      margin-bottom: var(--runory-page-gap) !important;
+    }
+
+    .dynamics-content {
+      max-width: none !important;
+      width: 100% !important;
+    }
+
+    .dynamics-tabs {
+      gap: 7px !important;
+      margin-bottom: 14px !important;
+    }
+
+    .dynamics-tab {
+      min-height: 36px !important;
+      padding: 9px 13px !important;
+      box-sizing: border-box !important;
+    }
+
+    .history-controls {
+      margin-bottom: 16px !important;
+    }
+
+    .history-list {
+      gap: 10px !important;
+    }
+
+    @media (max-width: 980px) {
+      .home-page,
+      .history-page,
+      .dynamics-page,
+      .calculator-view {
+        width: 100% !important;
+      }
+
+      .home-grid {
+        grid-template-columns: 1fr !important;
+      }
+
+      .home-main-column,
+      .home-side-column {
+        grid-template-columns: 1fr 1fr !important;
+      }
+
+      .home-latest-card {
+        grid-row: auto !important;
+      }
+    }
+
+    @media (max-width: 680px) {
+      :root {
+        --runory-page-gap: 18px;
+        --runory-card-pad: 16px;
+        --runory-heading-size: 32px;
+        --runory-body-size: 13px;
+        --runory-small-size: 10px;
+      }
+
+      .home-page,
+      .history-page,
+      .dynamics-page,
+      .calculator-view {
+        width: 100% !important;
+        max-width: none !important;
+        padding-top: 32px !important;
+        padding-bottom: 48px !important;
+      }
+
+      .home-heading,
+      .history-heading,
+      .dynamics-heading,
+      .calculator-intro {
+        margin-bottom: var(--runory-page-gap) !important;
+      }
+
+      .home-heading h1,
+      .history-heading h1,
+      .dynamics-heading h1,
+      .calculator-intro h1 {
+        font-size: var(--runory-heading-size) !important;
+        line-height: 1.08 !important;
+        letter-spacing: -1.6px !important;
+      }
+
+      .home-heading p:last-child,
+      .history-heading > div > p:last-child,
+      .dynamics-heading p,
+      .calculator-intro > p:last-child {
+        font-size: 13px !important;
+        line-height: 1.55 !important;
+      }
+
+      .home-grid,
+      .home-main-column,
+      .home-side-column,
+      .history-stats,
+      .history-analytics-grid {
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+      }
+
+      .home-latest-card,
+      .home-form-card,
+      .home-week-card,
+      .history-chart-card,
+      .history-dynamics-card,
+      .dynamics-module,
+      .calculator-card {
+        padding: var(--runory-card-pad) !important;
+        border-radius: 14px !important;
+      }
+
+      .home-latest-main {
+        margin-top: 16px !important;
+        align-items: flex-start !important;
+        gap: 10px !important;
+      }
+
+      .home-latest-main h2,
+      .calculator-heading h2,
+      .dynamics-module-heading h2 {
+        font-size: 21px !important;
+      }
+
+      .home-latest-main > strong {
+        font-size: 30px !important;
+        white-space: nowrap !important;
+      }
+
+      .home-metrics {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px !important;
+        margin-top: 18px !important;
+      }
+
+      .home-metrics > div:last-child {
+        grid-column: 1 / -1 !important;
+      }
+
+      .home-latest-footer {
+        margin-top: 16px !important;
+        padding-top: 14px !important;
+      }
+
+      .home-week-stats {
+        gap: 7px !important;
+        margin-top: 14px !important;
+      }
+
+      .home-week-stats > div {
+        padding: 11px 9px !important;
+      }
+
+      .home-week-stats strong {
+        font-size: 20px !important;
+      }
+
+      .home-week-days {
+        gap: 5px !important;
+        margin-top: 14px !important;
+      }
+
+      .home-section-heading {
+        gap: 10px !important;
+        margin-bottom: 9px !important;
+      }
+
+      .home-section-heading h2 {
+        font-size: 18px !important;
+      }
+
+      .home-outline-button,
+      .history-view-button,
+      .calc-tab,
+      .dynamics-tab,
+      .history-filter {
+        min-height: 36px !important;
+        font-size: 10px !important;
+      }
+
+      .home-outline-button {
+        padding: 8px 11px !important;
+      }
+
+      .history-stats {
+        grid-template-columns: repeat(3, minmax(0,1fr)) !important;
+        gap: 7px !important;
+      }
+
+      .history-stat-card {
+        min-height: 82px !important;
+        padding: 12px 10px !important;
+      }
+
+      .history-stat-card strong {
+        font-size: 20px !important;
+      }
+
+      .history-item {
+        padding: 14px !important;
+      }
+
+      .history-item-heading h3 {
+        font-size: 15px !important;
+      }
+
+      .history-distance {
+        font-size: 22px !important;
+      }
+
+      .history-metrics {
+        font-size: 10px !important;
+        gap: 7px 10px !important;
+      }
+
+      .history-item-actions {
+        width: 100% !important;
+      }
+
+      .history-view-button {
+        flex: 1 1 auto !important;
+      }
+
+      .calculator-tabs {
+        width: 100% !important;
+        margin-top: 20px !important;
+        display: grid !important;
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        gap: 6px !important;
+      }
+
+      .calc-tab {
+        width: 100% !important;
+        padding: 8px 5px !important;
+        white-space: nowrap !important;
+      }
+
+      .calculator-card {
+        margin-top: 12px !important;
+      }
+
+      .calculator-heading {
+        display: block !important;
+      }
+
+      .calculator-heading > p {
+        max-width: none !important;
+        margin-top: 8px !important;
+        font-size: 11px !important;
+      }
+
+      .calculator-fields {
+        grid-template-columns: 1fr !important;
+        margin-top: 20px !important;
+        gap: 12px !important;
+      }
+
+      .calc-field input {
+        min-height: 46px !important;
+        box-sizing: border-box !important;
+      }
+
+      .dynamics-page {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+      }
+
+      .dynamics-tabs {
+        width: 100% !important;
+        overflow-x: auto !important;
+        flex-wrap: nowrap !important;
+        padding-bottom: 3px !important;
+        scrollbar-width: none !important;
+      }
+
+      .dynamics-tabs::-webkit-scrollbar {
+        display: none !important;
+      }
+
+      .dynamics-tab {
+        flex: 0 0 auto !important;
+        white-space: nowrap !important;
+      }
+
+      .dynamics-module .history-dynamic-row strong {
+        font-size: 20px !important;
+      }
+    }
+
+    @media (max-width: 390px) {
+      .home-page,
+      .history-page,
+      .dynamics-page,
+      .calculator-view {
+        padding-top: 28px !important;
+      }
+
+      .home-heading h1,
+      .history-heading h1,
+      .dynamics-heading h1,
+      .calculator-intro h1 {
+        font-size: 29px !important;
+      }
+
+      .history-stats {
+        gap: 5px !important;
+      }
+
+      .history-stat-card {
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+      }
+
+      .history-stat-card strong {
+        font-size: 18px !important;
+      }
+
+      .calc-tab {
+        font-size: 9px !important;
+      }
+    }
   `;
   document.head.appendChild(style);
 }
