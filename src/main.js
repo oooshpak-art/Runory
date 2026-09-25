@@ -786,9 +786,9 @@ function applyRunoryIcons() {
        /* Unified Runory history rows — stable desktop/mobile grid */
        .history-item {
          display: grid !important;
-         grid-template-columns: 56px minmax(0, 1fr) 150px auto !important;
+         grid-template-columns: 48px minmax(0, 1fr) 150px auto !important;
          align-items: center !important;
-         column-gap: 24px !important;
+         column-gap: 12px !important;
        }
        .history-workout-mark {
          width: 48px !important;
