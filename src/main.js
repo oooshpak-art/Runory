@@ -6778,6 +6778,52 @@ function installRunoryMobilePolishV15() {
       }
     }
 
+    /* V16 — restore the light-theme calculator cells; keep dark theme unchanged. */
+    html[data-theme="light"] .calculator-card .runory-split-cell {
+      background: #f3f7f5 !important;
+      border-color: #d7e2de !important;
+      color: #1b2321 !important;
+    }
+    html[data-theme="light"] .calculator-card .runory-split-cell input {
+      color: #1b2321 !important;
+    }
+    html[data-theme="light"] .calculator-card .runory-split-cell input::placeholder {
+      color: #7d8984 !important;
+      opacity: 1 !important;
+    }
+    html[data-theme="light"] .calculator-card .runory-split-cell span {
+      color: #68756f !important;
+    }
+    html[data-theme="light"] .calculator-card .runory-split-cell:focus-within {
+      background: #f3f7f5 !important;
+      border-color: #2a9d8f !important;
+    }
+
+    @media (max-width: 680px) {
+      /* V16 — make the mobile hamburger unmistakably visible. */
+      #sidebarMobileToggle,
+      .sidebar-mobile-toggle,
+      .mobile-sidebar-toggle {
+        opacity: 1 !important;
+        visibility: visible !important;
+        background: #eef5f2 !important;
+        border: 2px solid #2a9d8f !important;
+        color: #16766c !important;
+        box-shadow: 0 0 0 2px rgba(42,157,143,.12), 0 4px 14px rgba(20,35,31,.18) !important;
+        -webkit-text-fill-color: currentColor !important;
+      }
+      #sidebarMobileToggle svg,
+      .sidebar-mobile-toggle svg,
+      .mobile-sidebar-toggle svg {
+        opacity: 1 !important;
+        visibility: visible !important;
+        stroke: currentColor !important;
+        fill: none !important;
+        color: currentColor !important;
+        stroke-width: 2.4 !important;
+      }
+    }
+
     @media (max-width: 390px) {
       #uploadState { gap: 7px !important; }
       #uploadState :is(.progress, .upload-progress, .progress-wrap, .progress-container) {
