@@ -3803,16 +3803,8 @@ function renderStructure(structure = [], summary = null) {
         }
       });
 
-      // Невеликий підсумок відновлень — тільки якщо вони реально є.
-      if (recoveryItems.length) {
-        addTimelineItem(
-          "recovery",
-          `${t("recovery")} · ${recoveryItems.length} × ${Math.round(recoveryDistance)} ${currentLanguage === "uk" ? "м" : "m"}`,
-          `${formatDistance(recovery.distance)} · ${formatDuration(recovery.duration)} · ${recovery.pace} /${currentLanguage === "uk" ? "км" : "km"} · ${formatTerrain(recovery.elevation)}`,
-          "timeline-summary"
-        );
-      }
-
+      // Aggregate recovery summary intentionally removed:
+      // individual recovery repetitions above are the only recovery cards shown.
       continue;
     }
 
@@ -6926,29 +6918,7 @@ function installRunoryMobilePolishV15() {
       }
     }
 
-    /* Targeted fix: aggregated recovery summary is a plain timeline row, not a card. */
-    #structureCard .timeline-summary,
-    #structureCard .timeline-recovery.timeline-summary,
-    #structureCard .timeline-summary .timeline-content {
-      background: transparent !important;
-      border: 0 !important;
-      border-radius: 0 !important;
-      box-shadow: none !important;
-      outline: 0 !important;
-    }
-    #structureCard .timeline-summary::before,
-    #structureCard .timeline-summary::after,
-    #structureCard .timeline-recovery.timeline-summary::before,
-    #structureCard .timeline-recovery.timeline-summary::after,
-    #structureCard .timeline-summary .timeline-content::before,
-    #structureCard .timeline-summary .timeline-content::after {
-      content: none !important;
-      display: none !important;
-      background: transparent !important;
-      border: 0 !important;
-      box-shadow: none !important;
-      outline: 0 !important;
-    }
+    /* Aggregate recovery summary is no longer rendered. */
   `;
   document.head.appendChild(style);
 }
