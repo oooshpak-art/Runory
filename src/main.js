@@ -1766,7 +1766,9 @@ function injectRunoryThemeStyles() {
       min-width: 0 !important;
       margin: 0 !important;
       padding: 0 !important;
-      gap: 10px !important;
+      gap: 16px !important;
+      column-gap: 16px !important;
+      row-gap: 16px !important;
       box-sizing: border-box !important;
       background: transparent !important;
       border: 0 !important;
@@ -1827,7 +1829,9 @@ function injectRunoryThemeStyles() {
     }
     @media (max-width: 720px) {
       .calculator-card .runory-split-fields {
-        gap: 8px !important;
+        gap: 12px !important;
+        column-gap: 12px !important;
+        row-gap: 12px !important;
       }
       .calculator-card .runory-split-cell {
         height: 58px !important;
