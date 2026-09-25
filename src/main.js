@@ -1251,6 +1251,7 @@ function injectRunoryThemeStyles() {
     /* Calculator split fields: keep every input as its own column/card. */
     .calculator-card .split-inputs {
       display: grid !important;
+      grid-template-columns: repeat(auto-fit, minmax(0, 1fr)) !important;
       gap: 12px !important;
       width: 100% !important;
       margin: 0 !important;
