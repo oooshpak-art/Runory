@@ -789,8 +789,11 @@ function applyRunoryIcons() {
          grid-template-columns: 48px minmax(0, 1fr) 150px auto !important;
          align-items: center !important;
          column-gap: 12px !important;
+         padding: 16px 20px !important;
+         box-sizing: border-box !important;
        }
        .history-workout-mark {
+         position: static !important;
          width: 48px !important;
          height: 48px !important;
          min-width: 48px !important;
@@ -851,19 +854,16 @@ function applyRunoryIcons() {
          margin: 0 !important;
          align-self: center !important;
        }
-       .history-stat-card strong,
-       .home-latest-main > strong,
-       .home-week-stats > div > strong {
-         font-variant-numeric: tabular-nums !important;
-       }
 
        @media (max-width: 900px) {
          .history-item {
            grid-template-columns: 48px minmax(0, 1fr) !important;
            column-gap: 16px !important;
            row-gap: 14px !important;
+           padding: 16px !important;
          }
          .history-workout-mark {
+           position: static !important;
            grid-column: 1 !important;
            grid-row: 1 / span 3 !important;
            align-self: start !important;
@@ -893,8 +893,10 @@ function applyRunoryIcons() {
            grid-template-columns: 44px minmax(0, 1fr) !important;
            column-gap: 12px !important;
            row-gap: 12px !important;
+           padding: 14px !important;
          }
          .history-workout-mark {
+           position: static !important;
            width: 44px !important;
            height: 44px !important;
            min-width: 44px !important;
