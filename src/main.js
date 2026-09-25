@@ -1269,6 +1269,13 @@ function injectRunoryThemeStyles() {
       margin-left: 0 !important;
       border-left: 1px solid var(--line) !important;
     }
+    html[data-theme="dark"] .calculator-card .split-inputs {
+      background: transparent !important;
+      border: 0 !important;
+      outline: none !important;
+      box-shadow: none !important;
+      padding: 0 !important;
+    }
     html[data-theme="dark"] .calculator-card .split-inputs label {
       border-color: var(--runory-dark-line) !important;
       background: #202725 !important;
