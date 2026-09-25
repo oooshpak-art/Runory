@@ -2790,6 +2790,38 @@ function getWorkoutPattern(summary) {
     const hasWarmup = bestStart > 0;
     const hasCooldown = bestEnd < paces.length - 1;
 
+    /*
+     * Fast finish: a long easy/steady opening followed by a sustained,
+     * controlled faster block all the way to the finish.
+     *
+     * This is still a tempo workout, even without a cool-down split after
+     * the fast block. Example: 10 km easy + 5 km at tempo pace.
+     * Keep the threshold conservative so an ordinary negative-split run is
+     * not automatically promoted to tempo.
+     */
+    if (blockLength >= 3 && share >= 0.30 && bestEnd === paces.length - 1) {
+      const precedingPaces = paces.slice(0, bestStart);
+      if (precedingPaces.length >= 3) {
+        const precedingAverage =
+          precedingPaces.reduce((sum, pace) => sum + pace, 0) / precedingPaces.length;
+        const paceGain = precedingAverage - blockAverage;
+
+        if (
+          paceGain >= 20
+          && paceGain / precedingAverage >= 0.06
+          && blockVariation <= 0.055
+        ) {
+          return {
+            type: "tempo",
+            variant: "fast_finish",
+            tempoStart: bestStart,
+            tempoEnd: bestEnd,
+            paceGain
+          };
+        }
+      }
+    }
+
     if (
       blockLength >= 3
       && share >= 0.30
