@@ -2032,7 +2032,93 @@ function injectRunoryThemeStyles() {
         margin-bottom: 7px !important;
       }
     }
-  `;
+  
+
+    /* v9: final dark-mode polish for workout result + structure. */
+    html[data-theme="dark"] .results-sidebar .summary-card,
+    html[data-theme="dark"] .results-sidebar .summary-panel {
+      background: #181e1c !important;
+      color: #f2f5f3 !important;
+      border: 1px solid #303a36 !important;
+      border-radius: 16px !important;
+      padding: 18px !important;
+      box-shadow: none !important;
+    }
+    html[data-theme="dark"] .results-sidebar .summary-card > * { background: transparent !important; }
+    html[data-theme="dark"] .results-sidebar .summary-metric {
+      display: grid !important;
+      grid-template-columns: 34px 1fr !important;
+      align-items: center !important;
+      gap: 10px !important;
+      min-height: 56px !important;
+      margin: 0 0 8px !important;
+      padding: 8px 12px !important;
+      background: #202725 !important;
+      border: 1px solid #303a36 !important;
+      border-radius: 10px !important;
+      box-shadow: none !important;
+    }
+    html[data-theme="dark"] .results-sidebar .summary-metric:last-child { margin-bottom: 0 !important; }
+    html[data-theme="dark"] .results-sidebar .summary-metric :is(span,small,label) { color: #9eaba5 !important; }
+    html[data-theme="dark"] .results-sidebar .summary-metric :is(strong,b,.summary-value) { color: #f4f7f5 !important; }
+    html[data-theme="dark"] .results-sidebar .summary-metric :is(svg,.metric-icon,.summary-icon) {
+      color: #8ed6cc !important; fill: none !important; stroke: currentColor !important;
+    }
+
+    html[data-theme="dark"] #structureCard {
+      background: #181e1c !important;
+      color: #e7eeea !important;
+      border: 1px solid #303a36 !important;
+      border-radius: 16px !important;
+      box-shadow: none !important;
+    }
+    html[data-theme="dark"] #structureCard .timeline-item {
+      background: transparent !important;
+      color: #dce5e1 !important;
+      border: 0 !important;
+      box-shadow: none !important;
+    }
+    html[data-theme="dark"] #structureCard .timeline-content { color: #dce5e1 !important; }
+    html[data-theme="dark"] #structureCard .timeline-content strong { color: #f4f7f5 !important; }
+    html[data-theme="dark"] #structureCard .timeline-content span { color: #aebbb5 !important; }
+    html[data-theme="dark"] #structureCard .timeline-detail,
+    html[data-theme="dark"] #structureCard .timeline-item.timeline-detail {
+      background: #202725 !important;
+      border: 1px solid #34413c !important;
+      border-radius: 10px !important;
+      padding: 10px 12px !important;
+      box-shadow: none !important;
+    }
+    html[data-theme="dark"] #structureCard .timeline-detail .timeline-content strong { color: #f0f5f2 !important; }
+    html[data-theme="dark"] #structureCard .timeline-detail .timeline-content span { color: #aebbb5 !important; }
+    html[data-theme="dark"] #structureCard .timeline-summary {
+      background: #252d2a !important;
+      border: 1px solid #3a4943 !important;
+      border-radius: 10px !important;
+    }
+    html[data-theme="dark"] #structureCard .timeline-dot {
+      background: #2a9d8f !important;
+      border: 2px solid #8ed6cc !important;
+      box-shadow: 0 0 0 3px #181e1c !important;
+    }
+    html[data-theme="dark"] #structureCard .timeline-recovery .timeline-dot {
+      background: #394540 !important; border-color: #77877f !important;
+    }
+
+    html[data-theme="dark"] #splitsTable thead,
+    html[data-theme="dark"] #splitsTable thead tr,
+    html[data-theme="dark"] #splitsTable thead th {
+      background: #202725 !important; color: #aebbb5 !important; border-color: #303a36 !important;
+    }
+    html[data-theme="dark"] #splitsBody tr,
+    html[data-theme="dark"] #splitsBody tr td { background: transparent !important; }
+    html[data-theme="dark"] #splitsBody tr:hover,
+    html[data-theme="dark"] #splitsBody tr:hover td,
+    html[data-theme="dark"] #splitsBody tr:focus-within,
+    html[data-theme="dark"] #splitsBody tr:focus-within td {
+      background: #263a35 !important; color: #f4f7f5 !important; box-shadow: none !important;
+    }
+`;
   document.head.appendChild(style);
 }
 
