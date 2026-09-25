@@ -992,7 +992,9 @@ function initRunoryTheme() {
       const dark = document.documentElement.dataset.theme === "dark";
       setRunoryTheme(dark ? "light" : "dark");
     });
-    topbarRight.appendChild(button);
+    languageSwitcher.appendChild(button);
+  } else if (button.parentElement !== languageSwitcher) {
+    languageSwitcher.appendChild(button);
   }
   updateThemeToggle();
 }
@@ -1022,8 +1024,25 @@ function injectRunoryThemeStyles() {
       --runory-dark-soft: #252d2a;
     }
 
-    .topbar { position: relative !important; }
+    /* V17 — keep the main header visible on every Runory page. */
+    .topbar {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      width: 100% !important;
+      z-index: 1000 !important;
+      box-sizing: border-box !important;
+      padding-bottom: 48px !important;
+    }
+    body {
+      padding-top: var(--runory-topbar-height, 0px) !important;
+    }
     .topbar-right { position: static !important; }
+    .language-switcher {
+      position: relative !important;
+      overflow: visible !important;
+    }
     .runory-theme-toggle {
       width: 44px !important;
       height: 34px !important;
@@ -1040,11 +1059,13 @@ function injectRunoryThemeStyles() {
       cursor: pointer !important;
       transition: background .16s ease, color .16s ease, border-color .16s ease, transform .16s ease !important;
       position: absolute !important;
-      right: 0 !important;
-      top: calc(100% + 10px) !important;
+      left: 50% !important;
+      right: auto !important;
+      top: calc(100% + 8px) !important;
+      transform: translateX(-50%) !important;
       z-index: 50 !important;
     }
-    .runory-theme-toggle:hover { transform: translateY(-1px) !important; border-color: #b8c3bc !important; }
+    .runory-theme-toggle:hover { transform: translateX(-50%) translateY(-1px) !important; border-color: #b8c3bc !important; }
     .runory-theme-toggle.is-dark { background: #252d2a !important; color: #f4f7f5 !important; border-color: #394540 !important; }
     .runory-theme-toggle span { display:block !important; transform: translateY(-1px); }
 
@@ -2072,6 +2093,11 @@ function injectRunoryThemeStyles() {
     html[data-theme="dark"] .results-sidebar .summary-metric :is(strong,b,.summary-value) { color: #f4f7f5 !important; }
     html[data-theme="dark"] .results-sidebar .summary-metric :is(svg,.metric-icon,.summary-icon) {
       color: #8ed6cc !important; fill: none !important; stroke: currentColor !important;
+    }
+
+    /* V17 — give the cool-down the same section spacing as the warm-up. */
+    #structureCard .timeline-cooldown {
+      margin-top: 28px !important;
     }
 
     html[data-theme="dark"] #structureCard {
@@ -5861,6 +5887,23 @@ document.querySelectorAll(".language-button").forEach(button => {
 });
 
 initRunoryTheme();
+
+function syncRunoryTopbarHeight() {
+  const topbar = document.querySelector(".topbar");
+  if (!topbar) return;
+  const update = () => {
+    const height = Math.ceil(topbar.getBoundingClientRect().height);
+    document.documentElement.style.setProperty("--runory-topbar-height", `${height}px`);
+  };
+  update();
+  if (typeof ResizeObserver !== "undefined") {
+    const observer = new ResizeObserver(update);
+    observer.observe(topbar);
+  }
+  window.addEventListener("resize", update, { passive: true });
+}
+
+syncRunoryTopbarHeight();
 
 document.querySelector("#addWorkoutButton")?.addEventListener("click", () => {
   navigateToView("analysis");
