@@ -783,14 +783,12 @@ function applyRunoryIcons() {
         color: #2A9D8F !important;
       }
     
-       /* Final history card alignment: distance and actions are independent columns. */
+       /* Unified Runory history rows — stable desktop/mobile grid */
        .history-item {
          display: grid !important;
-         grid-template-columns: 56px minmax(0, 1fr) 130px auto !important;
+         grid-template-columns: 56px minmax(0, 1fr) 150px auto !important;
          align-items: center !important;
          column-gap: 24px !important;
-         width: 100% !important;
-         box-sizing: border-box !important;
        }
        .history-workout-mark {
          width: 48px !important;
@@ -804,6 +802,8 @@ function applyRunoryIcons() {
          align-self: center !important;
          justify-self: center !important;
          box-sizing: border-box !important;
+         grid-column: 1 !important;
+         grid-row: 1 !important;
        }
        .history-workout-mark .runory-workout-icon {
          width: 23px !important;
@@ -815,6 +815,8 @@ function applyRunoryIcons() {
        .history-item-main {
          min-width: 0 !important;
          width: 100% !important;
+         grid-column: 2 !important;
+         grid-row: 1 !important;
        }
        .history-item-heading {
          display: block !important;
@@ -825,25 +827,29 @@ function applyRunoryIcons() {
          min-width: 0 !important;
        }
        .history-distance {
-         width: 130px !important;
-         min-width: 130px !important;
+         grid-column: 3 !important;
+         grid-row: 1 !important;
+         width: 150px !important;
+         min-width: 150px !important;
+         margin: 0 !important;
          display: flex !important;
          align-items: center !important;
-         justify-content: flex-start !important;
-         text-align: left !important;
+         justify-content: center !important;
+         text-align: center !important;
          white-space: nowrap !important;
-         margin: 0 !important;
-         font-size: 20px !important;
          font-variant-numeric: tabular-nums !important;
+         align-self: center !important;
        }
        .history-item-actions {
+         grid-column: 4 !important;
+         grid-row: 1 !important;
          display: flex !important;
          align-items: center !important;
          justify-content: flex-end !important;
          gap: 10px !important;
          min-width: max-content !important;
-         width: max-content !important;
          margin: 0 !important;
+         align-self: center !important;
        }
        .history-stat-card strong,
        .home-latest-main > strong,
@@ -851,37 +857,16 @@ function applyRunoryIcons() {
          font-variant-numeric: tabular-nums !important;
        }
 
-       @media (max-width: 1100px) {
+       @media (max-width: 900px) {
          .history-item {
-           grid-template-columns: 48px minmax(0, 1fr) 120px auto !important;
+           grid-template-columns: 48px minmax(0, 1fr) !important;
            column-gap: 16px !important;
+           row-gap: 14px !important;
          }
          .history-workout-mark {
-           width: 46px !important;
-           height: 46px !important;
-           min-width: 46px !important;
-           min-height: 46px !important;
-         }
-         .history-distance {
-           width: 120px !important;
-           min-width: 120px !important;
-         }
-       }
-
-       @media (max-width: 680px) {
-         .history-item {
-           grid-template-columns: 44px minmax(0, 1fr) !important;
-           column-gap: 12px !important;
-           row-gap: 10px !important;
-           align-items: start !important;
-         }
-         .history-workout-mark {
-           width: 44px !important;
-           height: 44px !important;
-           min-width: 44px !important;
-           min-height: 44px !important;
            grid-column: 1 !important;
-           grid-row: 1 !important;
+           grid-row: 1 / span 3 !important;
+           align-self: start !important;
          }
          .history-item-main {
            grid-column: 2 !important;
@@ -892,24 +877,34 @@ function applyRunoryIcons() {
            grid-row: 2 !important;
            width: auto !important;
            min-width: 0 !important;
-           font-size: 21px !important;
+           justify-content: flex-start !important;
+           text-align: left !important;
+           font-size: 28px !important;
          }
          .history-item-actions {
            grid-column: 2 !important;
            grid-row: 3 !important;
-           width: 100% !important;
-           min-width: 0 !important;
-           display: grid !important;
-           grid-template-columns: minmax(0, 1fr) 46px !important;
-           gap: 8px !important;
+           justify-content: flex-start !important;
          }
-         .history-view-button {
-           width: 100% !important;
+       }
+
+       @media (max-width: 560px) {
+         .history-item {
+           grid-template-columns: 44px minmax(0, 1fr) !important;
+           column-gap: 12px !important;
+           row-gap: 12px !important;
+         }
+         .history-workout-mark {
+           width: 44px !important;
+           height: 44px !important;
+           min-width: 44px !important;
            min-height: 44px !important;
          }
-         .history-delete-button {
-           width: 46px !important;
-           height: 44px !important;
+         .history-distance {
+           font-size: 26px !important;
+         }
+         .history-item-actions {
+           justify-content: flex-start !important;
          }
        }
 `;
