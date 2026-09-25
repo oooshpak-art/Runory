@@ -1248,67 +1248,84 @@ function injectRunoryThemeStyles() {
     html[data-theme="dark"] .calculation-result p { color: #a9d9d2 !important; }
     html[data-theme="dark"] .calculation-result span { color: #9da9a3 !important; }
 
-    /* Calculator split fields: keep every input as its own column/card. */
-    .calculator-card .split-inputs {
+    /* Calculator: each compound value is made from truly independent cells.
+       Dedicated class names prevent legacy split-input styles from joining them. */
+    .calculator-card .calculator-independent-fields {
       display: grid !important;
-      grid-template-columns: repeat(auto-fit, minmax(0, 1fr)) !important;
-      column-gap: 18px !important;
-      row-gap: 12px !important;
       width: 100% !important;
+      grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+      gap: 16px !important;
       margin: 0 !important;
       padding: 0 !important;
-      background: none !important;
-      border: none !important;
-      border-width: 0 !important;
-      border-color: transparent !important;
+      background: transparent !important;
+      border: 0 !important;
       box-shadow: none !important;
-      outline: none !important;
-      overflow: visible !important;
-      isolation: isolate !important;
+      outline: 0 !important;
     }
-    .calculator-card .split-inputs label {
+    .calculator-card .calculator-independent-fields.two-columns {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+    .calculator-card .calculator-independent-field {
+      display: block !important;
       min-width: 0 !important;
       width: 100% !important;
       margin: 0 !important;
       padding: 0 !important;
-      border-radius: 10px !important;
       border: 1px solid var(--line) !important;
-      border-left: 1px solid var(--line) !important;
-      border-right: 1px solid var(--line) !important;
-      overflow: hidden !important;
-      box-sizing: border-box !important;
+      border-radius: 10px !important;
       background: var(--surface) !important;
       box-shadow: none !important;
+      overflow: hidden !important;
+      box-sizing: border-box !important;
       position: relative !important;
-      z-index: 1 !important;
     }
-    .calculator-card .split-inputs label + label {
-      margin-left: 0 !important;
-      border-left: 1px solid var(--line) !important;
-    }
-    .calculator-card .split-inputs label::before,
-    .calculator-card .split-inputs label::after {
+    .calculator-card .calculator-independent-field::before,
+    .calculator-card .calculator-independent-field::after {
       display: none !important;
       content: none !important;
     }
-    html[data-theme="dark"] .calculator-card .split-inputs {
-      background: none !important;
-      border: none !important;
-      border-width: 0 !important;
-      border-color: transparent !important;
-      outline: none !important;
+    .calculator-card .calculator-independent-field input {
+      width: 100% !important;
+      min-width: 0 !important;
+      border: 0 !important;
+      outline: 0 !important;
+      background: transparent !important;
       box-shadow: none !important;
-      padding: 0 !important;
-      overflow: visible !important;
     }
-    html[data-theme="dark"] .calculator-card .split-inputs label {
-      border-color: var(--runory-dark-line) !important;
-      border-left-color: var(--runory-dark-line) !important;
+    .calculator-card .calculator-independent-field span {
+      display: block !important;
+    }
+    html[data-theme="dark"] .calculator-card .calculator-independent-fields,
+    html[data-theme="dark"] .calculator-card .calculator-independent-fields.two-columns {
+      background: transparent !important;
+      border: 0 !important;
+      box-shadow: none !important;
+      outline: 0 !important;
+    }
+    html[data-theme="dark"] .calculator-card .calculator-independent-field {
       background: #202725 !important;
+      border: 1px solid var(--runory-dark-line) !important;
       box-shadow: none !important;
     }
-    html[data-theme="dark"] .calculator-card .split-inputs label + label {
-      border-left-color: var(--runory-dark-line) !important;
+    @media (max-width: 900px) {
+      .calculator-card .calculator-independent-fields,
+      .calculator-card .calculator-independent-fields.two-columns {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 10px !important;
+      }
+      .calculator-card .calculator-independent-fields.three-mobile {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+      }
+    }
+    @media (max-width: 520px) {
+      .calculator-card .calculator-independent-fields,
+      .calculator-card .calculator-independent-fields.two-columns {
+        grid-template-columns: 1fr !important;
+      }
+      .calculator-card .calculator-independent-fields.three-mobile {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        gap: 8px !important;
+      }
     }
 
     @media (max-width: 900px) {
@@ -5752,10 +5769,10 @@ function renderCalculator(type = activeCalculator, { preserveResult = false } = 
       return `
         <fieldset class="calc-field time-field">
           <legend>${escapeHtml(t("time"))}</legend>
-          <div class="split-inputs">
-            <label><input name="timeHours" type="number" min="0" inputmode="numeric" placeholder="0" /><span>${escapeHtml(t("hours"))}</span></label>
-            <label><input name="timeMinutes" type="number" min="0" max="59" inputmode="numeric" placeholder="00" /><span>${escapeHtml(t("minutesShort"))}</span></label>
-            <label><input name="timeSeconds" type="number" min="0" max="59" inputmode="numeric" placeholder="00" /><span>${escapeHtml(t("secondsShort"))}</span></label>
+          <div class="calculator-independent-fields three-mobile">
+            <label class="calculator-independent-field"><input name="timeHours" type="number" min="0" inputmode="numeric" placeholder="0" /><span>${escapeHtml(t("hours"))}</span></label>
+            <label class="calculator-independent-field"><input name="timeMinutes" type="number" min="0" max="59" inputmode="numeric" placeholder="00" /><span>${escapeHtml(t("minutesShort"))}</span></label>
+            <label class="calculator-independent-field"><input name="timeSeconds" type="number" min="0" max="59" inputmode="numeric" placeholder="00" /><span>${escapeHtml(t("secondsShort"))}</span></label>
           </div>
         </fieldset>`;
     }
@@ -5763,9 +5780,9 @@ function renderCalculator(type = activeCalculator, { preserveResult = false } = 
     return `
       <fieldset class="calc-field time-field">
         <legend>${escapeHtml(t("pace"))}</legend>
-        <div class="split-inputs">
-          <label><input name="paceMinutes" type="number" min="0" inputmode="numeric" placeholder="5" required /><span>${escapeHtml(t("minutesShort"))}</span></label>
-          <label><input name="paceSeconds" type="number" min="0" max="59" inputmode="numeric" placeholder="30" /><span>${escapeHtml(t("secondsShort"))}</span></label>
+        <div class="calculator-independent-fields two-columns">
+          <label class="calculator-independent-field"><input name="paceMinutes" type="number" min="0" inputmode="numeric" placeholder="5" required /><span>${escapeHtml(t("minutesShort"))}</span></label>
+          <label class="calculator-independent-field"><input name="paceSeconds" type="number" min="0" max="59" inputmode="numeric" placeholder="30" /><span>${escapeHtml(t("secondsShort"))}</span></label>
         </div>
       </fieldset>`;
   }).join("");
