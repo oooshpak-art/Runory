@@ -6778,6 +6778,91 @@ function installRunoryMobilePolishV15() {
       }
     }
 
+    /* V17 — unify the framed controls and restore the distance field surface. */
+    html[data-theme="light"] .calculator-card .calc-field > div {
+      background: #f3f7f5 !important;
+      border-color: #d7e2de !important;
+      color: #1b2321 !important;
+    }
+    html[data-theme="light"] .calculator-card .calc-field > div input {
+      color: #1b2321 !important;
+      background: transparent !important;
+    }
+    html[data-theme="light"] .calculator-card .calc-field > div input::placeholder {
+      color: #7d8984 !important;
+      opacity: 1 !important;
+    }
+    html[data-theme="light"] .calculator-card .calc-field > div em {
+      color: #68756f !important;
+    }
+    html[data-theme="light"] .calculator-card .calc-field > div:focus-within {
+      background: #f3f7f5 !important;
+      border-color: #2a9d8f !important;
+    }
+
+    /* One consistent framed control style across desktop and mobile. */
+    #sidebarMobileToggle,
+    .account-sidebar-toggle,
+    #addWorkoutButton,
+    #authButton,
+    .language-switcher,
+    .runory-theme-toggle {
+      border: 2px solid #2a9d8f !important;
+      border-radius: 10px !important;
+      box-shadow: 0 0 0 2px rgba(42,157,143,.10), 0 4px 14px rgba(20,35,31,.12) !important;
+    }
+    #sidebarMobileToggle,
+    .account-sidebar-toggle,
+    #addWorkoutButton,
+    #authButton,
+    .runory-theme-toggle {
+      background: #eef5f2 !important;
+      color: #16766c !important;
+    }
+    .language-switcher {
+      background: #eef5f2 !important;
+      border-color: #2a9d8f !important;
+    }
+    .language-switcher .language-button {
+      border-radius: 7px !important;
+    }
+    .language-switcher .language-button.is-active {
+      background: #2a9d8f !important;
+      color: #ffffff !important;
+    }
+    #sidebarMobileToggle svg,
+    .account-sidebar-toggle svg {
+      stroke: currentColor !important;
+      color: currentColor !important;
+      fill: none !important;
+      stroke-width: 2.4 !important;
+    }
+    #addWorkoutButton:hover,
+    #authButton:hover,
+    .language-switcher:hover,
+    .runory-theme-toggle:hover,
+    .account-sidebar-toggle:hover,
+    #sidebarMobileToggle:hover {
+      border-color: #238b7f !important;
+      box-shadow: 0 0 0 3px rgba(42,157,143,.13), 0 5px 16px rgba(20,35,31,.15) !important;
+    }
+
+    html[data-theme="dark"] #sidebarMobileToggle,
+    html[data-theme="dark"] .account-sidebar-toggle,
+    html[data-theme="dark"] #addWorkoutButton,
+    html[data-theme="dark"] #authButton,
+    html[data-theme="dark"] .language-switcher,
+    html[data-theme="dark"] .runory-theme-toggle {
+      background: #202d29 !important;
+      border-color: #4c9d92 !important;
+      color: #9fe0d6 !important;
+      box-shadow: 0 0 0 2px rgba(76,157,146,.10), 0 4px 14px rgba(0,0,0,.20) !important;
+    }
+    html[data-theme="dark"] .language-switcher .language-button.is-active {
+      background: #2a9d8f !important;
+      color: #ffffff !important;
+    }
+
     /* V16 — restore the light-theme calculator cells; keep dark theme unchanged. */
     html[data-theme="light"] .calculator-card .runory-split-cell {
       background: #f3f7f5 !important;
