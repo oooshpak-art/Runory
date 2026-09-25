@@ -6971,103 +6971,78 @@ function installRunoryUiPolishV21() {
   const style = document.createElement("style");
   style.id = "runory-ui-polish-v21";
   style.textContent = `
-    /* V21 — restore calculator cells and make header frames unmistakable. */
+    /* V21 — target the current calculator DOM and make header frames unmistakable. */
 
-    /* Calculator fields: target the actual generated DOM directly. */
-    html[data-theme="light"] #calculator #calculatorFields .calc-field > div,
-    html[data-theme="light"] #calculator #calculatorFields .split-inputs label {
+    /* Calculator: the current renderer uses runory-split-fields/runory-split-cell. */
+    html[data-theme="light"] .calculator-card .runory-split-fields .runory-split-cell {
       background: #f4f7f5 !important;
-      background-color: #f4f7f5 !important;
+      border: 1px solid #c5d1cc !important;
       color: #18211e !important;
-      border: 1px solid #cdd8d3 !important;
       box-shadow: none !important;
-      opacity: 1 !important;
     }
-
-    html[data-theme="light"] #calculator #calculatorFields .calc-field > div:focus-within,
-    html[data-theme="light"] #calculator #calculatorFields .split-inputs:focus-within,
-    html[data-theme="light"] #calculator #calculatorFields .split-inputs label:focus-within {
+    html[data-theme="light"] .calculator-card .runory-split-fields .runory-split-cell:focus-within {
       background: #eaf5f2 !important;
-      background-color: #eaf5f2 !important;
       border-color: #2a9d8f !important;
       outline: 3px solid #d7f0ed !important;
       outline-offset: 0 !important;
       box-shadow: none !important;
     }
-
-    html[data-theme="light"] #calculator #calculatorFields .calc-field input {
+    html[data-theme="light"] .calculator-card .runory-split-fields .runory-split-cell input {
       background: transparent !important;
-      background-color: transparent !important;
       color: #18211e !important;
-      -webkit-text-fill-color: #18211e !important;
+      border: 0 !important;
+      box-shadow: none !important;
     }
-
-    html[data-theme="light"] #calculator #calculatorFields .calc-field input::placeholder {
+    html[data-theme="light"] .calculator-card .runory-split-fields .runory-split-cell input::placeholder {
       color: #8f9b95 !important;
       opacity: 1 !important;
     }
-
-    html[data-theme="light"] #calculator #calculatorFields .calc-field em,
-    html[data-theme="light"] #calculator #calculatorFields .split-inputs span {
+    html[data-theme="light"] .calculator-card .runory-split-fields .runory-split-cell span {
       color: #66736e !important;
     }
+    html[data-theme="light"] .calculator-card .runory-time-field .runory-field-label {
+      color: #48554e !important;
+    }
 
-    /* Header controls: use both border and an inset ring so the frame stays visible
-       even if another rule changes the outer border. */
+    /* Header: use a clearly visible 2px frame on every control. */
     .add-workout-button,
+    #addWorkoutButton,
     .auth-button,
     .language-switcher,
     .sidebar-mobile-toggle,
+    #sidebarMobileToggle,
     .account-sidebar-toggle,
-    .runory-theme-toggle {
-      border: 1px solid #c8d4cf !important;
-      border-style: solid !important;
-      border-width: 1px !important;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.16), 0 3px 12px rgba(18,24,20,.10) !important;
+    #accountSidebarToggle,
+    .runory-theme-toggle,
+    #runoryThemeToggle {
+      border: 2px solid #c1cec8 !important;
+      box-sizing: border-box !important;
       opacity: 1 !important;
       visibility: visible !important;
-      box-sizing: border-box !important;
-    }
-
-    .add-workout-button,
-    .auth-button {
-      border-color: #c8d4cf !important;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.16), 0 3px 12px rgba(18,24,20,.12) !important;
-    }
-
-    .language-switcher,
-    .runory-theme-toggle {
-      border-color: #c8d4cf !important;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.16), 0 3px 12px rgba(18,24,20,.09) !important;
     }
 
     html[data-theme="dark"] .add-workout-button,
+    html[data-theme="dark"] #addWorkoutButton,
     html[data-theme="dark"] .auth-button,
     html[data-theme="dark"] .language-switcher,
     html[data-theme="dark"] .sidebar-mobile-toggle,
+    html[data-theme="dark"] #sidebarMobileToggle,
     html[data-theme="dark"] .account-sidebar-toggle,
-    html[data-theme="dark"] .runory-theme-toggle {
-      border-color: #53645d !important;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.08), 0 3px 12px rgba(0,0,0,.22) !important;
+    html[data-theme="dark"] #accountSidebarToggle,
+    html[data-theme="dark"] .runory-theme-toggle,
+    html[data-theme="dark"] #runoryThemeToggle {
+      border-color: #566760 !important;
     }
 
     @media (max-width: 680px) {
-      .sidebar-mobile-toggle {
-        border: 1px solid #9fbdb5 !important;
-        background: #ffffff !important;
-        color: #147b70 !important;
-        box-shadow: inset 0 0 0 1px rgba(42,157,143,.14), 0 4px 12px rgba(18,24,20,.12) !important;
-      }
-      .sidebar-mobile-toggle svg {
-        stroke: currentColor !important;
-        fill: none !important;
-        opacity: 1 !important;
+      .sidebar-mobile-toggle,
+      #sidebarMobileToggle {
+        border: 2px solid #a9c3ba !important;
       }
     }
   `;
   document.head.appendChild(style);
 }
 
-installRunoryUiPolishV21();
 initializeRoute();
 initAuth();
