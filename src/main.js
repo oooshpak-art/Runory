@@ -6679,8 +6679,106 @@ function installWorkoutAnalysisReadabilityV13() {
   document.head.appendChild(style);
 }
 
+function installRunoryMobilePolishV14() {
+  if (document.querySelector("#runory-mobile-polish-v14")) return;
+  const style = document.createElement("style");
+  style.id = "runory-mobile-polish-v14";
+  style.textContent = `
+    @media (max-width: 680px) {
+      /* More visible mobile menu button. Desktop navigation is untouched. */
+      #sidebarMobileToggle {
+        background: #2a9d8f !important;
+        border: 1px solid #58b6a9 !important;
+        color: #ffffff !important;
+        box-shadow: 0 0 0 1px rgba(42,157,143,.18), 0 4px 14px rgba(0,0,0,.14) !important;
+        opacity: 1 !important;
+      }
+      #sidebarMobileToggle svg {
+        stroke: currentColor !important;
+        color: currentColor !important;
+        opacity: 1 !important;
+      }
+
+      /* Keep the theme symbol monochrome on mobile instead of the colored emoji glyph. */
+      #runoryThemeToggle span {
+        font-family: Arial, "Helvetica Neue", sans-serif !important;
+        font-variant-emoji: text !important;
+        color: currentColor !important;
+        -webkit-text-fill-color: currentColor !important;
+      }
+
+      /* FIT result row: everything stays on one line on narrow screens. */
+      #uploadState {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        align-items: center !important;
+        gap: 10px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        overflow: hidden !important;
+      }
+      #uploadState > * {
+        min-width: 0 !important;
+        flex-shrink: 1 !important;
+      }
+      #uploadState :is(.file-info, .upload-file-info, .file-details, .upload-details) {
+        min-width: 0 !important;
+        flex: 1 1 auto !important;
+        overflow: hidden !important;
+      }
+      #uploadState :is(#fileName, #fileStatus) {
+        min-width: 0 !important;
+        max-width: 100% !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+      }
+      #uploadState :is(.progress, .upload-progress, .progress-wrap, .progress-container) {
+        flex: 1 1 120px !important;
+        min-width: 70px !important;
+        max-width: 240px !important;
+      }
+      #uploadState :is(#progressValue, .progress-value) {
+        flex: 0 0 auto !important;
+        white-space: nowrap !important;
+      }
+      #resetButton {
+        flex: 0 0 32px !important;
+        width: 32px !important;
+        min-width: 32px !important;
+        max-width: 32px !important;
+        height: 32px !important;
+        min-height: 32px !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        white-space: nowrap !important;
+      }
+    }
+
+    @media (max-width: 390px) {
+      #uploadState {
+        gap: 7px !important;
+      }
+      #uploadState :is(.progress, .upload-progress, .progress-wrap, .progress-container) {
+        min-width: 55px !important;
+        flex-basis: 80px !important;
+      }
+      #resetButton {
+        flex-basis: 30px !important;
+        width: 30px !important;
+        min-width: 30px !important;
+        max-width: 30px !important;
+        height: 30px !important;
+        min-height: 30px !important;
+      }
+    }
+  `;
+  document.head.appendChild(style);
+}
+
 installWorkoutAnalysisReadabilityV11();
 installWorkoutAnalysisReadabilityV12();
 installWorkoutAnalysisReadabilityV13();
+installRunoryMobilePolishV14();
 initializeRoute();
 initAuth();
