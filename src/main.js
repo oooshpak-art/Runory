@@ -949,8 +949,17 @@ function updateThemeToggle() {
   button.setAttribute("aria-label", label);
   button.setAttribute("title", label);
   button.innerHTML = dark
-    ? '<span aria-hidden="true">☀</span>'
-    : '<span aria-hidden="true">☾</span>';
+    ? `<span aria-hidden="true" class="runory-theme-symbol runory-theme-symbol-sun">
+         <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+           <circle cx="12" cy="12" r="4.2"></circle>
+           <path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6"></path>
+         </svg>
+       </span>`
+    : `<span aria-hidden="true" class="runory-theme-symbol runory-theme-symbol-moon">
+         <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+           <path d="M19.2 14.5A7.7 7.7 0 0 1 9.5 4.8 7.7 7.7 0 1 0 19.2 14.5Z"></path>
+         </svg>
+       </span>`;
 }
 
 function setRunoryTheme(theme, persist = true) {
@@ -6679,70 +6688,85 @@ function installWorkoutAnalysisReadabilityV13() {
   document.head.appendChild(style);
 }
 
-function installRunoryMobilePolishV14() {
-  if (document.querySelector("#runory-mobile-polish-v14")) return;
+installWorkoutAnalysisReadabilityV11();
+installWorkoutAnalysisReadabilityV12();
+installWorkoutAnalysisReadabilityV13();
+
+function installRunoryMobilePolishV15() {
+  if (document.querySelector("#runory-mobile-polish-v15")) return;
   const style = document.createElement("style");
-  style.id = "runory-mobile-polish-v14";
+  style.id = "runory-mobile-polish-v15";
   style.textContent = `
+    /* V15 — mobile FIT status stays complete on a second line; theme icon is a real SVG. */
+    .runory-theme-symbol {
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      width: 20px !important;
+      height: 20px !important;
+      color: currentColor !important;
+      -webkit-text-fill-color: currentColor !important;
+    }
+    .runory-theme-symbol svg {
+      width: 20px !important;
+      height: 20px !important;
+      display: block !important;
+      fill: none !important;
+      stroke: currentColor !important;
+      stroke-width: 1.8 !important;
+      stroke-linecap: round !important;
+      stroke-linejoin: round !important;
+    }
+    .runory-theme-symbol-sun svg circle {
+      fill: currentColor !important;
+      stroke: currentColor !important;
+      stroke-width: 1.4 !important;
+    }
+
     @media (max-width: 680px) {
-      /* More visible mobile menu button. Desktop navigation is untouched. */
-      #sidebarMobileToggle {
-        background: #2a9d8f !important;
-        border: 1px solid #58b6a9 !important;
-        color: #ffffff !important;
-        box-shadow: 0 0 0 1px rgba(42,157,143,.18), 0 4px 14px rgba(0,0,0,.14) !important;
-        opacity: 1 !important;
-      }
-      #sidebarMobileToggle svg {
-        stroke: currentColor !important;
-        color: currentColor !important;
-        opacity: 1 !important;
-      }
-
-      /* Keep the theme symbol monochrome on mobile instead of the colored emoji glyph. */
-      #runoryThemeToggle span {
-        font-family: Arial, "Helvetica Neue", sans-serif !important;
-        font-variant-emoji: text !important;
-        color: currentColor !important;
-        -webkit-text-fill-color: currentColor !important;
-      }
-
-      /* FIT result row: everything stays on one line on narrow screens. */
       #uploadState {
         display: flex !important;
         flex-wrap: nowrap !important;
         align-items: center !important;
-        gap: 10px !important;
+        gap: 9px !important;
         width: 100% !important;
         box-sizing: border-box !important;
-        overflow: hidden !important;
+        overflow: visible !important;
       }
-      #uploadState > * {
-        min-width: 0 !important;
-        flex-shrink: 1 !important;
-      }
-      #uploadState :is(.file-info, .upload-file-info, .file-details, .upload-details) {
-        min-width: 0 !important;
+      #uploadState :has(> #fileName) {
+        display: flex !important;
         flex: 1 1 auto !important;
-        overflow: hidden !important;
-      }
-      #uploadState :is(#fileName, #fileStatus) {
         min-width: 0 !important;
-        max-width: 100% !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        justify-content: center !important;
+        gap: 2px !important;
+        overflow: visible !important;
+      }
+      #uploadState #fileName,
+      #uploadState #fileStatus {
+        display: block !important;
+        width: auto !important;
+        max-width: none !important;
+        min-width: 0 !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
         white-space: nowrap !important;
       }
+      #uploadState #fileStatus {
+        flex: none !important;
+      }
       #uploadState :is(.progress, .upload-progress, .progress-wrap, .progress-container) {
-        flex: 1 1 120px !important;
-        min-width: 70px !important;
-        max-width: 240px !important;
+        flex: 0 1 96px !important;
+        width: 96px !important;
+        min-width: 62px !important;
+        max-width: 96px !important;
       }
       #uploadState :is(#progressValue, .progress-value) {
         flex: 0 0 auto !important;
         white-space: nowrap !important;
       }
-      #resetButton {
+      #uploadState #resetButton {
         flex: 0 0 32px !important;
         width: 32px !important;
         min-width: 32px !important;
@@ -6751,19 +6775,17 @@ function installRunoryMobilePolishV14() {
         min-height: 32px !important;
         margin: 0 !important;
         padding: 0 !important;
-        white-space: nowrap !important;
       }
     }
 
     @media (max-width: 390px) {
-      #uploadState {
-        gap: 7px !important;
-      }
+      #uploadState { gap: 7px !important; }
       #uploadState :is(.progress, .upload-progress, .progress-wrap, .progress-container) {
-        min-width: 55px !important;
-        flex-basis: 80px !important;
+        flex-basis: 78px !important;
+        width: 78px !important;
+        min-width: 52px !important;
       }
-      #resetButton {
+      #uploadState #resetButton {
         flex-basis: 30px !important;
         width: 30px !important;
         min-width: 30px !important;
@@ -6776,9 +6798,6 @@ function installRunoryMobilePolishV14() {
   document.head.appendChild(style);
 }
 
-installWorkoutAnalysisReadabilityV11();
-installWorkoutAnalysisReadabilityV12();
-installWorkoutAnalysisReadabilityV13();
-installRunoryMobilePolishV14();
+installRunoryMobilePolishV15();
 initializeRoute();
 initAuth();
