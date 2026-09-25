@@ -6837,5 +6837,55 @@ function installRunoryMobilePolishV15() {
 }
 
 installRunoryMobilePolishV15();
+
+function installRunoryUiPolishV19() {
+  if (document.querySelector("#runory-ui-polish-v19")) return;
+  const style = document.createElement("style");
+  style.id = "runory-ui-polish-v19";
+  style.textContent = `
+    /* V19 — final overrides after V13/V15 so recovery summary loses its frame. */
+    #structureCard .timeline-summary {
+      background: transparent !important;
+      border: 0 !important;
+      box-shadow: none !important;
+      border-radius: 0 !important;
+    }
+    #structureCard .timeline-summary .timeline-content {
+      background: transparent !important;
+      border: 0 !important;
+      box-shadow: none !important;
+      border-radius: 0 !important;
+    }
+
+    /* Restore the light calculator inputs/cells on the light theme.
+       Dark-theme calculator styling remains unchanged. */
+    html[data-theme="light"] .calculator-card .runory-field-label {
+      color: #5f6b66 !important;
+    }
+    html[data-theme="light"] .calculator-card .runory-split-cell {
+      background: #ffffff !important;
+      border-color: #d8e0dc !important;
+      color: #18211e !important;
+      box-shadow: none !important;
+    }
+    html[data-theme="light"] .calculator-card .runory-split-cell input {
+      background: transparent !important;
+      color: #18211e !important;
+    }
+    html[data-theme="light"] .calculator-card .runory-split-cell input::placeholder {
+      color: #a2aca7 !important;
+    }
+    html[data-theme="light"] .calculator-card .runory-split-cell span {
+      color: #68756f !important;
+    }
+    html[data-theme="light"] .calculator-card .runory-split-cell:focus-within {
+      border-color: #2a9d8f !important;
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+installRunoryUiPolishV19();
+
 initializeRoute();
 initAuth();
