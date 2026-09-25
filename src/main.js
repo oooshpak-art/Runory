@@ -6533,7 +6533,121 @@ function installWorkoutAnalysisReadabilityV12() {
   document.head.appendChild(style);
 }
 
+
+
+function installWorkoutAnalysisReadabilityV13() {
+  if (document.querySelector('#runory-workout-analysis-v13')) return;
+  const style = document.createElement('style');
+  style.id = 'runory-workout-analysis-v13';
+  style.textContent = `
+    /* V13 — Runory teal icons, readable dark intervals, compact FIT picker. */
+    .results-sidebar .runory-summary-icon {
+      filter: brightness(0) saturate(100%) invert(54%) sepia(22%) saturate(1118%) hue-rotate(125deg) brightness(90%) contrast(88%) !important;
+      opacity: 1 !important;
+    }
+
+    html[data-theme="light"] .results-sidebar .runory-summary-icon,
+    html[data-theme="dark"] .results-sidebar .runory-summary-icon {
+      filter: brightness(0) saturate(100%) invert(54%) sepia(22%) saturate(1118%) hue-rotate(125deg) brightness(90%) contrast(88%) !important;
+      opacity: 1 !important;
+    }
+
+    /* Make elevation icon clearly larger than the other summary icons. */
+    .results-sidebar .summary-metric:has(#summaryAscent) .runory-summary-icon {
+      width: 38px !important;
+      height: 38px !important;
+      min-width: 38px !important;
+      min-height: 38px !important;
+    }
+    .results-sidebar .summary-metric:has(#summaryAscent) {
+      grid-template-columns: 42px 1fr !important;
+    }
+
+    /* Dark structure: force every interval/recovery text node to readable contrast. */
+    html[data-theme="dark"] #structureCard .timeline-detail,
+    html[data-theme="dark"] #structureCard .timeline-item.timeline-detail {
+      background: #222c28 !important;
+      border-color: #3b4b45 !important;
+      color: #eaf2ee !important;
+      opacity: 1 !important;
+    }
+    html[data-theme="dark"] #structureCard .timeline-detail * ,
+    html[data-theme="dark"] #structureCard .timeline-item.timeline-detail * {
+      opacity: 1 !important;
+    }
+    html[data-theme="dark"] #structureCard .timeline-detail .timeline-content,
+    html[data-theme="dark"] #structureCard .timeline-detail .timeline-content :is(strong,b,span,small,p,div) {
+      color: #dfe9e4 !important;
+    }
+    html[data-theme="dark"] #structureCard .timeline-detail .timeline-content :is(strong,b) {
+      color: #f7faf8 !important;
+    }
+    html[data-theme="dark"] #structureCard .timeline-detail .timeline-content span {
+      color: #c4d0ca !important;
+    }
+    html[data-theme="dark"] #structureCard .timeline-recovery.timeline-detail,
+    html[data-theme="dark"] #structureCard .timeline-recovery.timeline-detail * {
+      color: #cbd7d1 !important;
+    }
+    html[data-theme="dark"] #structureCard .timeline-recovery.timeline-detail .timeline-content :is(strong,b) {
+      color: #f2f7f4 !important;
+    }
+
+    /* Compact FIT picker: keep the action button, remove the oversized empty drop area. */
+    #dropZone {
+      min-height: 0 !important;
+      height: auto !important;
+      padding: 16px !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 0 !important;
+      box-sizing: border-box !important;
+    }
+    #dropZone [data-i18n="dropTitle"],
+    #dropZone [data-i18n="dropSubtitle"] {
+      display: none !important;
+    }
+    #dropZone .upload-icon,
+    #dropZone .drop-icon,
+    #dropZone .fit-badge,
+    #dropZone svg,
+    #dropZone img {
+      display: none !important;
+    }
+    #dropZone [data-i18n="chooseFit"] {
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      min-height: 46px !important;
+      padding: 0 22px !important;
+      margin: 0 !important;
+      border-radius: 12px !important;
+      background: #2a9d8f !important;
+      color: #ffffff !important;
+      border: 1px solid #2a9d8f !important;
+      font-weight: 700 !important;
+      cursor: pointer !important;
+      box-shadow: none !important;
+    }
+    #dropZone [data-i18n="chooseFit"]:hover {
+      background: #238b7f !important;
+      border-color: #238b7f !important;
+    }
+    html[data-theme="dark"] #dropZone {
+      background: #1b2421 !important;
+      border-color: #34413c !important;
+    }
+    html[data-theme="light"] #dropZone {
+      background: #f4f8f6 !important;
+      border-color: #b9d4ce !important;
+    }
+  `;
+  document.head.appendChild(style);
+}
+
 installWorkoutAnalysisReadabilityV11();
 installWorkoutAnalysisReadabilityV12();
+installWorkoutAnalysisReadabilityV13();
 initializeRoute();
 initAuth();
