@@ -993,8 +993,6 @@ function initRunoryTheme() {
       setRunoryTheme(dark ? "light" : "dark");
     });
     topbarRight.appendChild(button);
-  } else if (button.parentElement !== topbarRight) {
-    topbarRight.appendChild(button);
   }
   updateThemeToggle();
 }
@@ -1024,61 +1022,8 @@ function injectRunoryThemeStyles() {
       --runory-dark-soft: #252d2a;
     }
 
-    /* V18 — compact opaque fixed header with all controls in one row. */
-    .topbar {
-      position: fixed !important;
-      top: 0 !important;
-      left: 0 !important;
-      right: 0 !important;
-      width: 100% !important;
-      z-index: 1000 !important;
-      box-sizing: border-box !important;
-      min-height: 76px !important;
-      height: 76px !important;
-      padding: 8px 20px !important;
-      background: #ffffff !important;
-      border-bottom: 1px solid #dfe6e2 !important;
-      box-shadow: 0 2px 12px rgba(20,35,31,.06) !important;
-      display: flex !important;
-      align-items: center !important;
-      justify-content: space-between !important;
-      gap: 20px !important;
-    }
-    body {
-      padding-top: var(--runory-topbar-height, 76px) !important;
-    }
-    .topbar .brand {
-      display: flex !important;
-      align-items: center !important;
-      height: 60px !important;
-      min-width: 0 !important;
-      margin: 0 !important;
-    }
-    .topbar .brand-logo {
-      display: block !important;
-      width: 220px !important;
-      max-width: 42vw !important;
-      height: auto !important;
-      max-height: 58px !important;
-      object-fit: contain !important;
-      object-position: left center !important;
-      margin: 0 !important;
-    }
-    .topbar-right {
-      position: static !important;
-      display: flex !important;
-      align-items: center !important;
-      justify-content: flex-end !important;
-      gap: 10px !important;
-      flex-wrap: nowrap !important;
-      margin: 0 !important;
-      min-width: 0 !important;
-    }
-    .language-switcher {
-      position: static !important;
-      overflow: visible !important;
-      flex: 0 0 auto !important;
-    }
+    .topbar { position: relative !important; }
+    .topbar-right { position: static !important; }
     .runory-theme-toggle {
       width: 44px !important;
       height: 34px !important;
@@ -1094,19 +1039,14 @@ function injectRunoryThemeStyles() {
       font: 700 17px/1 Manrope, sans-serif !important;
       cursor: pointer !important;
       transition: background .16s ease, color .16s ease, border-color .16s ease, transform .16s ease !important;
-      position: static !important;
-      flex: 0 0 auto !important;
+      position: absolute !important;
+      right: 0 !important;
+      top: calc(100% + 10px) !important;
       z-index: 50 !important;
     }
     .runory-theme-toggle:hover { transform: translateY(-1px) !important; border-color: #b8c3bc !important; }
     .runory-theme-toggle.is-dark { background: #252d2a !important; color: #f4f7f5 !important; border-color: #394540 !important; }
     .runory-theme-toggle span { display:block !important; transform: translateY(-1px); }
-
-    html[data-theme="dark"] .topbar {
-      background: #181e1c !important;
-      border-bottom-color: #303a36 !important;
-      box-shadow: 0 2px 12px rgba(0,0,0,.20) !important;
-    }
 
     html[data-theme="dark"] {
       color-scheme: dark;
@@ -1508,18 +1448,10 @@ function injectRunoryThemeStyles() {
     }
 
     @media (max-width: 900px) {
-      .topbar { min-height: 68px !important; height: 68px !important; padding: 7px 14px !important; gap: 10px !important; }
-      .topbar .brand { height: 54px !important; }
-      .topbar .brand-logo { width: 190px !important; max-height: 52px !important; }
-      .topbar-right { gap: 7px !important; }
-      .runory-theme-toggle { width: 40px !important; height: 32px !important; min-width: 40px !important; }
+      .runory-theme-toggle { top: calc(100% + 10px) !important; width: 40px !important; height: 32px !important; min-width: 40px !important; }
     }
     @media (max-width: 560px) {
-      .topbar { min-height: 62px !important; height: 62px !important; padding: 6px 10px !important; gap: 7px !important; }
-      .topbar .brand { height: 50px !important; }
-      .topbar .brand-logo { width: 155px !important; max-height: 46px !important; }
-      .topbar-right { gap: 5px !important; }
-      .runory-theme-toggle { width: 38px !important; height: 30px !important; min-width: 38px !important; border-radius: 9px !important; }
+      .runory-theme-toggle { top: calc(100% + 8px) !important; width: 38px !important; height: 30px !important; min-width: 38px !important; border-radius: 9px !important; }
     }
 
     /* === Runory unified page system ===
@@ -2140,11 +2072,6 @@ function injectRunoryThemeStyles() {
     html[data-theme="dark"] .results-sidebar .summary-metric :is(strong,b,.summary-value) { color: #f4f7f5 !important; }
     html[data-theme="dark"] .results-sidebar .summary-metric :is(svg,.metric-icon,.summary-icon) {
       color: #8ed6cc !important; fill: none !important; stroke: currentColor !important;
-    }
-
-    /* V18 — reduce the gap before the cool-down. */
-    #structureCard .timeline-cooldown {
-      margin-top: 16px !important;
     }
 
     html[data-theme="dark"] #structureCard {
@@ -5935,23 +5862,6 @@ document.querySelectorAll(".language-button").forEach(button => {
 
 initRunoryTheme();
 
-function syncRunoryTopbarHeight() {
-  const topbar = document.querySelector(".topbar");
-  if (!topbar) return;
-  const update = () => {
-    const height = Math.ceil(topbar.getBoundingClientRect().height);
-    document.documentElement.style.setProperty("--runory-topbar-height", `${height}px`);
-  };
-  update();
-  if (typeof ResizeObserver !== "undefined") {
-    const observer = new ResizeObserver(update);
-    observer.observe(topbar);
-  }
-  window.addEventListener("resize", update, { passive: true });
-}
-
-syncRunoryTopbarHeight();
-
 document.querySelector("#addWorkoutButton")?.addEventListener("click", () => {
   navigateToView("analysis");
   window.setTimeout(() => document.querySelector("#fileInput")?.click(), 0);
@@ -7071,148 +6981,6 @@ function installRunoryMobilePolishV15() {
         max-width: 30px !important;
         height: 30px !important;
         min-height: 30px !important;
-      }
-    }
-
-
-    /* V19 — fixed desktop sidebar + compact mobile layout.
-       Layout only: workout parsing/classification is untouched. */
-
-    @media (min-width: 681px) {
-      #accountSidebar {
-        position: fixed !important;
-        left: 0 !important;
-        top: var(--runory-topbar-height, 76px) !important;
-        bottom: 0 !important;
-        height: calc(100vh - var(--runory-topbar-height, 76px)) !important;
-        max-height: calc(100vh - var(--runory-topbar-height, 76px)) !important;
-        z-index: 900 !important;
-        overflow-y: auto !important;
-        overflow-x: hidden !important;
-        box-sizing: border-box !important;
-      }
-
-      #accountSidebar.is-collapsed {
-        width: 110px !important;
-      }
-
-      /* Keep the page content aligned with the permanently visible rail. */
-      .page-shell,
-      .app-content,
-      .main-content,
-      .content-area {
-        box-sizing: border-box !important;
-      }
-
-      #sidebarMobileToggle,
-      #sidebarMobileBackdrop {
-        display: none !important;
-      }
-    }
-
-    @media (max-width: 680px) {
-      /* Mobile: the sidebar becomes a drawer below the fixed header. */
-      #accountSidebar {
-        position: fixed !important;
-        left: 0 !important;
-        top: var(--runory-topbar-height, 62px) !important;
-        bottom: 0 !important;
-        height: calc(100vh - var(--runory-topbar-height, 62px)) !important;
-        max-height: calc(100vh - var(--runory-topbar-height, 62px)) !important;
-        z-index: 1100 !important;
-        overflow-y: auto !important;
-        overflow-x: hidden !important;
-      }
-
-      #sidebarMobileBackdrop {
-        position: fixed !important;
-        left: 0 !important;
-        right: 0 !important;
-        top: var(--runory-topbar-height, 62px) !important;
-        bottom: 0 !important;
-        z-index: 1090 !important;
-      }
-
-      /* Do not let the compact header controls wrap or collide. */
-      .topbar {
-        gap: 6px !important;
-        padding-left: 9px !important;
-        padding-right: 9px !important;
-      }
-
-      .topbar .brand {
-        flex: 0 1 auto !important;
-        min-width: 0 !important;
-        max-width: 42vw !important;
-      }
-
-      .topbar .brand-logo {
-        width: min(150px, 42vw) !important;
-        max-width: 100% !important;
-        max-height: 44px !important;
-        height: auto !important;
-      }
-
-      .topbar-right {
-        flex: 0 0 auto !important;
-        gap: 4px !important;
-      }
-
-      #addWorkoutButton,
-      #authButton {
-        min-width: 34px !important;
-        height: 34px !important;
-      }
-
-      #authButton {
-        padding-left: 8px !important;
-        padding-right: 8px !important;
-        white-space: nowrap !important;
-      }
-
-      .language-switcher {
-        height: 34px !important;
-        min-height: 34px !important;
-      }
-
-      .language-switcher .language-button {
-        min-width: 31px !important;
-        padding-left: 6px !important;
-        padding-right: 6px !important;
-      }
-
-      .runory-theme-toggle {
-        width: 34px !important;
-        min-width: 34px !important;
-        height: 34px !important;
-        border-radius: 9px !important;
-      }
-
-      #sidebarMobileToggle {
-        z-index: 1200 !important;
-      }
-    }
-
-    @media (max-width: 430px) {
-      .topbar .brand-logo {
-        width: min(128px, 36vw) !important;
-      }
-
-      #authButton {
-        font-size: 0 !important;
-        width: 34px !important;
-        min-width: 34px !important;
-        padding: 0 !important;
-      }
-
-      #authButton::before {
-        content: "•" !important;
-        font-size: 17px !important;
-        line-height: 1 !important;
-      }
-
-      .topbar-right {
-        gap: 3px !important;
       }
     }
 
