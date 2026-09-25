@@ -7074,6 +7074,148 @@ function installRunoryMobilePolishV15() {
       }
     }
 
+
+    /* V19 — fixed desktop sidebar + compact mobile layout.
+       Layout only: workout parsing/classification is untouched. */
+
+    @media (min-width: 681px) {
+      #accountSidebar {
+        position: fixed !important;
+        left: 0 !important;
+        top: var(--runory-topbar-height, 76px) !important;
+        bottom: 0 !important;
+        height: calc(100vh - var(--runory-topbar-height, 76px)) !important;
+        max-height: calc(100vh - var(--runory-topbar-height, 76px)) !important;
+        z-index: 900 !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        box-sizing: border-box !important;
+      }
+
+      #accountSidebar.is-collapsed {
+        width: 110px !important;
+      }
+
+      /* Keep the page content aligned with the permanently visible rail. */
+      .page-shell,
+      .app-content,
+      .main-content,
+      .content-area {
+        box-sizing: border-box !important;
+      }
+
+      #sidebarMobileToggle,
+      #sidebarMobileBackdrop {
+        display: none !important;
+      }
+    }
+
+    @media (max-width: 680px) {
+      /* Mobile: the sidebar becomes a drawer below the fixed header. */
+      #accountSidebar {
+        position: fixed !important;
+        left: 0 !important;
+        top: var(--runory-topbar-height, 62px) !important;
+        bottom: 0 !important;
+        height: calc(100vh - var(--runory-topbar-height, 62px)) !important;
+        max-height: calc(100vh - var(--runory-topbar-height, 62px)) !important;
+        z-index: 1100 !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+      }
+
+      #sidebarMobileBackdrop {
+        position: fixed !important;
+        left: 0 !important;
+        right: 0 !important;
+        top: var(--runory-topbar-height, 62px) !important;
+        bottom: 0 !important;
+        z-index: 1090 !important;
+      }
+
+      /* Do not let the compact header controls wrap or collide. */
+      .topbar {
+        gap: 6px !important;
+        padding-left: 9px !important;
+        padding-right: 9px !important;
+      }
+
+      .topbar .brand {
+        flex: 0 1 auto !important;
+        min-width: 0 !important;
+        max-width: 42vw !important;
+      }
+
+      .topbar .brand-logo {
+        width: min(150px, 42vw) !important;
+        max-width: 100% !important;
+        max-height: 44px !important;
+        height: auto !important;
+      }
+
+      .topbar-right {
+        flex: 0 0 auto !important;
+        gap: 4px !important;
+      }
+
+      #addWorkoutButton,
+      #authButton {
+        min-width: 34px !important;
+        height: 34px !important;
+      }
+
+      #authButton {
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+        white-space: nowrap !important;
+      }
+
+      .language-switcher {
+        height: 34px !important;
+        min-height: 34px !important;
+      }
+
+      .language-switcher .language-button {
+        min-width: 31px !important;
+        padding-left: 6px !important;
+        padding-right: 6px !important;
+      }
+
+      .runory-theme-toggle {
+        width: 34px !important;
+        min-width: 34px !important;
+        height: 34px !important;
+        border-radius: 9px !important;
+      }
+
+      #sidebarMobileToggle {
+        z-index: 1200 !important;
+      }
+    }
+
+    @media (max-width: 430px) {
+      .topbar .brand-logo {
+        width: min(128px, 36vw) !important;
+      }
+
+      #authButton {
+        font-size: 0 !important;
+        width: 34px !important;
+        min-width: 34px !important;
+        padding: 0 !important;
+      }
+
+      #authButton::before {
+        content: "•" !important;
+        font-size: 17px !important;
+        line-height: 1 !important;
+      }
+
+      .topbar-right {
+        gap: 3px !important;
+      }
+    }
+
     /* Aggregate recovery summary is no longer rendered. */
   `;
   document.head.appendChild(style);
