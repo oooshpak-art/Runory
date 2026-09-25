@@ -6926,22 +6926,28 @@ function installRunoryMobilePolishV15() {
       }
     }
 
-    /* Targeted fix: aggregated recovery summary has no visible frame. */
+    /* Targeted fix: aggregated recovery summary is a plain timeline row, not a card. */
     #structureCard .timeline-summary,
     #structureCard .timeline-recovery.timeline-summary,
     #structureCard .timeline-summary .timeline-content {
+      background: transparent !important;
       border: 0 !important;
-      outline: 0 !important;
+      border-radius: 0 !important;
       box-shadow: none !important;
+      outline: 0 !important;
     }
     #structureCard .timeline-summary::before,
     #structureCard .timeline-summary::after,
     #structureCard .timeline-recovery.timeline-summary::before,
-    #structureCard .timeline-recovery.timeline-summary::after {
+    #structureCard .timeline-recovery.timeline-summary::after,
+    #structureCard .timeline-summary .timeline-content::before,
+    #structureCard .timeline-summary .timeline-content::after {
       content: none !important;
       display: none !important;
+      background: transparent !important;
       border: 0 !important;
       box-shadow: none !important;
+      outline: 0 !important;
     }
   `;
   document.head.appendChild(style);
