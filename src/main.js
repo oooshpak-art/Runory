@@ -1742,33 +1742,41 @@ function injectRunoryThemeStyles() {
       }
     }
 
-    /* Calculator split fields: truly independent cells. Keep the original calculator layout intact. */
+    /* Calculator split fields: independent cells with a stable two-column form grid. */
     .calculator-card .runory-time-field {
-      border: 0 !important;
-      padding: 0 !important;
+      display: block !important;
+      min-width: 0 !important;
+      width: 100% !important;
       margin: 0 !important;
-      min-inline-size: 0 !important;
-      background: transparent !important;
-      box-shadow: none !important;
-    }
-    .calculator-card .runory-time-field > legend {
       padding: 0 !important;
+      box-sizing: border-box !important;
+    }
+    .calculator-card .runory-field-label {
+      display: block !important;
       margin: 0 0 8px !important;
+      padding: 0 !important;
+      color: #aeb9b4 !important;
+      font-size: 12px !important;
+      line-height: 1.2 !important;
+      font-weight: 600 !important;
     }
     .calculator-card .runory-split-fields {
       display: grid !important;
-      grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-      gap: 16px !important;
       width: 100% !important;
       min-width: 0 !important;
-      padding: 0 !important;
       margin: 0 !important;
-      border: 0 !important;
+      padding: 0 !important;
+      gap: 10px !important;
+      box-sizing: border-box !important;
       background: transparent !important;
+      border: 0 !important;
       box-shadow: none !important;
       overflow: visible !important;
     }
-    .calculator-card .runory-time-field:has(.runory-split-fields > .runory-split-cell:nth-child(2):last-child) .runory-split-fields {
+    .calculator-card .runory-split-fields.is-three {
+      grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    }
+    .calculator-card .runory-split-fields.is-two {
       grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     }
     .calculator-card .runory-split-cell {
@@ -1777,13 +1785,15 @@ function injectRunoryThemeStyles() {
       justify-content: space-between !important;
       align-items: stretch !important;
       min-width: 0 !important;
+      width: 100% !important;
+      height: 62px !important;
       min-height: 62px !important;
       box-sizing: border-box !important;
-      padding: 10px 12px 7px !important;
+      padding: 9px 12px 8px !important;
       margin: 0 !important;
       border: 1px solid var(--runory-dark-line) !important;
       border-radius: 10px !important;
-      background: var(--runory-dark-surface-2) !important;
+      background: #202725 !important;
       overflow: hidden !important;
       box-shadow: none !important;
     }
@@ -1791,6 +1801,7 @@ function injectRunoryThemeStyles() {
       display: block !important;
       width: 100% !important;
       min-width: 0 !important;
+      height: 24px !important;
       min-height: 24px !important;
       padding: 0 !important;
       margin: 0 !important;
@@ -1798,20 +1809,33 @@ function injectRunoryThemeStyles() {
       outline: 0 !important;
       background: transparent !important;
       box-shadow: none !important;
+      color: #f2f5f3 !important;
+      font: inherit !important;
+      line-height: 24px !important;
     }
     .calculator-card .runory-split-cell span {
       display: block !important;
-      margin: 4px 0 0 !important;
+      margin: 3px 0 0 !important;
       padding: 0 !important;
-      line-height: 1 !important;
+      color: #9da9a3 !important;
+      font-size: 11px !important;
+      line-height: 14px !important;
+    }
+    .calculator-card .runory-split-cell:focus-within {
+      border-color: #2a9d8f !important;
+      outline: 0 !important;
     }
     @media (max-width: 720px) {
       .calculator-card .runory-split-fields {
         gap: 8px !important;
       }
       .calculator-card .runory-split-cell {
+        height: 58px !important;
         min-height: 58px !important;
-        padding: 9px 10px 7px !important;
+        padding: 8px 9px 7px !important;
+      }
+      .calculator-card .runory-field-label {
+        margin-bottom: 7px !important;
       }
     }
   `;
@@ -5741,24 +5765,24 @@ function renderCalculator(type = activeCalculator, { preserveResult = false } = 
 
     if (field === "time") {
       return `
-        <fieldset class="calc-field time-field runory-time-field">
-          <legend>${escapeHtml(t("time"))}</legend>
-          <div class="runory-split-fields">
+        <div class="calc-field time-field runory-time-field">
+          <span class="runory-field-label">${escapeHtml(t("time"))}</span>
+          <div class="runory-split-fields is-three">
             <label class="runory-split-cell"><input name="timeHours" type="number" min="0" inputmode="numeric" placeholder="0" /><span>${escapeHtml(t("hours"))}</span></label>
             <label class="runory-split-cell"><input name="timeMinutes" type="number" min="0" max="59" inputmode="numeric" placeholder="00" /><span>${escapeHtml(t("minutesShort"))}</span></label>
             <label class="runory-split-cell"><input name="timeSeconds" type="number" min="0" max="59" inputmode="numeric" placeholder="00" /><span>${escapeHtml(t("secondsShort"))}</span></label>
           </div>
-        </fieldset>`;
+        </div>`;
     }
 
     return `
-      <fieldset class="calc-field time-field runory-time-field">
-        <legend>${escapeHtml(t("pace"))}</legend>
-        <div class="runory-split-fields">
+      <div class="calc-field time-field runory-time-field">
+        <span class="runory-field-label">${escapeHtml(t("pace"))}</span>
+        <div class="runory-split-fields is-two">
           <label class="runory-split-cell"><input name="paceMinutes" type="number" min="0" inputmode="numeric" placeholder="5" required /><span>${escapeHtml(t("minutesShort"))}</span></label>
           <label class="runory-split-cell"><input name="paceSeconds" type="number" min="0" max="59" inputmode="numeric" placeholder="30" /><span>${escapeHtml(t("secondsShort"))}</span></label>
         </div>
-      </fieldset>`;
+      </div>`;
   }).join("");
 
   const button = panel.querySelector(".calculate-button");
