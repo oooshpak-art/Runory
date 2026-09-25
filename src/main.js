@@ -6926,19 +6926,20 @@ function installRunoryMobilePolishV15() {
       }
     }
 
-    /* Targeted fix: aggregated recovery summary has no frame in any theme. */
+    /* Targeted fix: aggregated recovery summary has no visible frame. */
     #structureCard .timeline-summary,
-    #structureCard .timeline-item.timeline-summary {
+    #structureCard .timeline-recovery.timeline-summary,
+    #structureCard .timeline-summary .timeline-content {
       border: 0 !important;
-      border-width: 0 !important;
-      border-color: transparent !important;
       outline: 0 !important;
       box-shadow: none !important;
     }
     #structureCard .timeline-summary::before,
     #structureCard .timeline-summary::after,
-    #structureCard .timeline-item.timeline-summary::before,
-    #structureCard .timeline-item.timeline-summary::after {
+    #structureCard .timeline-recovery.timeline-summary::before,
+    #structureCard .timeline-recovery.timeline-summary::after {
+      content: none !important;
+      display: none !important;
       border: 0 !important;
       box-shadow: none !important;
     }
