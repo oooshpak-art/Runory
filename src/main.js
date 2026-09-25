@@ -1014,7 +1014,7 @@ function injectRunoryThemeStyles() {
     }
 
     .topbar { position: relative !important; }
-    .topbar-right { position: relative !important; }
+    .topbar-right { position: static !important; }
     .runory-theme-toggle {
       width: 44px !important;
       height: 34px !important;
@@ -1176,6 +1176,77 @@ function injectRunoryThemeStyles() {
     html[data-theme="dark"] .home-empty-icon { background: #203532 !important; color: #9fe0d6 !important; }
     html[data-theme="dark"] .history-bar-label,
     html[data-theme="dark"] .history-bar-date { color: #8f9b95 !important; }
+
+    /* Workout history: secondary metrics must stay readable in dark mode. */
+    html[data-theme="dark"] .history-metrics { color: #b2bdb7 !important; }
+    html[data-theme="dark"] .history-metrics b { color: #d1d9d5 !important; }
+
+    /* Calculator: remove every light/white surface from the dark theme. */
+    html[data-theme="dark"] .calculator-card { background: var(--runory-dark-surface) !important; border-color: var(--runory-dark-line) !important; }
+    html[data-theme="dark"] .calc-tab {
+      background: var(--runory-dark-surface-2) !important;
+      color: #d6dfdb !important;
+      border-color: var(--runory-dark-line) !important;
+    }
+    html[data-theme="dark"] .calc-tab:hover,
+    html[data-theme="dark"] .calc-tab:focus-visible {
+      background: #2a3733 !important;
+      color: #f2f5f3 !important;
+      border-color: #4a5b54 !important;
+      outline: none !important;
+    }
+    html[data-theme="dark"] .calc-tab.is-active,
+    html[data-theme="dark"] .calc-tab.is-active:hover,
+    html[data-theme="dark"] .calc-tab.is-active:focus-visible {
+      background: #203d39 !important;
+      color: #9fe0d6 !important;
+      border-color: #4c9d92 !important;
+    }
+    html[data-theme="dark"] .calc-tab:disabled {
+      background: #1b211f !important;
+      color: #66716c !important;
+      border-color: #2a312e !important;
+      opacity: 1 !important;
+    }
+    html[data-theme="dark"] .calculator-card .calc-field > div,
+    html[data-theme="dark"] .calculator-card .split-inputs label {
+      background: #202725 !important;
+      border-color: var(--runory-dark-line) !important;
+    }
+    html[data-theme="dark"] .calculator-card .calc-field > div:focus-within,
+    html[data-theme="dark"] .calculator-card .split-inputs:focus-within {
+      outline-color: #294b46 !important;
+      border-color: #2a9d8f !important;
+    }
+    html[data-theme="dark"] .calculator-card .calc-field input {
+      background: transparent !important;
+      color: #f2f5f3 !important;
+    }
+    html[data-theme="dark"] .calculator-card .calc-field input::placeholder { color: #7f8b85 !important; }
+    html[data-theme="dark"] .calculator-card .calc-field em,
+    html[data-theme="dark"] .calculator-card .split-inputs span { color: #9da9a3 !important; }
+    html[data-theme="dark"] .calculator-card .calc-field > span,
+    html[data-theme="dark"] .calculator-card .calc-field legend { color: #aeb9b4 !important; }
+    html[data-theme="dark"] .calculate-button {
+      background: #f2f5f3 !important;
+      color: #171b1d !important;
+    }
+    html[data-theme="dark"] .calculate-button:hover,
+    html[data-theme="dark"] .calculate-button:focus-visible {
+      background: #dce5e1 !important;
+      color: #171b1d !important;
+    }
+    html[data-theme="dark"] .calculate-button:disabled {
+      background: #2a312e !important;
+      color: #77837d !important;
+      opacity: 1 !important;
+    }
+    html[data-theme="dark"] .calculation-result {
+      background: #203532 !important;
+      border: 1px solid #31524c !important;
+    }
+    html[data-theme="dark"] .calculation-result p { color: #a9d9d2 !important; }
+    html[data-theme="dark"] .calculation-result span { color: #9da9a3 !important; }
 
     @media (max-width: 900px) {
       .runory-theme-toggle { top: calc(100% + 10px) !important; width: 40px !important; height: 32px !important; min-width: 40px !important; }
