@@ -1345,6 +1345,99 @@ function injectRunoryThemeStyles() {
       border-color: #71807a !important;
     }
 
+    /* Final workout-analysis contrast pass: keep every analysis block dark. */
+    html[data-theme="dark"] .results-sidebar,
+    html[data-theme="dark"] .results-sidebar > *,
+    html[data-theme="dark"] .results-sidebar .summary-card,
+    html[data-theme="dark"] .results-sidebar .summary-panel {
+      background: #181e1c !important;
+      color: #f2f5f3 !important;
+      border-color: #303a36 !important;
+      box-shadow: none !important;
+    }
+    html[data-theme="dark"] .results-sidebar .summary-metric {
+      background: #202725 !important;
+      color: #f2f5f3 !important;
+      border-color: #303a36 !important;
+    }
+    html[data-theme="dark"] .results-sidebar .summary-metric :is(span, small, label) {
+      color: #aeb9b4 !important;
+    }
+    html[data-theme="dark"] .results-sidebar .summary-metric :is(strong, b, .summary-value) {
+      color: #f2f5f3 !important;
+    }
+    html[data-theme="dark"] #structureCard,
+    html[data-theme="dark"] #structureCard .timeline-item,
+    html[data-theme="dark"] #structureCard .timeline-detail,
+    html[data-theme="dark"] #structureCard .timeline-summary {
+      background: #181e1c !important;
+      color: #dce5e1 !important;
+      border-color: #303a36 !important;
+      box-shadow: none !important;
+    }
+    html[data-theme="dark"] #structureCard .timeline-detail {
+      background: #202725 !important;
+      border: 1px solid #303a36 !important;
+      border-radius: 10px !important;
+    }
+    html[data-theme="dark"] #structureCard .timeline-summary {
+      background: #252d2a !important;
+    }
+    html[data-theme="dark"] #structureCard .timeline-content :is(strong, b) {
+      color: #f2f5f3 !important;
+    }
+    html[data-theme="dark"] #structureCard .timeline-content span {
+      color: #aeb9b4 !important;
+    }
+    html[data-theme="dark"] #structureCard .timeline-detail .timeline-content span,
+    html[data-theme="dark"] #structureCard .timeline-summary .timeline-content span {
+      color: #c3cec8 !important;
+    }
+
+    html[data-theme="dark"] #splitsTable thead,
+    html[data-theme="dark"] #splitsTable thead tr,
+    html[data-theme="dark"] #splitsTable thead th {
+      background: #202725 !important;
+      color: #aeb9b4 !important;
+      border-color: #303a36 !important;
+    }
+    html[data-theme="dark"] #splitsBody tr {
+      transition: background-color .14s ease, box-shadow .14s ease !important;
+    }
+    html[data-theme="dark"] #splitsBody tr:hover,
+    html[data-theme="dark"] #splitsBody tr:focus-within {
+      background: #263a35 !important;
+      box-shadow: inset 3px 0 0 #2a9d8f !important;
+    }
+    html[data-theme="dark"] #splitsBody tr:hover td,
+    html[data-theme="dark"] #splitsBody tr:focus-within td {
+      background: #263a35 !important;
+      color: #f2f5f3 !important;
+    }
+
+    html[data-theme="dark"] :is(.insight-card, .insight-panel, .first-look, .first-look-card, .insight-box) {
+      background: #202725 !important;
+      color: #dce5e1 !important;
+      border-color: #303a36 !important;
+      box-shadow: none !important;
+    }
+    html[data-theme="dark"] :is(.insight-card, .insight-panel, .first-look, .first-look-card, .insight-box) :is(p, span, .insight-text) {
+      color: #c3cec8 !important;
+    }
+    html[data-theme="dark"] :is(.insight-card, .insight-panel, .first-look, .first-look-card, .insight-box) :is(strong, b, .eyebrow) {
+      color: #f2f5f3 !important;
+    }
+    html[data-theme="dark"] :is(.insight-card, .insight-panel, .first-look, .first-look-card, .insight-box) button {
+      background: #252d2a !important;
+      color: #dce5e1 !important;
+      border-color: #394540 !important;
+    }
+    html[data-theme="dark"] :is(.insight-card, .insight-panel, .first-look, .first-look-card, .insight-box) button:hover {
+      background: #2d3b36 !important;
+      color: #f2f5f3 !important;
+      border-color: #4a5b54 !important;
+    }
+
     @media (max-width: 900px) {
       .runory-theme-toggle { top: calc(100% + 10px) !important; width: 40px !important; height: 32px !important; min-width: 40px !important; }
     }
