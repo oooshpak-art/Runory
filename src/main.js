@@ -1252,22 +1252,37 @@ function injectRunoryThemeStyles() {
     .calculator-card .split-inputs {
       display: grid !important;
       grid-template-columns: repeat(auto-fit, minmax(0, 1fr)) !important;
-      gap: 12px !important;
+      column-gap: 16px !important;
+      row-gap: 12px !important;
       width: 100% !important;
       margin: 0 !important;
+      padding: 0 !important;
+      background: transparent !important;
+      border: 0 !important;
+      box-shadow: none !important;
+      outline: 0 !important;
     }
     .calculator-card .split-inputs label {
       min-width: 0 !important;
       width: 100% !important;
       margin: 0 !important;
+      padding: 0 !important;
       border-radius: 10px !important;
       border: 1px solid var(--line) !important;
+      border-left: 1px solid var(--line) !important;
       overflow: hidden !important;
       box-sizing: border-box !important;
+      background: var(--surface) !important;
+      box-shadow: none !important;
     }
     .calculator-card .split-inputs label + label {
       margin-left: 0 !important;
       border-left: 1px solid var(--line) !important;
+    }
+    .calculator-card .split-inputs label::before,
+    .calculator-card .split-inputs label::after {
+      display: none !important;
+      content: none !important;
     }
     html[data-theme="dark"] .calculator-card .split-inputs {
       background: transparent !important;
@@ -1278,7 +1293,12 @@ function injectRunoryThemeStyles() {
     }
     html[data-theme="dark"] .calculator-card .split-inputs label {
       border-color: var(--runory-dark-line) !important;
+      border-left-color: var(--runory-dark-line) !important;
       background: #202725 !important;
+      box-shadow: none !important;
+    }
+    html[data-theme="dark"] .calculator-card .split-inputs label + label {
+      border-left-color: var(--runory-dark-line) !important;
     }
 
     @media (max-width: 900px) {
