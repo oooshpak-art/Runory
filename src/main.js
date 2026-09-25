@@ -1252,15 +1252,19 @@ function injectRunoryThemeStyles() {
     .calculator-card .split-inputs {
       display: grid !important;
       grid-template-columns: repeat(auto-fit, minmax(0, 1fr)) !important;
-      column-gap: 16px !important;
+      column-gap: 18px !important;
       row-gap: 12px !important;
       width: 100% !important;
       margin: 0 !important;
       padding: 0 !important;
-      background: transparent !important;
-      border: 0 !important;
+      background: none !important;
+      border: none !important;
+      border-width: 0 !important;
+      border-color: transparent !important;
       box-shadow: none !important;
-      outline: 0 !important;
+      outline: none !important;
+      overflow: visible !important;
+      isolation: isolate !important;
     }
     .calculator-card .split-inputs label {
       min-width: 0 !important;
@@ -1270,10 +1274,13 @@ function injectRunoryThemeStyles() {
       border-radius: 10px !important;
       border: 1px solid var(--line) !important;
       border-left: 1px solid var(--line) !important;
+      border-right: 1px solid var(--line) !important;
       overflow: hidden !important;
       box-sizing: border-box !important;
       background: var(--surface) !important;
       box-shadow: none !important;
+      position: relative !important;
+      z-index: 1 !important;
     }
     .calculator-card .split-inputs label + label {
       margin-left: 0 !important;
@@ -1285,11 +1292,14 @@ function injectRunoryThemeStyles() {
       content: none !important;
     }
     html[data-theme="dark"] .calculator-card .split-inputs {
-      background: transparent !important;
-      border: 0 !important;
+      background: none !important;
+      border: none !important;
+      border-width: 0 !important;
+      border-color: transparent !important;
       outline: none !important;
       box-shadow: none !important;
       padding: 0 !important;
+      overflow: visible !important;
     }
     html[data-theme="dark"] .calculator-card .split-inputs label {
       border-color: var(--runory-dark-line) !important;
