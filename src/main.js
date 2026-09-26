@@ -2116,7 +2116,7 @@ function injectRunoryThemeStyles() {
 
     /* Одинаковый визуальный отступ перед заминкой, как разделение после разминки. */
     #structureCard .timeline-cooldown-spaced {
-      margin-top: 28px !important;
+      margin-top: 20px !important;
     }
 
     html[data-theme="dark"] #splitsTable thead,
