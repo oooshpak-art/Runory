@@ -316,7 +316,7 @@ const translations = {
      authHaveAccount: "Вже маєш акаунт?",
      authCreateAccount: "Створити акаунт",
      authSwitchToSignIn: "Увійти",
-     authAccountEyebrow: "ТВОЄМУ RUNORY",
+     authAccountEyebrow: "",
      authAccountTitle: "Мій акаунт",
      authAccountCopy: "Тут керування входом в акаунт. Профіль спортсмена відкривається окремо в меню зліва.",
      authLogout: "Вийти",
@@ -625,7 +625,7 @@ const translations = {
      authHaveAccount: "Already have an account?",
      authCreateAccount: "Create account",
      authSwitchToSignIn: "Sign in",
-     authAccountEyebrow: "ATHLETE PROFILE",
+     authAccountEyebrow: "",
      authAccountTitle: "My account",
      authAccountCopy: "Account access is managed here. Your athlete profile is available separately in the left menu.",
      authLogout: "Sign out",
@@ -7021,6 +7021,50 @@ function installRunoryAccountPolishV18() {
       display: block !important;
       color: currentColor !important;
       stroke: currentColor !important;
+    }
+
+    /* Restore the account icon without changing the button footprint. */
+    #authButton::before {
+      content: "";
+      display: block !important;
+      width: 22px !important;
+      height: 22px !important;
+      flex: 0 0 22px !important;
+      background: currentColor !important;
+      -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='8' r='3.5' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='M5 20c.7-3.8 3.1-5.8 7-5.8s6.3 2 7 5.8' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat !important;
+      mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='8' r='3.5' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='M5 20c.7-3.8 3.1-5.8 7-5.8s6.3 2 7 5.8' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat !important;
+    }
+
+    /* The account modal should focus on the account title, not an eyebrow. */
+    #authAccountView [data-i18n="authAccountEyebrow"] {
+      display: none !important;
+    }
+    #authAccountView [data-i18n="authAccountTitle"] {
+      color: #17211f !important;
+      -webkit-text-fill-color: #17211f !important;
+      font-weight: 750 !important;
+      opacity: 1 !important;
+    }
+
+    /* Subtle but visible hover feedback without changing button dimensions. */
+    button {
+      transition: filter .16s ease, box-shadow .16s ease, border-color .16s ease, background-color .16s ease, transform .16s ease !important;
+    }
+    button:hover:not(:disabled) {
+      filter: brightness(1.045) !important;
+    }
+    #authButton:hover,
+    #addWorkoutButton:hover,
+    .language-switcher:hover,
+    .runory-theme-toggle:hover,
+    .account-sidebar-toggle:hover,
+    #sidebarMobileToggle:hover {
+      filter: brightness(1.07) !important;
+      transform: translateY(-1px);
+    }
+    #authAccountView button:hover:not(:disabled) {
+      filter: brightness(1.045) !important;
+      box-shadow: 0 5px 18px rgba(42,157,143,.16) !important;
     }
 
     /* In dark mode the account modal stays light, so force its text/buttons
