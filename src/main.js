@@ -5940,29 +5940,11 @@ function updateAuthUI(session) {
   const user = currentSession?.user;
   const signedIn = Boolean(user);
 
-  if (authButton) {
-    authButton.classList.toggle("is-signed-in", signedIn);
-    authButton.setAttribute("aria-label", signedIn ? t("authAccount") : t("authSignIn"));
-    authButton.setAttribute("title", signedIn ? t("authAccount") : t("authSignIn"));
-
-    // Account control: use the Runory-style profile icon instead of a text button.
-    if (!authButton.querySelector(".runory-account-icon")) {
-      const icon = document.createElement("span");
-      icon.className = "runory-account-icon";
-      icon.setAttribute("aria-hidden", "true");
-      icon.innerHTML = `
-        <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
-          <circle cx="12" cy="12" r="10.2"></circle>
-          <circle cx="12" cy="8.2" r="3.1"></circle>
-          <path d="M5.9 20.2v-3.1c0-3.2 2.6-5.8 5.8-5.8h.6c3.2 0 5.8 2.6 5.8 5.8v3.1"></path>
-        </svg>`;
-      authButton.insertBefore(icon, authButton.firstChild);
-    }
-  }
-
+  if (authButton) authButton.classList.toggle("is-signed-in", signedIn);
   if (authButtonText) {
-    authButtonText.textContent = "";
-    authButtonText.setAttribute("aria-hidden", "true");
+    authButtonText.textContent = signedIn
+      ? t("authAccount")
+      : t("authSignIn");
   }
 
   if (authAccountEmail) {
@@ -6919,41 +6901,6 @@ function installRunoryMobilePolishV15() {
       fill: none !important;
       stroke-width: 2.4 !important;
     }
-    /* Account control: compact Runory profile icon, matching the supplied profile mark. */
-    #authButton {
-      width: 46px !important;
-      min-width: 46px !important;
-      height: 46px !important;
-      min-height: 46px !important;
-      padding: 0 !important;
-      display: inline-flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-      gap: 0 !important;
-    }
-    #authButton #authButtonText {
-      display: none !important;
-    }
-    #authButton .runory-account-icon {
-      width: 27px !important;
-      height: 27px !important;
-      display: inline-flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-      color: currentColor !important;
-      flex: 0 0 auto !important;
-    }
-    #authButton .runory-account-icon svg {
-      width: 27px !important;
-      height: 27px !important;
-      display: block !important;
-      overflow: visible !important;
-      stroke: currentColor !important;
-      fill: none !important;
-      stroke-width: 2.05 !important;
-      stroke-linecap: round !important;
-      stroke-linejoin: round !important;
-    }
     #addWorkoutButton:hover,
     #authButton:hover,
     .language-switcher:hover,
@@ -6962,12 +6909,6 @@ function installRunoryMobilePolishV15() {
     #sidebarMobileToggle:hover {
       border-color: #238b7f !important;
       box-shadow: 0 0 0 3px rgba(42,157,143,.13), 0 5px 16px rgba(20,35,31,.15) !important;
-    }
-
-    html[data-theme="dark"] #authButton .runory-account-icon,
-    html[data-theme="dark"] #authButton .runory-account-icon svg {
-      color: #9fe0d6 !important;
-      stroke: #9fe0d6 !important;
     }
 
     html[data-theme="dark"] #sidebarMobileToggle,
@@ -7054,6 +6995,93 @@ function installRunoryMobilePolishV15() {
   document.head.appendChild(style);
 }
 
+
+/* V18 — account control + auth modal readability. */
+function installRunoryAccountPolishV18() {
+  const style = document.createElement("style");
+  style.textContent = `
+    /* Account button: same footprint as the other framed top controls. */
+    #authButton {
+      width: 40px !important;
+      min-width: 40px !important;
+      max-width: 40px !important;
+      height: 40px !important;
+      min-height: 40px !important;
+      padding: 0 !important;
+      gap: 0 !important;
+      border-radius: 10px !important;
+    }
+    #authButton .auth-button-dot,
+    #authButtonText {
+      display: none !important;
+    }
+    #authButton svg {
+      width: 22px !important;
+      height: 22px !important;
+      display: block !important;
+      color: currentColor !important;
+      stroke: currentColor !important;
+    }
+
+    /* In dark mode the account modal stays light, so force its text/buttons
+       to use explicit readable colors instead of the global dark-theme rules. */
+    html[data-theme="dark"] #authModal .auth-modal-card,
+    html[data-theme="dark"] #authModal .auth-modal-card * {
+      text-shadow: none !important;
+    }
+    html[data-theme="dark"] #authModal .auth-modal-card h1,
+    html[data-theme="dark"] #authModal .auth-modal-card h2,
+    html[data-theme="dark"] #authModal .auth-modal-card h3,
+    html[data-theme="dark"] #authModal .auth-modal-card strong,
+    html[data-theme="dark"] #authModal .auth-modal-card .auth-title,
+    html[data-theme="dark"] #authModal .auth-modal-card .auth-heading {
+      color: #171b1d !important;
+      -webkit-text-fill-color: #171b1d !important;
+    }
+    html[data-theme="dark"] #authModal .auth-modal-card p,
+    html[data-theme="dark"] #authModal .auth-modal-card span,
+    html[data-theme="dark"] #authModal .auth-modal-card small,
+    html[data-theme="dark"] #authAccountEmail,
+    html[data-theme="dark"] #authMessage {
+      color: #5f6d67 !important;
+      -webkit-text-fill-color: #5f6d67 !important;
+    }
+    html[data-theme="dark"] #authModal .auth-modal-card label {
+      color: #4f5d57 !important;
+      -webkit-text-fill-color: #4f5d57 !important;
+    }
+    html[data-theme="dark"] #authModal .auth-modal-card button:not(#authClose) {
+      color: #17211f !important;
+      -webkit-text-fill-color: #17211f !important;
+    }
+    html[data-theme="dark"] #authModal #openProfileFromAccount {
+      background: #eef5f2 !important;
+      border-color: #d5e3df !important;
+      color: #17211f !important;
+      -webkit-text-fill-color: #17211f !important;
+    }
+    html[data-theme="dark"] #authModal #authLogoutButton {
+      background: #f3f5f4 !important;
+      border-color: #d9dfdc !important;
+      color: #17211f !important;
+      -webkit-text-fill-color: #17211f !important;
+    }
+    html[data-theme="dark"] #authModal #authClose {
+      color: #5f6d67 !important;
+      -webkit-text-fill-color: #5f6d67 !important;
+    }
+    html[data-theme="dark"] #authModal input,
+    html[data-theme="dark"] #authModal select {
+      color: #17211f !important;
+      -webkit-text-fill-color: #17211f !important;
+      background: #f7f9f8 !important;
+      border-color: #d6dfdb !important;
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+installRunoryAccountPolishV18();
 installRunoryMobilePolishV15();
 initializeRoute();
 initAuth();
