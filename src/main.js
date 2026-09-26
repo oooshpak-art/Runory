@@ -5940,11 +5940,29 @@ function updateAuthUI(session) {
   const user = currentSession?.user;
   const signedIn = Boolean(user);
 
-  if (authButton) authButton.classList.toggle("is-signed-in", signedIn);
+  if (authButton) {
+    authButton.classList.toggle("is-signed-in", signedIn);
+    authButton.setAttribute("aria-label", signedIn ? t("authAccount") : t("authSignIn"));
+    authButton.setAttribute("title", signedIn ? t("authAccount") : t("authSignIn"));
+
+    // Account control: use the Runory-style profile icon instead of a text button.
+    if (!authButton.querySelector(".runory-account-icon")) {
+      const icon = document.createElement("span");
+      icon.className = "runory-account-icon";
+      icon.setAttribute("aria-hidden", "true");
+      icon.innerHTML = `
+        <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+          <circle cx="12" cy="12" r="10.2"></circle>
+          <circle cx="12" cy="8.2" r="3.1"></circle>
+          <path d="M5.9 20.2v-3.1c0-3.2 2.6-5.8 5.8-5.8h.6c3.2 0 5.8 2.6 5.8 5.8v3.1"></path>
+        </svg>`;
+      authButton.insertBefore(icon, authButton.firstChild);
+    }
+  }
+
   if (authButtonText) {
-    authButtonText.textContent = signedIn
-      ? t("authAccount")
-      : t("authSignIn");
+    authButtonText.textContent = "";
+    authButtonText.setAttribute("aria-hidden", "true");
   }
 
   if (authAccountEmail) {
@@ -6901,6 +6919,41 @@ function installRunoryMobilePolishV15() {
       fill: none !important;
       stroke-width: 2.4 !important;
     }
+    /* Account control: compact Runory profile icon, matching the supplied profile mark. */
+    #authButton {
+      width: 46px !important;
+      min-width: 46px !important;
+      height: 46px !important;
+      min-height: 46px !important;
+      padding: 0 !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 0 !important;
+    }
+    #authButton #authButtonText {
+      display: none !important;
+    }
+    #authButton .runory-account-icon {
+      width: 27px !important;
+      height: 27px !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      color: currentColor !important;
+      flex: 0 0 auto !important;
+    }
+    #authButton .runory-account-icon svg {
+      width: 27px !important;
+      height: 27px !important;
+      display: block !important;
+      overflow: visible !important;
+      stroke: currentColor !important;
+      fill: none !important;
+      stroke-width: 2.05 !important;
+      stroke-linecap: round !important;
+      stroke-linejoin: round !important;
+    }
     #addWorkoutButton:hover,
     #authButton:hover,
     .language-switcher:hover,
@@ -6909,6 +6962,12 @@ function installRunoryMobilePolishV15() {
     #sidebarMobileToggle:hover {
       border-color: #238b7f !important;
       box-shadow: 0 0 0 3px rgba(42,157,143,.13), 0 5px 16px rgba(20,35,31,.15) !important;
+    }
+
+    html[data-theme="dark"] #authButton .runory-account-icon,
+    html[data-theme="dark"] #authButton .runory-account-icon svg {
+      color: #9fe0d6 !important;
+      stroke: #9fe0d6 !important;
     }
 
     html[data-theme="dark"] #sidebarMobileToggle,
