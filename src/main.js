@@ -2114,6 +2114,11 @@ function injectRunoryThemeStyles() {
       background: #394540 !important; border-color: #77877f !important;
     }
 
+    /* Одинаковый визуальный отступ перед заминкой, как разделение после разминки. */
+    #structureCard .timeline-cooldown-spaced {
+      margin-top: 28px !important;
+    }
+
     html[data-theme="dark"] #splitsTable thead,
     html[data-theme="dark"] #splitsTable thead tr,
     html[data-theme="dark"] #splitsTable thead th {
@@ -3897,7 +3902,8 @@ function renderStructure(structure = [], summary = null) {
     addTimelineItem(
       type,
       label,
-      formatStats(blockStats)
+      formatStats(blockStats),
+      type === "cooldown" ? "timeline-cooldown-spaced" : ""
     );
   }
 }
