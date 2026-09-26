@@ -7011,16 +7011,27 @@ function installRunoryAccountPolishV18() {
       gap: 0 !important;
       border-radius: 10px !important;
     }
-    #authButton .auth-button-dot,
-    #authButtonText {
+    /* Keep the account control exactly the same footprint as the + button
+       and render the user icon independently so it cannot disappear because
+       of inherited SVG/icon rules. */
+    #authButton {
+      box-sizing: border-box !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+    }
+    #authButton > * {
       display: none !important;
     }
-    #authButton svg {
+    #authButton::before {
+      content: "" !important;
+      display: block !important;
       width: 22px !important;
       height: 22px !important;
-      display: block !important;
-      color: currentColor !important;
-      stroke: currentColor !important;
+      flex: 0 0 22px !important;
+      background: currentColor !important;
+      -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='7.5' r='3.5' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='M5 20c.8-3.8 3.2-5.7 7-5.7s6.2 1.9 7 5.7' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat !important;
+      mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='7.5' r='3.5' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='M5 20c.8-3.8 3.2-5.7 7-5.7s6.2 1.9 7 5.7' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat !important;
     }
 
     /* In dark mode the account modal stays light, so force its text/buttons
@@ -7029,22 +7040,39 @@ function installRunoryAccountPolishV18() {
     html[data-theme="dark"] #authModal .auth-modal-card * {
       text-shadow: none !important;
     }
+    /* The account view is intentionally brighter/readable in dark mode. */
+    html[data-theme="dark"] #authModal [data-i18n="authAccountEyebrow"] {
+      display: none !important;
+    }
+    html[data-theme="dark"] #authModal [data-i18n="authAccountTitle"] {
+      color: #121817 !important;
+      -webkit-text-fill-color: #121817 !important;
+      opacity: 1 !important;
+      font-weight: 800 !important;
+    }
+    html[data-theme="dark"] #authModal [data-i18n="authAccountCopy"] {
+      color: #4d5e58 !important;
+      -webkit-text-fill-color: #4d5e58 !important;
+      opacity: 1 !important;
+    }
     html[data-theme="dark"] #authModal .auth-modal-card h1,
     html[data-theme="dark"] #authModal .auth-modal-card h2,
     html[data-theme="dark"] #authModal .auth-modal-card h3,
     html[data-theme="dark"] #authModal .auth-modal-card strong,
     html[data-theme="dark"] #authModal .auth-modal-card .auth-title,
     html[data-theme="dark"] #authModal .auth-modal-card .auth-heading {
-      color: #171b1d !important;
-      -webkit-text-fill-color: #171b1d !important;
+      color: #121817 !important;
+      -webkit-text-fill-color: #121817 !important;
+      opacity: 1 !important;
     }
     html[data-theme="dark"] #authModal .auth-modal-card p,
     html[data-theme="dark"] #authModal .auth-modal-card span,
     html[data-theme="dark"] #authModal .auth-modal-card small,
     html[data-theme="dark"] #authAccountEmail,
     html[data-theme="dark"] #authMessage {
-      color: #5f6d67 !important;
-      -webkit-text-fill-color: #5f6d67 !important;
+      color: #4d5e58 !important;
+      -webkit-text-fill-color: #4d5e58 !important;
+      opacity: 1 !important;
     }
     html[data-theme="dark"] #authModal .auth-modal-card label {
       color: #4f5d57 !important;
